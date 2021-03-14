@@ -1,0 +1,15 @@
+*.c text
+*.h text
+
+# Declare files that will always have CRLF line endings on checkout.
+*.m text eol=lf
+*.tex text eol=lf
+
+# Denote all files that are truly binary and should not be modified.
+*.png binary
+*.jpg binary
+*.mat binary
+
+
+# .gitattributes needed for correct unix eol
+# https://stackoverflow.com/questions/57402900/config-encoding-per-file-in-git-repository-for-proper-output-of-git-diff
