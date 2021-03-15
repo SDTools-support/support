@@ -592,7 +592,14 @@ elseif comstr(Cam,'step');[CAM,Cam]=comstr(CAM,5);
     else; RO.Actuator=find(r1.data(:,2)==0);
     end
     p_piezo('electrodeinfo',model)
-    model=p_piezo('electrode2case',model);    
+    model=p_piezo('electrode2case',model);  
+    %add all PZT
+    sens=struct('cta',speye(size(r1.data,1)),'DOF',r1.data(:,1)+.21, ...
+        'lab',{cellfun(@(x) sprintf('pz%i',x),...
+        num2cell((1:size(r1.data,1))'),'uni',0)}); 
+    %  eval(iigui({'model','opt','sens'},'SetInBaseC')) % Allow debug
+    model=fe_case(model,'SensDof','V_OUT',sens);
+        
     %% Definition time variation of input
     if isfield(RO,'input'); %% Illustrated in lize16
       if ischar(RO.input);com=RO.input;
@@ -629,22 +636,14 @@ elseif comstr(Cam,'step');[CAM,Cam]=comstr(CAM,5);
      end;
     end    
     %% Save
-    r1=stack_get(model,'info','Electrodes','get');
-    sens=struct('cta',speye(size(r1.data,1)),'DOF',r1.data(:,1)+.21, ...
-          'lab',{cellfun(@(x) sprintf('pz%i',x),...
-          num2cell((1:size(r1.data,1))'),'uni',0)}); %  {'pz1','pz2','pz3','pz4','pz5'}'});
-        %  eval(iigui({'model','opt','sens'},'SetInBaseC')) % Allow debug
+    %r1=stack_get(model,'info','Electrodes','get');
     if isfield(RO,'OutElec')&&RO.OutElec
-          %% Observe all electrodes (should have been done before)
-          model=fe_case(model,'SensDof','V_OUT',sens);
-          opt.OutputInit='d_shm(''CbInitElecOutput'')';
+        opt.OutputInit='d_shm(''CbInitElecOutput'')';
     end
 
     if RO.AlphaR||RO.BetaR&&~isfield(opt,'Rayleigh');error('d_fetime problem');end
     model=stack_set(model,'info','TimeOpt',opt);
     model=stack_set(model,'info','SimuInfo',RO);% model is v_handle
-    
-    
     cf.mdl=model; %EM
     
     
@@ -1343,7 +1342,8 @@ elseif comstr(Cam,'export');[CAM,Cam]=comstr(CAM,7);
   %% clean end
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
-  out='$Revision: 540 $  $Date: 2021-01-28 19:03:41 +0100 (Thu, 28 Jan 2021) $';
+ out=sdtcheck('Revision');
+ %out='$Revision: 541 $  $Date: 2021-02-06 00:02:14 +0100 (Sat, 06 Feb 2021) $';
 else; error('%s unknown',CAM);
 end
 %% #End function
