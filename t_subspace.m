@@ -11,7 +11,7 @@ function [out,out1,out2]=t_subspace(varargin)
 % Contributed by E. Balmes
 
 %       Etienne Balmes
-%       Copyright (c) 1990-2015 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
 
 
 %#ok<*NOSEM,*ASGLU>
@@ -287,7 +287,8 @@ legend(h,st{1:length(h)},'location','EastOutside')
 
 % ------------------------------------------------------------
 elseif comstr(varargin{1},'cvs')
-  out='$Revision: 490 $  $Date: 2020-02-26 09:49:43 +0100 (Wed, 26 Feb 2020) $'; return;
+ out=sdtcheck('revision');
+  %out='$Revision: 490 $  $Date: 2020-02-26 09:49:43 +0100 (Wed, 26 Feb 2020) $'; return;
 % ------------------------------------------------------------
 else; error('%s unknown',CAM);
 end
