@@ -7,7 +7,7 @@ function [out,out1,out2]=fe_homo(varargin)
 % SDTools thus does not guarantee that support will be provided.
 
 %       E. Balmes
-%       Copyright (c) 1990-2020 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
 %       For revision information use fe_homo('cvs')
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
@@ -2168,7 +2168,8 @@ end
 %% #end ------------------------------------------------------------------- -2
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 530 $  $Date: 2020-12-11 11:10:34 +0100 (Fri, 11 Dec 2020) $'; 
+ out=sdtcheck('revision');
+ %out='$Revision: 530 $  $Date: 2020-12-11 11:10:34 +0100 (Fri, 11 Dec 2020) $'; 
 else; error('%s unknown',CAM);
 end
 
