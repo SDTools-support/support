@@ -7,7 +7,7 @@ function [out,out1]=d_nlstatic(varargin)
 %       See also : fe_time, nl_solve, fe_case, mattyp
 
 %	Etienne Balmes, Guillaume Vermot des Roches
-%       Copyright (c) 1990-2015 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
 
 
 if nargin==0; return; end % auto test skip
@@ -66,6 +66,7 @@ elseif comstr(Cam,'modal')
 %% -------------------------------------------------------
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
-  out='$Revision: 206 $  $Date: 2015-03-16 14:24:10 +0100 (Mon, 16 Mar 2015) $';
+ out=sdtcheck('revision');
+  %out='$Revision: 206 $  $Date: 2015-03-16 14:24:10 +0100 (Mon, 16 Mar 2015) $';
 else; error('%s unknown',CAM);    
 end
