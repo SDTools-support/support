@@ -11,7 +11,7 @@ function [out,out1,out2]=start_time2frf(varargin) %#ok<STOUT>
 
 
 %       Etienne Balmes, Guillaume Martin
-%       Copyright (c) 1990-2019 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
 %       start_time2frf('cvs') for revision information
 
 %#ok<*ASGLU,*NOSEM,*NASGU>
@@ -136,6 +136,7 @@ elseif comstr(Cam,'demogartfe');[CAM,Cam]=comstr(CAM,11);
   
 %% ---------------------------------------------------------------------------
 elseif comstr(Cam,'cvs');
- out='$Revision: 531 $  $Date: 2020-12-16 21:52:35 +0100 (Wed, 16 Dec 2020) $';
+ out=sdtcheck('revision');
+ %out='$Revision: 531 $  $Date: 2020-12-16 21:52:35 +0100 (Wed, 16 Dec 2020) $';
 else; error('%s unknown',CAM);
 end
