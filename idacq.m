@@ -192,8 +192,9 @@ elseif comstr(Cam,'stop')
  %% #End------------------------------------------------------------------1
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.00 $  $Date: 2020/01/13 09:32:24 $';
-else; error('daqsdt %s unknown',CAM);
+ out=sdtcheck('revision');
+ %out='$Revision: 1.00 $  $Date: 2020/01/13 09:32:24 $';
+else; error('idacq %s unknown',CAM);
 end
 end
 
