@@ -3,7 +3,7 @@ function [out,out1,out2]=pak2sdt(varargin)
 % 
 
 %       Etienne Balmes, Jean-Philippe Bianchi
-%       Copyright (c) 1990-2015 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
 %       $Revision: 1.29 $  $Date: 2015/10/06 16:36:20 $
 
 obj=[]; evt=[];
@@ -55,7 +55,7 @@ elseif comstr(Cam,'test'); [CAM,Cam]=comstr(CAM,5);
  
  fe_range('uiRO2Table',r1.Measurements,[],struct('MaxCol',10,'MaxLevel',3))
  
- 
- 
+elseif comstr(Cam,'cvs')
+ out=sdtcheck('revision');
 else;error('%s unknown',CAM);
 end
