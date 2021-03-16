@@ -1343,7 +1343,6 @@ elseif comstr(Cam,'export');[CAM,Cam]=comstr(CAM,7);
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
  out=sdtcheck('Revision');
- %out='$Revision: 541 $  $Date: 2021-02-06 00:02:14 +0100 (Sat, 06 Feb 2021) $';
 else; error('%s unknown',CAM);
 end
 %% #End function
