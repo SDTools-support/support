@@ -6,7 +6,7 @@ function [out,out1,out2]=d_pml(varargin); %#ok<*STOUT>
 % Etienne Balmes, SDTools, Arnaud Deraemaeker, ULB
 
 
-%       Copyright (c) 1990-2017 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
 %       For revision information use d_pml('cvs')
 
 if nargin==0
@@ -532,7 +532,8 @@ else;error('View%s unknown',CAM);
 end
 %% End function
 elseif comstr(Cam,'cvs');
- out='$Revision: 529 $  $Date: 2020-11-02 14:25:17 +0100 (Mon, 02 Nov 2020) $'; return;
+ out=sdtcheck('revision');
+ %out='$Revision: 529 $  $Date: 2020-11-02 14:25:17 +0100 (Mon, 02 Nov 2020) $'; return;
 end
 
 
