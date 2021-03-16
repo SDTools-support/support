@@ -6,10 +6,10 @@ function out=fe_honeycomb(varargin)
 
 
 %       Etienne Balmes, Jean-Michel Leclere
-%       Copyright (c) 1990-2020 by SDTools, All Rights Reserved.
-%       For revision information use fe_fmesh('cvs')
+%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
+%       For revision information use fe_honeycomb('cvs')
 
-if nargin==0; CAM=''; carg=1; else CAM=varargin{1}; carg=2;  end
+if nargin==0; CAM=''; carg=1; else;CAM=varargin{1}; carg=2;  end
 [CAM,Cam]=comstr(CAM,1);
 
 % -------------------------------------------------------------------------
@@ -131,11 +131,12 @@ if comstr(Cam,'patch')
  mdl=fe_fmesh('patch Ori .15 .15 0 width .2 height .1 Thick .01 Divx 2 DivY3',mdl)
 
 % - - - - - - - - - - - - - - - - - - - 
-else error('Test%s unknown',CAM);
+else;error('Test%s unknown',CAM);
 end
     
 % -----------------------------------------------------------------
 elseif comstr(Cam,'cvs')
- out='$Revision: 492 $  $Date: 2020-02-26 12:10:10 +0100 (Wed, 26 Feb 2020) $';
-else error('%s unknown',CAM);
+ out=sdtcheck('revision');
+ %out='$Revision: 492 $  $Date: 2020-02-26 12:10:10 +0100 (Wed, 26 Feb 2020) $';
+else;error('%s unknown',CAM);
 end
