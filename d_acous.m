@@ -5,8 +5,8 @@ function [out,out1]=d_acous(varargin);
 % Etienne Balmes, SDTools
 
 
-%       Copyright (c) 1990-2012 by SDTools, All Rights Reserved.
-%       For revision information use d_piezo('cvs')
+%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
+%       For revision information use d_acous('cvs')
 
 if nargin==0
 
@@ -110,7 +110,8 @@ end
 %% clean end
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out='$Revision: 507 $  $Date: 2020-05-13 08:54:00 +0200 (Wed, 13 May 2020) $';
+ out=sdtcheck('revision');
+ %out='$Revision: 507 $  $Date: 2020-05-13 08:54:00 +0200 (Wed, 13 May 2020) $';
 else; error('%s unknown',CAM);
 end 
 %% #End function
