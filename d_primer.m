@@ -6,7 +6,7 @@ function [out,out1]=d_primer(varargin); %#ok<*NOSEM,*STOUT>
 %     sdtweb('_taglist','d_primer') to view current contents
 %     d_primer('tuto')  % to see integrated tutorials
 
-%       Copyright (c) 1990-2018 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
 %       For revision information use d_primer('cvs')
 
 if nargin==0; d_primer('tuto'); return; end
@@ -455,7 +455,8 @@ elseif comstr(Cam,'tuto');
  if nargout==0; clear out; end
 
 elseif comstr(Cam,'cvs')
- out='$Revision: 377 $  $Date: 2018-06-19 14:24:26 +0200 (Tue, 19 Jun 2018) $';
+ out=sdtcheck('revision');
+ %out='$Revision: 377 $  $Date: 2018-06-19 14:24:26 +0200 (Tue, 19 Jun 2018) $';
 else; error('%s unknown',CAM);
 end 
 %% #End function
