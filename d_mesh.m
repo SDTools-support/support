@@ -6,7 +6,7 @@ function [out,out1,out2]=d_mesh(varargin); %#ok<*NOSEM,*STOUT>
 %     sdtweb('_taglist','d_mesh') to view current contents
 %     d_mesh('tuto')  % to see integrated tutorials
 
-%       Copyright (c) 1990-2018 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
 %       For revision information use d_mesh('cvs')
 
 if nargin==0; d_mesh('tuto'); return; end
@@ -1717,7 +1717,8 @@ elseif comstr(Cam,'tuto');
  if nargout==0; clear out; end
 
 elseif comstr(Cam,'cvs')
- out='$Revision: 520 $  $Date: 2020-07-24 18:27:50 +0200 (Fri, 24 Jul 2020) $';
+ out=sdtcheck('revision');
+ %out='$Revision: 520 $  $Date: 2020-07-24 18:27:50 +0200 (Fri, 24 Jul 2020) $';
 else; error('%s unknown',CAM);
 end 
 %% #End function
