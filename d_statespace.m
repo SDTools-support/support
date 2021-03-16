@@ -96,6 +96,7 @@ end
 
 %% ---------------------------------------------------------------------
 elseif comstr(Cam,'cvs')
-    out='$Revision: 134 $  $Date: 2014-02-26 15:27:26 +0100 (Wed, 26 Feb 2014) $';
+ out=sdtcheck('revision');
+    %out='$Revision: 134 $  $Date: 2014-02-26 15:27:26 +0100 (Wed, 26 Feb 2014) $';
 else;error('%s unknown',CAM);
 end
