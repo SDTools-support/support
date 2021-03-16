@@ -18,8 +18,8 @@ function [out,out1,out2,out3]=p_pml(varargin)
 
 
 %       Etienne Balmes
-%       Copyright (c) 2001-2020 by SDTools, All Rights Reserved.
-%       For revision information use feplot('cvs')
+%       Copyright (c) 2001-2021 by SDTools, All Rights Reserved.
+%       For revision information use p_pml('cvs')
 
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
@@ -1511,7 +1511,8 @@ end
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out='$Revision: 527 $  $Date: 2020-10-21 19:10:15 +0200 (Wed, 21 Oct 2020) $'; return;
+ out=sdtcheck('revision');
+ %out='$Revision: 527 $  $Date: 2020-10-21 19:10:15 +0200 (Wed, 21 Oct 2020) $'; return;
 else;sdtw('''%s'' not known',CAM);
 end
 end
