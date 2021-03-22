@@ -1807,21 +1807,17 @@ if comstr(Cam,'pbc')||comstr(Cam,'simpleload')||comstr(Cam,'kubc')||comstr(Cam,'
  if strcmpi(RO.btype,'mubc') 
  elseif strcmpi(RO.btype,'kubc') % Enforce motion on full edge
   c=find(sum(abs(c),1));c=sparse(1:length(c),c,1,length(c),length(Case.DOF));
-  [C1.T,C1.TIn] = fe_coor(c,[4 1 2],(c*d2.def));
-  % sdtw('_ewt','luxxxeb ');
-  %[T,TIn] = fe_coor('lu',struct('c',c,'T',d2.def));
+  %[C1.T,C1.TIn] = fe_coor(c,[4 1 2],(c*d2.def));
+  T = fe_coor('lu',struct('c',c,'TIn',d2.def));C1.T=T.T;C1.TIn=T.TIn;
+  1;
   % [T,TIn] = fe_coor(c(:,fe_c(d2.DOF,Case.DOF,'ind')),[4 1 2],(c*d2.def));
   
  else % K=PBC : left disp=right disp
-  if ~isfield(RO,'lut')||~RO.lut
+  if 1==2%~isfield(RO,'lut')||~RO.lut
    [T,TIn] = fe_coor(c(:,fe_c(d2.DOF,Case.DOF,'ind')),[4 1 2],(c*d2.def));
   else
-   %[Tz,TInz] = fe_coor('lu',c(:,fe_c(d2.DOF,Case.DOF,'ind')),d2.def);
    T = fe_coor('lu',struct('c',c(:,fe_c(d2.DOF,Case.DOF,'ind')),'TIn',d2.def));
-   %TIn=T.TIn;T=T.T;
-   %TIn-TInz
-   %Tz-T
-   
+   TIn=T.TIn;T=T.T;   
   end
   mo1.DOF=R2.DOF; C1.Stack=Case.Stack; 
   C1.T=Case.T*T;C1.TIn=Case.T*TIn;
