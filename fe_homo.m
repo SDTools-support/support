@@ -1848,7 +1848,7 @@ if comstr(Cam,'pbc')||comstr(Cam,'simpleload')||comstr(Cam,'kubc')||comstr(Cam,'
     d2.LearnDD=[];
     for jpar=1:length(Range.val)
           Range.jPar=jpar;r2=Range.param.iVisco.data{Range.val(jpar)};
-          r2(:,2)=cellfun(@real,r2(:,2),'uni',0);
+          r2(:,2)=cellfun(@real,r2(:,2),'uni',0);% Learning is elastic
           r2=feutilb('sumkcoef',mo1.K,r2); 
           def=C1.TIn-ofact({r2.Kh,C1.T},r2.Kh*C1.TIn,RO.oProp{:});
           r1=(def'*r2.Kh*def)/R2.V;
@@ -1860,16 +1860,17 @@ if comstr(Cam,'pbc')||comstr(Cam,'simpleload')||comstr(Cam,'kubc')||comstr(Cam,'
           d2.LearnDD=RO.toFun(d2.LearnDD,Range,r1);
     end
     [T,fr]=fe_norm(d2.def,mo1.K{1},r2.Kh);
-    mo1.TR=struct('def',T,'DOF',mo1.DOF,'data',fr/2/pi,'adof',(1:size(T,2))'+.99);
-    % xxxEB projection of matrices should be reworked : to have both kr and Tin
-    %mo1.KIn=cellfun(@(x)T'*x*C1.TIn,mo1.K,'uni',0); 
-    %mo1.K=feutilb('tkt',T,mo1.K); mo1.DOF=mo1.TR.adof;
+    mo1.TR=struct('def',[C1.TIn T],'DOF',mo1.DOF,'data',fr/2/pi,'adof',(1:size(T,2))'+.99);
+    C1.TIn=speye(size(mo1.TR.def,2),size(C1.TIn,2));
+    C1.T=speye(size(C1.TIn,1));C1.T(:,1:size(C1.TIn,2))=[];
+    mo1.K=feutilb('tkt',mo1.TR.def,mo1.K);
+    % see Florian Conejos Thesis section 3.4.2 
     Range=RO.Range;     
     for jpar=1:size(Range.val,1)
       Range.jPar=jpar;      
       r2=feutilb('sumkcoef',mo1.K,Range.param.iVisco.data{Range.val(jpar)});
-      kr=feutilb('tkt',T,r2.Kh); 
-      def=C1.TIn-T* (kr\ ( T'*(r2.Kh*C1.TIn))); % qh_cc = - Kh_cc \ Kh_ci q_d     
+      kr=feutilb('tkt',C1.T,r2.Kh); 
+      def=C1.TIn-C1.T* (kr\ ( C1.T'*(r2.Kh*C1.TIn))); % qh_cc = - Kh_cc \ Kh_ci q_d     
       r1=(def'*r2.Kh*def)/R2.V;
       C2=RO.toFun(C2,Range,r1);
     end
