@@ -1816,8 +1816,13 @@ if comstr(Cam,'pbc')||comstr(Cam,'simpleload')||comstr(Cam,'kubc')||comstr(Cam,'
   if 1==2%~isfield(RO,'lut')||~RO.lut
    [T,TIn] = fe_coor(c(:,fe_c(d2.DOF,Case.DOF,'ind')),[4 1 2],(c*d2.def));
   else
-   T = fe_coor('lu',struct('c',c(:,fe_c(d2.DOF,Case.DOF,'ind')),'TIn',d2.def));
-   TIn=T.TIn;T=T.T;   
+   i2=fe_c(d2.DOF,Case.DOF,'ind');
+   T = fe_coor('lu',struct('c',c(:,i2),'TIn',d2.def(i2,:)));
+   if normest(c(:,i2)*T.T)>1e-10
+    sdtw('_ewt','Report lu problem');
+    [T,TIn] = fe_coor(c(:,fe_c(d2.DOF,Case.DOF,'ind')),[4 1 2],(c*d2.def));
+   else;   TIn=T.TIn;T=T.T;   
+   end
   end
   mo1.DOF=R2.DOF; C1.Stack=Case.Stack; 
   C1.T=Case.T*T;C1.TIn=Case.T*TIn;
