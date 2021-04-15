@@ -34,24 +34,27 @@ if comstr(Cam,'build');[CAM,Cam]=comstr(CAM,6);
  mdl0=varargin{carg};carg=carg+1;
  dir=varargin{carg};carg=carg+1;
  r0=[];
- if ~isempty(dir)&&dir(1)
+ if ~isempty(dir)&&size(dir,1)~=3
   if dir(1)==-1;dir(1)=max(mdl0.Node(:,5))-min(mdl0.Node(:,5));end
-  mdl0=fe_cyclic(sprintf('build -1 %.15g 0.0 0.0 %s',dir(1),CAM),mdl0);
+  if length(dir)>1&&dir(2)==-1;dir(2)=max(mdl0.Node(:,6))-min(mdl0.Node(:,6));end
+  if length(dir)>1&&dir(3)==-1;dir(3)=max(mdl0.Node(:,7))-min(mdl0.Node(:,7));end
+  dir=diag(dir);dir(end+1:3,1)=0;
+ end
+ if ~isempty(dir)&&any(dir(:,1))
+  mdl0=fe_cyclic(sprintf('build -1 %.15g %.15g %.15g %s',dir(:,1),CAM),mdl0);
   r0=fe_case('GetDataSymmetry',mdl0);
  end
  if length(dir)>1&&dir(2)
-  if dir(2)==-1;dir(2)=max(mdl0.Node(:,6))-min(mdl0.Node(:,6));end
   % builds periodicity /y :
   if isempty(strfind(Cam,'epsl'));CAM=[ ' epsl .001' CAM];end
-  mdl0=fe_cyclic(sprintf('build -1 0.0 %.15g 0.0 %s', ...
-      dir(2),CAM),mdl0);
+  mdl0=fe_cyclic(sprintf('build -1 %.15g %.15g %.15g %s', ...
+      dir(:,2),CAM),mdl0);
   r1=fe_case('GetDataSymmetry',mdl0);
   if isempty(r0);r0=r1;else; r0.IntYNodes=r1.IntNodes;end
  end
  if length(dir)>2&&dir(3)
  % builds periodicity /z :
-  if dir(3)==-1;dir(3)=max(mdl0.Node(:,7))-min(mdl0.Node(:,7));end
-  mdl0=fe_cyclic(sprintf('build -1 0.0 0.0 %.15g %s',dir(3),CAM),mdl0);
+  mdl0=fe_cyclic(sprintf('build -1 %.15g %.15g %.15g %s',dir(:,3),CAM),mdl0);
   r1=fe_case('GetDataSymmetry',mdl0);
   r0.IntZNodes=r1.IntNodes;
  end
@@ -349,7 +352,9 @@ else
   if R1.val(1)~=1 % Not ncx==1
    d1=fe_def('subdef',d1,1:2:size(d1.def,2)); % On vector of the pair
   end
-  if ~RO.nM&&~isempty(def); 
+  if size(d1.def,2)<RO.nM; 
+    d1.def(:,end+1:RO.nM)=NaN;d1.data(end+1:RO.nM,1)=NaN;
+  elseif ~RO.nM&&~isempty(def); 
       RO.nM=size(d1.def,2);def=fe_def('subdef',def,1:RO.nM);
   end
   def=fe_def('appendDef',def,d1);
@@ -362,6 +367,7 @@ try
  ph=reshape(def.data(:,2),size(RO.RangeNc.val,1),[]); 
  RO.NeedHist=1;
 catch
+ sdtw('_nb','Failed hist reshape');
  RO.NeedHist=0;
 end
 if ~isempty(out2);out2.data=out2.data';end
@@ -645,7 +651,9 @@ for j1=1:size(RO.P2Sets,1)
  nind=sparse(i2,1,1:length(i2));
  RC.EdgeDof=full(nind(RO.EdgeDof(ismember(RO.EdgeDof(:,1),i2),:)));
  %% Build a basis that uses all given DOF and span the learning subspace
- if isnumeric(T2)
+ if ~isnumeric(T2)
+ elseif isempty(RC.EdgeDof);warning('No EdgeDof');break;
+ else;
   T2=fe_coor(RO.curCoor,T2,RC);% sdtweb fe_coor('lrisvd')
  end
  % p_pml('viewqz'); 
@@ -1116,6 +1124,44 @@ elseif comstr(Cam,'dva')
   
 else;error('DftRK%s',CAM);
 end
+elseif comstr(Cam,'converge');[CAM,Cam]=comstr(CAM,5);
+%% DftConverge : packaging of convergence test
+mo1=varargin{carg};carg=carg+1;
+RO=varargin{carg};carg=carg+1;
+mo1=stack_set(mo1,'info','EigOpt',2);
+
+if ~isfield(RO,'name');RO.name='Wave';end
+if ~isfield(RO,'ncx');RO.ncx=1./linspace(1e-1,.49,30)';end
+r1=fe_case(mo1,'getdata','Symmetry'); 
+if isfield(r1,'IntYNodes'); Range.ncy=1; end
+
+for jpar=1:size(RO.scale,1)
+ mo2=mo1; r3=RO.scale(jpar,:);r3(end+1:3)=1;
+ mo2.Node(:,5:7)=mo2.Node(:,5:7)*diag(r3);
+ Range.ncx=RO.ncx*max(RO.scale(:,1))/RO.scale(jpar);
+ r2=r1;r2.CellDir=r2.CellDir*diag(RO.scale(jpar,1:size(r2.CellDir,2)));
+ mo2=fe_case(mo2,'cyclic','Symmetry',r2);
+ [def,hist]=fe_homo('dftDisp -UseLong',mo2,struct('Range',Range));
+ if jpar==1
+  RD=struct('mno',(0:10)','cf',102,'ci',112,'ViewHist',hist,'ktype','kcx');
+  fe_homo('dfpInitSelDef',mo2,def,RD);fecom('ShowFiCEvalz')
+ end
+ if jpar==1; hp=hist;
+     hp.Xlab{3}={'lc','mm',[],'#st3{j2}=sprintf(''%.1fmm'',r2(j2)*1e3);'}; % xxx unit
+ end
+ %hist.X{1}(1)
+ hp.X{3}=RO.scale(1:jpar,:);hp.Y(:,:,jpar)=hist.Y;
+end
+
+if nargout==0
+ hp.Xlab{2}={'Mode','',[],'Mode %i'};hp.Ylab={'Frequency','Hz',[]};
+ hp.DimPos=[1 3 2]; hp.X{1}=2*pi./hp.X{1}*1000; hp.Xlab{1}={'\lambda_x','mm',[]};
+ ci=iiplot(111); iicom('curveInit',RO.name,hp); 
+ iicom(ci,'ch',{'Mode','All'});iicom(ci,';xlog;ylog');
+end
+
+
+
 elseif comstr(Cam,'test');[CAM,Cam]=comstr(CAM,5);
 %% #DFTTest : sample models
 if carg<=nargin;RO=varargin{carg};else;RO=struct;end
@@ -1297,7 +1343,7 @@ else;% No mno
  sel=feval(sdtroot('@iselcna'),[],d1,sel,'new');
 end
 if isfield(RO,'type')&&comstr(RO.type,'dfrf')
-%% recombined FRF with (freq x k) order
+%% RO.type='dfrf' % recombined FRF with (freq x k) order
  r2=d1.def.Source; r2.Rest.type='dfrfb';
  r2.Rest.kcx=dftu('getx',d1,struct('lab',{{'kcx'}}));
  r1=feval(fe_def('@omethods'),'xvec',d1,[],'jPar');
@@ -1314,6 +1360,7 @@ elseif (~isfield(RO,'type')||isempty(RO.type))&& ...
         length(def.Xlab{2})>1&&strcmpi(def.Xlab{2}{2},'IndDef')
     RO.type='dfrf';
 elseif isfield(RO,'type')
+elseif isfield(RO,'sens'); RO.type='dfrf';% non recombined FRF
 else; RO.type='hist';
 end
 
@@ -2700,7 +2747,10 @@ elseif comstr(Cam,'getx');
      r1=Range.val(:,strcmpi(Range.lab,'ak'));
    case 'ncx';  % find ncx from kcx
      r1=Range.val(:,strcmpi(Range.lab,'kcx'));
-     if isempty(r1);error('Not a valid case');
+     if isempty(r1);% xxx needs checking
+      r1=Range.val(:,strcmpi(Range.lab,'kx'));% physical wave kx=2pi/(ncx*dx)
+      i1=(r1~=0); r1(i1)=2*pi./r1(i1)/norm(RO.CellDir(:,1));%ncx=2*pi/kx/dx
+      
      else;
        i1=(r1~=0); r1(i1)=2*pi./r1(i1);
        r1(~i1)=1; %ncx=1 for kcx=0 (simple periodicity) 
@@ -2851,6 +2901,7 @@ if comstr(Cam,'rangech')
  r1=cf.vfields.DefF;
  if isempty(r1)||isempty(r1{1});return;else;r1=r1{1};end
  def=r1;r1=r1.data; 
+ if size(r1,2)<2; warning('Inconsistent def in feplot(%i)',cf.opt(1));return;end
  if isa(evt,'matlab.graphics.internal.DataTipEvent');pos=evt.Position;
  elseif isfield(evt,'pos');pos=evt.pos;
  else; pos=evt.Position;
