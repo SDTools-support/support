@@ -37,7 +37,7 @@ if comstr(Cam,'build');[CAM,Cam]=comstr(CAM,6);
  if ~isempty(dir)&&size(dir,1)~=3
   if dir(1)==-1;dir(1)=max(mdl0.Node(:,5))-min(mdl0.Node(:,5));end
   if length(dir)>1&&dir(2)==-1;dir(2)=max(mdl0.Node(:,6))-min(mdl0.Node(:,6));end
-  if length(dir)>1&&dir(3)==-1;dir(3)=max(mdl0.Node(:,7))-min(mdl0.Node(:,7));end
+  if length(dir)>2&&dir(3)==-1;dir(3)=max(mdl0.Node(:,7))-min(mdl0.Node(:,7));end
   dir=diag(dir);dir(end+1:3,1)=0;
  end
  if ~isempty(dir)&&any(dir(:,1))
