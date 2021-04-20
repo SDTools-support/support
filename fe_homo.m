@@ -44,7 +44,7 @@ if comstr(Cam,'build');[CAM,Cam]=comstr(CAM,6);
   mdl0=fe_cyclic(sprintf('build -1 %.15g %.15g %.15g %s',dir(:,1),CAM),mdl0);
   r0=fe_case('GetDataSymmetry',mdl0);
  end
- if length(dir)>1&&dir(2)
+ if size(dir,2)>1&&any(dir(:,2))
   % builds periodicity /y :
   if isempty(strfind(Cam,'epsl'));CAM=[ ' epsl .001' CAM];end
   mdl0=fe_cyclic(sprintf('build -1 %.15g %.15g %.15g %s', ...
@@ -52,7 +52,7 @@ if comstr(Cam,'build');[CAM,Cam]=comstr(CAM,6);
   r1=fe_case('GetDataSymmetry',mdl0);
   if isempty(r0);r0=r1;else; r0.IntYNodes=r1.IntNodes;end
  end
- if length(dir)>2&&dir(3)
+ if size(dir,2)>2&&any(dir(:,3))
  % builds periodicity /z :
   mdl0=fe_cyclic(sprintf('build -1 %.15g %.15g %.15g %s',dir(:,3),CAM),mdl0);
   r1=fe_case('GetDataSymmetry',mdl0);
@@ -1866,7 +1866,7 @@ if comstr(Cam,'pbc')||comstr(Cam,'simpleload')||comstr(Cam,'kubc')||comstr(Cam,'
    i2=fe_c(d2.DOF,Case.DOF,'ind');
    T = fe_coor('lu',struct('c',c(:,i2),'TIn',d2.def(i2,:)));
    if normest(c(:,i2)*T.T)>1e-10
-    sdtw('_ewt','Report lu problem');
+    %sdtw('_ewt','Report lu problem');
     [T,TIn] = fe_coor(c(:,fe_c(d2.DOF,Case.DOF,'ind')),[4 1 2],(c*d2.def));
    else;   TIn=T.TIn;T=T.T;   
    end
