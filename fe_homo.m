@@ -1137,7 +1137,7 @@ if isfield(r1,'IntYNodes'); Range.ncy=1; end
 
 for jpar=1:size(RO.scale,1)
  mo2=mo1; r3=RO.scale(jpar,:);r3(end+1:3)=1;
- mo2.Node(:,5:7)=mo2.Node(:,5:7)*diag(r3);
+ mo2.Node(:,5:7)=mo2.Node(:,5:7)*diag(r3(1:3));
  Range.ncx=RO.ncx*max(RO.scale(:,1))/RO.scale(jpar);
  r2=r1;r2.CellDir=r2.CellDir*diag(RO.scale(jpar,1:size(r2.CellDir,2)));
  mo2=fe_case(mo2,'cyclic','Symmetry',r2);

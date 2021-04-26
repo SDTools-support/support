@@ -2928,8 +2928,7 @@ elseif comstr(Cam,'tuto');
  if nargout==0; clear out; end
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
- out=sdtcheck('revision');
- %out='$Revision: 529 $  $Date: 2020-11-02 14:25:17 +0100 (Mon, 02 Nov 2020) $';
+ out=sdtcheck('revision','$Revision: c3f9e0b $  $Date: 2021-03-16 18:05:59 +0100 $ ');
 else; error('%s unknown',CAM);
 end 
 %% #End function
