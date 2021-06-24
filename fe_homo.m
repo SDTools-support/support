@@ -1402,7 +1402,7 @@ if size(hist.Y,3)==2 % If markers defined loop on markers
      li(j1*3+[-2:0])={r3,r1,marker{remi(j1,length(marker))}};
  end
  plot(li{:});xlabel('Omega [Hz]');ylabel(st);
-elseif norm(hist.Y(:,1:min(5,size(hist.Y,2))),'inf')>1e4&&size(hist.Y,3)==1
+elseif norm(hist.Y(isfinite(hist.Y)),'inf')>1e4&&size(hist.Y,3)==1
  plot(hist.Y/1000,r1);xlabel('Omega [kHz]');ylabel(st);
 elseif size(hist.Y,3)>1;warning('Forced response not expected');
  plot(squeeze(hist.Y(:,:,strncmpi(hist.X{3},'Freq',4))),r1);
@@ -2464,6 +2464,7 @@ for j1=1:2
  elseif isempty(hist); break;
  else; st=hist.Xlab{1};
  end
+ if iscell(st);st=st{1};end
  if strcmpi(RO.ktype,st) % no change
  else
   r2=r1(strcmpi(r1(:,1),[st,RO.ktype]),:);
