@@ -245,15 +245,29 @@ if norm(feval(elem0('@get_lambda'),C1,1,1)-r1.Lambda{1})>1e-10
 end
 EC=C1.GroupInfo{8};EC.w(:,4);
 % should use ddg=vhandle.matrix.stressCutDDG(obs,RO);
+% mkl_utils(struct('jac',xxx))
+i1=size(r1.Lambda{1},1);
+RM.ddg=vhandle.matrix.stressCutDDG(struct('alloc',[i1 size(r1.X{2},1)],'ddg',ones(i1)));
+
 lambda=inv(r1.Lambda{1});i2=size(lambda,1);i1=size(r1.cta,1)/i2;
 in1=repmat(reshape(1:size(r1.cta,1),i2,[]),i2,1);
 in2=repmat(1:size(r1.cta,1),i2,1);
 lambda=sparse(in1(:),in2(:),repmat(lambda(:),1,i1)*diag(r1.wjdet));
-k1=r1.cta'*(lambda)*r1.cta;
+k1=r1.cta'*(lambda)*r1.cta; % cta is stress obs here 
 if normest(k1-mo1.K{2}) /normest(k1)>1e-10; 
   full([diag(k1)./diag(mo1.K{2})]);figure(1);plot(ans)
   error('Mismatch');
 end
+%% Check NL implementation in uMax and jacobian calls
+% uMaxW 
+% sdtweb _textag 'For the representation of bushings'
+% sdtweb nlutil umaxlo
+NL=struct('unl',zeros(6,size(r1.X{2},1),3),'opt',[1],'c',r1.cta, ...
+    'b',r1.cta'*diag(sparse(reshape(repmat(r1.wjdet(:)',6,1),[],1)))); %MexCb RO
+NL.ddg=vhandle.matrix.stressCutDDG(struct('alloc',[9 size(NL.unl,2)]));
+ja=mkl_utils(struct('jac',1,'simo',RM));dd=reshape(ja(1:81,1),9,9);
+
+
 
 %% surface stress at nodes
 mo1=fe_caseg('StressCut -selout',struct('type','conform','sel','selface & innode{z==0}'),model);
