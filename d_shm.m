@@ -131,7 +131,8 @@ elseif comstr(Cam,'study');[CAM,Cam]=comstr(CAM,6);
     
     
   end
-  %% #MeshCfg Step10 -----------------------------------------------------------
+  %% #MeshCfg Step10 --------------------------------------------------------
+  % should be moved to d_mesh('MeshCfg')
 elseif comstr(Cam,'meshcfg');[CAM,Cam]=comstr(CAM,8);
   
   % take base range input

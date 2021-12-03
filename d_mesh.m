@@ -1709,6 +1709,79 @@ else;error('MatRve%s',CAM);
 else; error('Mat%s unknown',CAM);
 end
 
+elseif comstr(Cam,'stepmesh'); [CAM,Cam]=comstr(CAM,8);
+%% #stepMesh : default meshing step  ---------------------------------------
+
+Range=varargin{2};carg=2;
+evt=varargin{carg};carg=carg+1;
+model=evt.data;
+
+assignin('caller','Res',model);
+
+elseif comstr(Cam,'meshcfg'); [CAM,Cam]=comstr(CAM,8);
+%% #MeshCfg : obtain mesh  ---------------------------------------
+% Default MeshCfg callback for simulation experiments
+% see also sdtweb d_fetime SimuCfg
+% sdth.findobj('_sub:~','d_hbm(Mesh):(Case):(NL)');comstr(ans,-30)
+Range=RO;%varargin{carg};carg=carg+1;
+RO=varargin{carg};carg=carg+1;
+if ischar(RO);RO=struct('urn',RO);end
+st=sdth.findobj('_sub:~',RO.urn);
+% 1 : create/load base mesh
+if length(st)>1&&exist(st(1).subs,'file')% d_hbm(Mesh0D:cub)
+  mo1=feval(st(1).subs,['Mesh' st(2).subs],Range,RO); RO.MeshCb=st(1); 
+  RO.name=st(2).subs;
+  if length(st)>3&&strcmpi(st(4).type,'()');st(1:2)=[];% :func(Case)
+  else; st(2)=[]; %fun(mesh):Case
+  end
+else
+  st=sdtroot('param.Project.MeshCb -safe');
+  if isempty(st); error('Project.MeshCb not set, implement callback');end
+end
+%% 2: deal with case building (possibly Mesh::NL for empty)
+  RO.Case=st(2).subs; 
+  if ~isempty(RO.Case)
+   RO.name=sprintf('%s:%s',RO.name,RO.Case);
+   mo1=feval(st(1).subs,'Case',mo1,RO); RO.MeshCb=st(1); 
+  end
+  if length(st)>3&&strcmpi(st(4).type,'()');st(1:2)=[];% :func(Case)
+  else; st(2)=[]; %fun(mesh):Case
+  end% comstr(st,-30)
+
+%% 3; now add the NLdata 
+if length(st)==2; %  'd_hbm(Mesh0D):d_hbm(NL0Dm1t)'
+  RO.NL=st(2).subs; 
+  if ~isempty(RO.NL)
+   RO.name=sprintf('%s:%s',RO.name,RO.NL);
+   NLdata=feval(st(1).subs,'NL',mo1,RO);st(1:2)=[];
+  end
+else;
+      error('Need implement callback for Constitutive model')
+end
+if ~isempty(NLdata)
+  %% Simple case where NLdata is shown here
+  % Set first by convention or use a callback set in the NLdata call above
+  if ~isfield(NLdata,'type');error('missing .type,  ''nl_inout'' is usual');end
+  il=feutil('getil',mo1);
+  mo1=feutil(sprintf('setpro %i',il(1)),mo1,'NLdata',NLdata);
+end
+
+if ~isfield(mo1,'name');mo1.name=RO.name;end
+if ~isfield(Range,'param');Range.param=struct;end
+
+r1=struct('type','pop','value',1,'level',10,...
+      'choices',{{}},'data',{{}},'SetFcn',{{@d_mesh,'stepMesh'}},...
+      'ShortFmt',1, ...
+      'RepList', ... % 'TestEvtData',1,
+      {{'M_(.*)_([^_]+)', ... % start with M_ and end with non_ parameter name
+      struct('type',{'.','{}'},'subs',{'list',{'@token{1}',3}})
+      }});
+Range=sdtm.range('SafeParamInit-name',Range,'MeshCfg',r1);
+Range=sdtm.range('popMerge',Range,'MeshCfg',{mo1.name,mo1});
+if isfield(Range,'MeshCfg'); Range.MeshCfg=Range.param.MeshCfg.choices;end
+
+out=Range;
+
 %% clean end
 elseif comstr(Cam,'@');out=eval(CAM);
 %% #Tuto: recover model from a specific tuto step -3
