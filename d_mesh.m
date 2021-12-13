@@ -1749,10 +1749,11 @@ end
   end% comstr(st,-30)
 
 %% 3; now add the NLdata 
+NLdata=[];
 if length(st)==2; %  'd_hbm(Mesh0D):d_hbm(NL0Dm1t)'
   RO.NL=st(2).subs; 
   if ~isempty(RO.NL)
-   RO.name=sprintf('%s:%s',RO.name,RO.NL);
+   RO.name=sprintf('%s:%s',RO.name,RO.NL);% Mesh:Case:NL name convention
    NLdata=feval(st(1).subs,'NL',mo1,RO);st(1:2)=[];
   end
 else;
