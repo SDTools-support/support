@@ -220,6 +220,7 @@ elseif comstr(Cam,'gauss')
 cf=feplot(model,def);
 
 cut=fe_caseg('StressCut -selout',struct('type','Gauss'),model);
+c2=fe_caseg('StressCut -selout',struct('type','Gauss','ddg',[]),model);
 fe_caseg('stresscut',cut,cf)  % displays field at nodes
 
 if 1==2  % Display principal stress
@@ -247,17 +248,29 @@ EC=C1.GroupInfo{8};EC.w(:,4);
 % should use ddg=vhandle.matrix.stressCutDDG(obs,RO);
 % mkl_utils(struct('jac',xxx))
 i1=size(r1.Lambda{1},1);
-RM.ddg=vhandle.matrix.stressCutDDG(struct('alloc',[i1 size(r1.X{2},1)],'ddg',ones(i1)));
+%RM.ddg=vhandle.matrix.stressCutDDG(struct('alloc',[i1 size(r1.X{2},1)],'ddg',ones(i1)));
 
 lambda=inv(r1.Lambda{1});i2=size(lambda,1);i1=size(r1.cta,1)/i2;
 in1=repmat(reshape(1:size(r1.cta,1),i2,[]),i2,1);
 in2=repmat(1:size(r1.cta,1),i2,1);
 lambda=sparse(in1(:),in2(:),repmat(lambda(:),1,i1)*diag(r1.wjdet));
-k1=r1.cta'*(lambda)*r1.cta; % cta is stress obs here 
+
+ddg=vhandle.matrix.stressCutDDG(cut.StressObs,struct('StrainFcn',@(x)inv(x),'wjdet',1));
+if normest(ddg-lambda)>normest(lambda)*1e-10; error('Mismatch');end
+
+k1=r1.cta'*(ddg)*r1.cta; % cta is stress obs here 
 if normest(k1-mo1.K{2}) /normest(k1)>1e-10; 
   full([diag(k1)./diag(mo1.K{2})]);figure(1);plot(ans)
   error('Mismatch');
 end
+dd2=vhandle.matrix.stressCutDDG(c2,struct('wjdet',1));
+k1=c2.StressObs.cta'*(dd2)*c2.StressObs.cta; % cta is stress obs here 
+if normest(k1-mo1.K{2}) /normest(k1)>1e-10; 
+  full([diag(k1)./diag(mo1.K{2})]);figure(1);plot(ans)
+  error('Mismatch');
+end
+
+
 %% Check NL implementation in uMax and jacobian calls
 % sdtweb _textag 'For the representation of bushings'
 % sdtweb nlutil umaxlo
