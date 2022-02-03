@@ -1719,7 +1719,7 @@ model=evt.data;
 assignin('caller','Res',model);
 
 elseif comstr(Cam,'meshcfg'); [CAM,Cam]=comstr(CAM,8);
-%% #MeshCfg : obtain mesh  ---------------------------------------
+%% #MeshCfg : obtain/generate mesh  ---------------------------------------
 % Default MeshCfg callback for simulation experiments
 % see also sdtweb d_fetime SimuCfg
 % sdth.findobj('_sub:~','d_hbm(Mesh):(Case):(NL)');comstr(ans,-30)
@@ -1735,8 +1735,11 @@ if length(st)>1&&exist(st(1).subs,'file')% d_hbm(Mesh0D:cub)
   else; st(2)=[]; %fun(mesh):Case
   end
 else
+  st1=st;
   st=sdtroot('param.Project.MeshCb -safe');
-  if isempty(st); error('Project.MeshCb not set, implement callback');end
+  if isempty(st); 
+      error('Project.MeshCb not set and ''%s'' not found',st1(1).subs);
+  end
 end
 %% 2: deal with case building (possibly Mesh::NL for empty)
   RO.Case=st(2).subs; 
@@ -1751,20 +1754,17 @@ end
 %% 3; now add the NLdata 
 NLdata=[];
 if length(st)==2; %  'd_hbm(Mesh0D):d_hbm(NL0Dm1t)'
-  RO.NL=st(2).subs; 
-  if ~isempty(RO.NL)
-   RO.name=sprintf('%s:%s',RO.name,RO.NL);% Mesh:Case:NL name convention
-   NLdata=feval(st(1).subs,'NL',mo1,RO);st(1:2)=[];
-  end
-else;
-      error('Need implement callback for Constitutive model')
-end
-if ~isempty(NLdata)
-  %% Simple case where NLdata is shown here
-  % Set first by convention or use a callback set in the NLdata call above
-  if ~isfield(NLdata,'type');error('missing .type,  ''nl_inout'' is usual');end
   il=feutil('getil',mo1);
-  mo1=feutil(sprintf('setpro %i',il(1)),mo1,'NLdata',NLdata);
+  RO.NL=st(2).subs; 
+  if ~iscell(RO.NL);RO.NL={il(1) RO.NL};end 
+  for j2=1:2:length(RO.NL)
+    RO.name=sprintf('%s:%s',RO.name,RO.NL{j2+1});% Mesh:Case:NL name convention
+    RN=RO;RN.NL=RO.NL{j2+1};NLdata=feval(st(1).subs,'NL',mo1,RN);
+    if isempty(NLdata); error('Expecting non empty NLdata');end
+    if ~isfield(NLdata,'type');error('missing .type,  ''nl_inout'' is usual');end
+    i1=RO.NL{j2}; if ischar(i1);i1=str2double(i1);end
+    mo1=feutil(sprintf('setpro %i',i1),mo1,'NLdata',NLdata,'name',RN.NL);
+  end
 end
 
 if ~isfield(mo1,'name');mo1.name=RO.name;end

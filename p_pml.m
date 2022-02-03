@@ -1586,6 +1586,70 @@ out={'-1','il(2)','form','pow','a0','x0','Lx0','y0','Ly0','z0','Lz0', ...
         'd11','d12','d13','d22','d23','d33','d44','d55','d66'}; % 16:24 Non attenuated
 end
     
+function out=ViscousDampingBoundary(model,RM);
+%% #ViscousDamping Boundary Method INFINITE DAMPING (Viscous Damping Boundary Method)
+
+%% #both top and side
+%%%%%%%%%%%%%%%%%%%
+% cyl <=r i nx 
+
+data=struct('sel',RM.SelNode, ... 
+             'eltsel',['Withnode{ ' RM.SelNode '}'],'def',1,'DOF',.19);
+model=fe_case(model,'Fsurf','Surface load',data);
+Load = fe_load(model);
+
+% Arnaud - to check if nodes are identified correctly
+if 1==2
+  nd=unique(floor(Load.DOF(Load.def~=0)));feplot(model);fecom('textnode',nd)
+ % @cd this is a strange load distribution no ?
+ feplot(model,Load); %
+ %fecom('showdefarrow') % to see the load as vectors
+ % pause
+end
+
+% Node to apply cbush
+com1 = sprintf(['findnode ' RM.SelNode ]);
+[~,NR] = feutil(com1,model); % Ok the nodes are fine
+
+Elfact = [10 0];
+elem_data=[];
+
+model.bas=[]; 
+if ~isfield(RM,'ki');RM.ki=1e2*ones(1,6);end % Default spring stiffness
+
+for i_n =1:length(NR);
+    % Position/direction actual spring
+%     NR(i_n,1);
+    ind = fe_c(Load.DOF,NR(i_n,1),'ind');
+%     Load.DOF(ind);
+    F1 = Load.def(ind);
+    
+    if abs(sum(F1))~=0
+        if size(F1,1)==2
+        dir = [(F1')./norm(F1) 0]; % Added a zero because only x and y load for some elements ...
+        else
+        dir = (F1')./norm(F1);
+        end
+            
+        fact = -sign(NR(i_n,5:7)*dir')*norm(F1);
+        %CorID Type 0     Ax Ay Az       Ux Uy Uz Vx Vy Vz Wx Wy Wz s
+        p =  basis(dir,[0 0 0],1);
+        model.bas(end+1,:) = [i_n 1 0 NR(i_n,5:7) [p(:,1)' p(:,2)' p(:,3)'] 1] ;
+        Elfact(end+1,:) = [Elfact(end,1)+1 fact];
+        ProId = Elfact(end,1);
+        % spring element definition
+        elem_data(end+1,:)=[[NR(i_n,1) 0] [ProId ProId 0] 0 0 0 i_n 1];
+        % Spring properties
+        model.il(end+1,1:14)=[ProId fe_mat('p_spring','SI',2) RM.ki fact*RM.ci];
+        %     end
+    end
+end
+clear load NR 
+model.Elt=feutil('AddElt',model.Elt,'cbush',elem_data);
+model=fe_case(model,'Remove','Surface load');
+out=model; 
+
+end
 %% #stretch : evaluate stretch function -2
 function lx=stretch(x,xiL,pow,fei,Vslw)
     if xiL(2)==0; % No stretch direction
