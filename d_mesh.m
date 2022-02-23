@@ -1745,6 +1745,9 @@ end
   RO.Case=st(2).subs; 
   if ~isempty(RO.Case)
    RO.name=sprintf('%s:%s',RO.name,RO.Case);
+   if length(st)>3&&strcmp(st(3).type,'{}') %% Mesh:V{data}:NL
+    RO.CaseVal=st(3).subs; st(3)=[]; 
+   end
    mo1=feval(st(1).subs,'Case',mo1,RO); RO.MeshCb=st(1); 
   end
   if length(st)>3&&strcmpi(st(4).type,'()');st(1:2)=[];% :func(Case)
@@ -1753,11 +1756,12 @@ end
 
 %% 3; now add the NLdata 
 NLdata=[];
-if length(st)==2; %  'd_hbm(Mesh0D):d_hbm(NL0Dm1t)'
+if length(st)==2; %  'd_hbm(Mesh0D):d_hbm(NL0Dm1t)' % sdtweb d_hbm NL 
   il=feutil('getil',mo1);
   RO.NL=st(2).subs; 
   if ~iscell(RO.NL);RO.NL={il(1) RO.NL};end 
   for j2=1:2:length(RO.NL)
+    if isempty(RO.NL{j2+1}); continue;end
     RO.name=sprintf('%s:%s',RO.name,RO.NL{j2+1});% Mesh:Case:NL name convention
     RN=RO;RN.NL=RO.NL{j2+1};NLdata=feval(st(1).subs,'NL',mo1,RN);
     if isempty(NLdata); error('Expecting non empty NLdata');end
