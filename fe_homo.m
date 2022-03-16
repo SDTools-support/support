@@ -1003,16 +1003,36 @@ elseif comstr(Cam,'vg');[CAM,Cam]=comstr(CAM,5);
 % physical wave length is 1/(n_c dx) = k/dx
 
 hist=varargin{carg};carg=carg+1;
-dx=hist.dx;
+RO=struct('ind',1:3,'unit','SI');
+ % 1./(hist.X{1}/2/pi)/RO.Lc(1) % check Nc 
+ %deriv=feval(ii_mmif('@getOp'),struct('type','velc'),hist);
 
- h2=hist;h2.Y=diag(sparse(dx./diff(hist.X{1})))*diff(h2.Y);
- h2.X{1}(end)=[];h2.Y(:,:,2)=hist.Y(1:end-1,:); h2.DimPos=[1 3 2];
- h2.X{3}={'Vg';'Freq'}; h2.Xlab{3}={'info'};
+if carg<=nargin;RO=sdth.sfield('addmissing',varargin{carg},RO);carg=carg+1;end
+if isfield(hist,'dx');dx=hist.dx;
+else; dx=norm(hist.Range.CellDir(:,1));% xxx check
+    if strcmpi(hist.Xlab{1},'kx'); dx=1;end
+end
+
+[Fu,dFu]=feval(nlutil('@cubeInterp'),'pppchip',hist);
+ h2=hist;
+ %h2.Y=2*pi*diag(sparse(dx./diff(hist.X{1})))*diff(h2.Y);
+ %h2.X{1}(end)=[];h2.Y(:,:,2)=hist.Y(1:end-1,:); h2.DimPos=[1 3 2];
+ h2.Y=dFu(hist.X{1})*2*pi;h2.Y(:,:,2)=hist.Y;h2.DimPos=[1 3 2];
+ h2.X{3}={'Vg','m/s',[];'Freq','Hz',[]}; h2.Xlab{3}={'info'};
  %iicom('curveinit','V_g',h2); iicom('polar-1'); 
- 
- figure(1);semilogx(h2.Y(:,1:3,2)/1000, ...
-     h2.Y(:,1:3,1)*fe_mat('convertMMSI',5))
- xlabel('Frequency (kHz)');ylabel('Vg [m/s]');axis tight
+ coef=fe_mat(sprintf('convert%sSI',RO.unit),5);
+ if isfield(RO,'rel')
+  if ~isfinite(RO.rel(1)); RO.rel=squeeze(h2.Y(end,:,1));end
+  h2.Y(:,:,1)=h2.Y(:,:,1)*diag(sparse(1./RO.rel));
+  h2.X{3}(1,1:3)={sprintf('Vg/(%.2g m/s)',RO.rel*coef),'',[]};coef=1; 
+ end
+ figure(1);
+ if isfield(RO,'hold');hold(RO.hold);end
+ semilogx(h2.Y(:,RO.ind,2)/1000, ...
+     h2.Y(:,RO.ind,1)*coef)
+ xlabel('Frequency (kHz)');ylabel(sprintf('%s ',h2.X{3}{1,1:2}));axis tight
+ if isfield(RO,'hold');hold('off');end
+ if nargout>0; out=RO;end
 
 elseif comstr(Cam,'deflong');[CAM,Cam]=comstr(CAM,5);
 %% #DFTdeflong : transform to long format with Imag in DOF >.50
@@ -2181,6 +2201,38 @@ for j1=1:2
  RO.K_homo{j1}=fe_mknl('assemble NoT',model,Case,1);
 end
 out=RO;
+
+elseif comstr(Cam,'displc')
+%% #RveDispLC : dispersion curve to mesh convergence
+model=varargin{carg};carg=carg+1;
+RO=varargin{carg};carg=carg+1;
+RO=sdth.sfield('addmissing',RO,struct('nc',[5:10 20:10:100]','gf',1));
+gf=RO.gf; figure(gf);clf; 
+%  compression speed sqrt(model.pl(3)/model.pl(5))
+% E=model.pl(3);rho=model.pl(5);nu=model.pl(4); sqrt(E*(1-nu)/(1+nu)/(1-2*nu)/rho)
+
+RO.rel=NaN;
+for j1=1:length(RO.Lc)
+ mo1=feutil(sprintf('objecthexa %i %i',model.pl(1),model.il(1)),[0 0 0;eye(3)], ...
+     [0 RO.Lc(j1)],[0 RO.Lc(j1)],[0 RO.Lc(j1)]);
+ mo1.pl=model.pl;mo1.il=model.il;
+ mo1=fe_case(mo1,'fixdof','z','z==0 -DOF3','fixdof','y','y==0 -DOF2');
+ mo1=fe_homo('dftbuild;',mo1,RO.Lc(j1)*[1 1 1]);
+ mo1=stack_set(mo1,'info','EigOpt',[5 10 0]);
+ mo1.name='';
+ RT=sdth.sfield('addselected',struct('Range',struct('ncx',RO.nc,'ncy',1,'ncz',1)),RO,'MatDes');
+ [def,hist]=fe_homo('dftDisp',mo1,RT);
+ r1=fe_homo('dftVg',hist,struct('unit',model.unit,'ind',1,'hold','on','cf',gf,'rel',RO.rel));
+ RO.rel=r1.rel;
+ %hold on; plot(hist.Y(:,1)/1e3,pi*hist.X{1},'-+');hold off;
+ %xlabel('Omega (kHz)');ylabel(hist.Xlab{1});
+end
+cingui('objset',gf,{'@OsDic',{'ImGrid','ImSw40'},'@axes',{'xscale','log'},'@line',{'marker','.'}})
+st=cellfun(@(x)comstr(x,-30),num2cell(RO.Lc),'uni',0);
+legend(st,'location','best');
+if isfield(RO,'Report')&&RO.Report
+ cingui('plotwd',gf,'@OsDic(SDT Root)',{'WrW49c'});comgui('imwrite',gf);
+end
 
 else;error('Rve%s unknown',CAM);
 end

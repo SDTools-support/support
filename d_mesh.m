@@ -1742,7 +1742,7 @@ else
   end
 end
 %% 2: deal with case building (possibly Mesh::NL for empty)
-  RO.Case=st(2).subs; 
+  if length(st)==1; RO.Case='';else; RO.Case=st(2).subs; end
   if ~isempty(RO.Case)
    RO.name=sprintf('%s:%s',RO.name,RO.Case);
    if length(st)>3&&strcmp(st(3).type,'{}') %% Mesh:V{data}:NL
@@ -1751,7 +1751,7 @@ end
    mo1=feval(st(1).subs,'Case',mo1,RO); RO.MeshCb=st(1); 
   end
   if length(st)>3&&strcmpi(st(4).type,'()');st(1:2)=[];% :func(Case)
-  else; st(2)=[]; %fun(mesh):Case
+  elseif length(st)>1; st(2)=[]; %fun(mesh):Case
   end% comstr(st,-30)
 
 %% 3; now add the NLdata 

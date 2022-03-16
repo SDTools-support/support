@@ -1608,8 +1608,7 @@ if 1==2
 end
 
 % Node to apply cbush
-com1 = sprintf(['findnode ' RM.SelNode ]);
-[~,NR] = feutil(com1,model); % Ok the nodes are fine
+[~,NR] = feutil(['findnode ' RM.SelNode ],model); % Ok the nodes are fine
 
 Elfact = [10 0];
 elem_data=[];
