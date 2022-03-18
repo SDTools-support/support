@@ -6,7 +6,7 @@ function [out,out1,out2]=d_pml(varargin); %#ok<*STOUT>
 % Etienne Balmes, SDTools, Arnaud Deraemaeker, ULB
 
 
-%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2022 by SDTools, All Rights Reserved.
 %       For revision information use d_pml('cvs')
 
 if nargin==0
@@ -27,23 +27,21 @@ if comstr(Cam,'pml_1d')
 %% #1D_PML : Demo script : see sdtweb ... 
 
 elseif comstr(Cam,'ulb1d')
-%% #Script ULB1D : analytic verification on column
+%% #Script_ULB1D : analytic verification on column
 % Derived from PhD of Cedric Dumoulin at ULB
 
 %% #Shear/pressure frequency domain -2
-% Shear wave
-mo1=d_pml('MeshUlb1D SW',struct('v',1,'quad',1,'Lc',2));feutilb('_write',mo1)
-RF=struct('DfrfBIn',p_pml('@DfrfBIn'));
-d1=fe_simul('dfrf',stack_set(mo1,'info','Freq',[10;100]),RF);d_pml('View1DPS',mo1,d1);
+
+ % Pressure wave
+ RP=struct('MeshCfg','d_pml(Ulb1d{v1,quad,Lc2})','SimuCfg','', 'RunCfg','{dfrf{10,100},d_pml(View1DPS)}');
+ R1=d_tdoe('Solve',RP);
+
+ % Shear wave 
+ RP=struct('MeshCfg','d_pml(Ulb1dSW{v1,quad,Lc2})','SimuCfg','', 'RunCfg','{dfrf{10,50},d_pml(View1DPS)}');
+ R2=d_tdoe('Solve',RP);
+
+feplot(R2.Res{1},R2.Res{2});fecom('ShowFiMdef');
 %comgui('imwrite',2);
-
-% Pressure wave wave
-mo2=d_pml('MeshUlb1D',struct('quad',0,'Lc',2));
-RF=struct('DfrfBIn',p_pml('@DfrfBIn'));
-d2=fe_simul('dfrf',stack_set(mo2,'info','Freq',[10;50]),RF);
-d_pml('View1DPS',mo2,d2);
-
-feplot(mo2,d2);fecom('ShowFiMdef');
 
 %% #Pressure_wave_time domain formulation -2
 
@@ -234,6 +232,10 @@ out=model;out1=RO;
 
 elseif comstr(Cam,'ulb1d');[CAM,Cam]=comstr(CAM,6);
 %% #MeshUlb1D : sample ULB test for S and P waves
+if any(Cam=='{') % struct('v',1,'quad',1,'Lc',2)
+  [CAM,RO]=sdtm.urnPar(CAM,struct('li',{{'v','%g';'quad',3;'Lc','%g'}}),RO);
+end
+
 [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
  'dim([2 2 40]#%g#"Lx Ly Lz of standard material")' ...
  'pow(2#%g#"defaut attenuation")' ...
@@ -478,9 +480,10 @@ elseif comstr(Cam,'view');[CAM,Cam]=comstr(CAM,5);
 
 if comstr(Cam,'1dps')
 %% #view1DPS : P/S wave comparison with analytic result
-mo1=RO;
-d1=varargin{carg};carg=carg+1;
-
+if carg>nargin; eval(iigui({'mo1','d1'},'GetInCaller'))
+else
+ mo1=RO; d1=varargin{carg};carg=carg+1;
+end
 mat=feutil('getmat 4 -struct',mo1,4);
 
 if ~isempty(fe_case(mo1,'getdata','Shear'))

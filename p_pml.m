@@ -257,9 +257,9 @@ end
   obs=feutilb('placeindof',model.DOF,obs);
   obs.trans=feutilb('placeindof',model.DOF,obs.trans);
   obs.a=pro.a;
-  obs.toK=@stretchD; obs.MatType=1; % Ready for Z assembly
+  obs.toK=@stretchD; obs.MatType=3; % Ready for Z assembly (MatType=3 since depends on s)
   EC.StrainDefinition=cell(1,5);
-  EC.obs=obs;
+  EC.toK=vhandle.matrix('ZMatrix',obs);
   EC.ConstitTopology=cell(1,5);
   EC.MatrixIntegrationRule=cell(1,5);
   EC.VectMap=int32(reshape(1:3*EC.Nnode,3,EC.Nnode)'); 
@@ -1521,7 +1521,23 @@ end
 
 %% #DfrfBIN Full/Reduced DRF with enforced shape - ---------------------------
 function def1=DfrfBIn(MVR,mdl,oProp)
-  warning('Obsolete use implicit matrix now');
+
+if 1==2
+ % This is obsolete but could be tested with 
+ mo1=d_pml('MeshUlb1D SW',struct('v',1,'quad',1,'Lc',2));feutilb('_write',mo1)
+ RF=struct('DfrfBIn',p_pml('@DfrfBIn'));
+ d1=fe_simul('dfrf',stack_set(mo1,'info','Freq',[10;100]),RF);d_pml('View1DPS',mo1,d1);
+ % Pressure wave wave
+mo2=d_pml('MeshUlb1D',struct('quad',0,'Lc',2));
+RF=struct('DfrfBIn',p_pml('@DfrfBIn'));
+d2=fe_simul('dfrf',stack_set(mo2,'info','Freq',[10;50]),RF);
+d_pml('View1DPS',mo2,d2);
+
+end
+
+  warning('Obsolete use implicit matrix now'); v=3;
+  Case=evalin('caller','Case');EC=Case.GroupInfo{1,8};
+
   na=size(MVR.BIN{1},2);if ~isfield(MVR,'br');MVR.br=[];end
   na=na+size(MVR.br,2);
   BIN=MVR.BIN;K=MVR.K;w=MVR.w;
@@ -1535,11 +1551,16 @@ function def1=DfrfBIn(MVR,mdl,oProp)
    end
   [zCoef,K]=feval(fe_simul('@safe_dfrf_zcoef'),w,'K',mdl);
   if isfield(MVR,'lab_in');def1.lab_in=MVR.lab_in;end
-  Case=evalin('caller','Case');EC=Case.GroupInfo{1,8};
-  obs=EC.obs;obs.cta=obs.cta*Case.T;obs.DOF=Case.DOF;
-  obs.trans.cta=obs.trans.cta*Case.T;obs.trans.DOF=Case.DOF;
+  if v==3;  elseif v==2 % xxx Will need to implement tkt
+    obs=EC.obs;obs.cta=obs.cta*Case.T;obs.DOF=Case.DOF;
+    obs.trans.cta=obs.trans.cta*Case.T;obs.trans.DOF=Case.DOF;
+    K{1,end+1}=vhandle.matrix('ZMatrix',obs);zCoef(:,end+1)=w; 
+  else
+   obs=EC.obs;obs.cta=obs.cta*Case.T;obs.DOF=Case.DOF;
+   obs.trans.cta=obs.trans.cta*Case.T;obs.trans.DOF=Case.DOF;
   zCoef(:,end+1)=w; K{1,end+1}=@(x)obs.toK(obs,x);
-  
+  end
+
   for j1=1:length(w)
    %  zCoef=fix_loss(mdl,zCoef);
    %[K{length(zCoef)+1},K{length(zCoef)+2}]=obs.StretchD(obs,w(j1)/2/pi);
@@ -1587,7 +1608,7 @@ out={'-1','il(2)','form','pow','a0','x0','Lx0','y0','Ly0','z0','Lz0', ...
 end
     
 function out=ViscousDampingBoundary(model,RM);
-%% #ViscousDamping Boundary Method INFINITE DAMPING (Viscous Damping Boundary Method)
+%% #ViscousDampingBoundary #VDB Method INFINITE DAMPING (Viscous Damping Boundary Method)
 
 %% #both top and side
 %%%%%%%%%%%%%%%%%%%
@@ -1692,7 +1713,7 @@ DK=sparse(IK,JK,DK);
 DM=sparse(IM,JM,DM);
 m=obs.trans.cta'*DM*obs.trans.cta;
 k=obs.cta'*DK*obs.cta;
-if nargout==1; % Return Z for implicit implementation
+if nargout==1; % Return Z for implicit/zmatrix implementation
  m=k-(freqRad)^2*m; 
 end
 end
