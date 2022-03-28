@@ -1726,14 +1726,11 @@ elseif comstr(Cam,'meshcfg'); [CAM,Cam]=comstr(CAM,8);
 Range=RO;%varargin{carg};carg=carg+1;
 RO=varargin{carg};carg=carg+1;
 if ischar(RO);RO=struct('urn',RO);end
-st=sdth.findobj('_sub:~',RO.urn);
+st=sdth.findobj('_sub:~',RO.urn);js=1; 
 % 1 : create/load base mesh
 if length(st)>1&&exist(st(1).subs,'file')% d_hbm(Mesh0D:cub)
-  mo1=feval(st(1).subs,['Mesh' st(2).subs],Range,RO); RO.MeshCb=st(1); 
-  RO.name=st(2).subs;
-  if length(st)>3&&strcmpi(st(4).type,'()');st(1:2)=[];% :func(Case)
-  else; st(2)=[]; %fun(mesh):Case
-  end
+  mo1=feval(st(js).subs,['Mesh' st(js+1).subs],Range,RO); 
+  RO.MeshCb=st(js); RO.name=st(js+1).subs; js=js+2;
 else
   st1=st;
   st=sdtroot('param.Project.MeshCb -safe');
@@ -1742,28 +1739,31 @@ else
   end
 end
 %% 2: deal with case building (possibly Mesh::NL for empty)
-  if length(st)==1; RO.Case='';else; RO.Case=st(2).subs; end
+  if strcmpi(st(js).type,'()'); 
+    RO.MeshCb=st(js);js=js+1; % :CaseFun(Case)
+  end
+  if js>length(st); RO.Case='';else; RO.Case=st(js).subs; js=js+1; end
   if ~isempty(RO.Case)
    RO.name=sprintf('%s:%s',RO.name,RO.Case);
-   if length(st)>3&&strcmp(st(3).type,'{}') %% Mesh:V{data}:NL
-    RO.CaseVal=st(3).subs; st(3)=[]; 
+   if js<=length(st)&&strcmp(st(js).type,'{}') %% Mesh:V{data}:NL
+    RO.CaseVal=st(3).subs; js=js+1;  
    end
-   mo1=feval(st(1).subs,'Case',mo1,RO); RO.MeshCb=st(1); 
+   mo1=feval(RO.MeshCb.subs,'Case',mo1,RO); RO.MeshCb=st(1); 
   end
-  if length(st)>3&&strcmpi(st(4).type,'()');st(1:2)=[];% :func(Case)
-  elseif length(st)>1; st(2)=[]; %fun(mesh):Case
-  end% comstr(st,-30)
 
 %% 3; now add the NLdata 
+  if strcmpi(st(js).type,'()'); 
+    RO.MeshCb=st(js);js=js+1; % :MatFun(Mat)
+  end
 NLdata=[];
-if length(st)==2; %  'd_hbm(Mesh0D):d_hbm(NL0Dm1t)' % sdtweb d_hbm NL 
+if js<=length(st); %  'd_hbm(Mesh0D):d_hbm(NL0Dm1t)' % sdtweb d_hbm NL 
   il=feutil('getil',mo1);
-  RO.NL=st(2).subs; 
+  RO.NL=st(js).subs; 
   if ~iscell(RO.NL);RO.NL={il(1) RO.NL};end 
   for j2=1:2:length(RO.NL)
     if isempty(RO.NL{j2+1}); continue;end
     RO.name=sprintf('%s:%s',RO.name,RO.NL{j2+1});% Mesh:Case:NL name convention
-    RN=RO;RN.NL=RO.NL{j2+1};NLdata=feval(st(1).subs,'NL',mo1,RN);
+    RN=RO;RN.NL=RO.NL{j2+1};NLdata=feval(RO.MeshCb.subs,'NL',mo1,RN);
     if isempty(NLdata); error('Expecting non empty NLdata');end
     if ~isfield(NLdata,'type');error('missing .type,  ''nl_inout'' is usual');end
     i1=RO.NL{j2}; if ischar(i1);i1=str2double(i1);end
@@ -1773,19 +1773,21 @@ end
 
 if ~isfield(mo1,'name');mo1.name=RO.name;end
 if ~isfield(Range,'param');Range.param=struct;end
-
-r1=struct('type','pop','value',1,'level',10,...
+if ~isfield(Range,'val')%mo1=d_mesh('MeshCfg','cbi21(CoupStiff):StaticA:');
+  out=mo1; 
+else
+ r1=struct('type','pop','value',1,'level',10,...
       'choices',{{}},'data',{{}},'SetFcn',{{@d_mesh,'stepMesh'}},...
       'ShortFmt',1, ...
       'RepList', ... % 'TestEvtData',1,
       {{'M_(.*)_([^_]+)', ... % start with M_ and end with non_ parameter name
       struct('type',{'.','{}'},'subs',{'list',{'@token{1}',3}})
       }});
-Range=sdtm.range('SafeParamInit-name',Range,'MeshCfg',r1);
-Range=sdtm.range('popMerge',Range,'MeshCfg',{mo1.name,mo1});
-if isfield(Range,'MeshCfg'); Range.MeshCfg=Range.param.MeshCfg.choices;end
-
-out=Range;
+ Range=sdtm.range('SafeParamInit-name',Range,'MeshCfg',r1);
+ Range=sdtm.range('popMerge',Range,'MeshCfg',{mo1.name,mo1});
+ if isfield(Range,'MeshCfg'); Range.MeshCfg=Range.param.MeshCfg.choices;end
+ out=Range;
+end
 
 %% clean end
 elseif comstr(Cam,'@');out=eval(CAM);
