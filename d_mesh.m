@@ -1758,6 +1758,9 @@ end
 NLdata=[];
 if js<=length(st); %  'd_hbm(Mesh0D):d_hbm(NL0Dm1t)' % sdtweb d_hbm NL 
   il=feutil('getil',mo1);
+  if js+1<=length(st)&&strcmpi(st(js+1).type,'()');
+    RO.MeshCb=st(js);js=js+1;
+  end
   RO.NL=st(js).subs; 
   if ~iscell(RO.NL);RO.NL={il(1) RO.NL};end 
   for j2=1:2:length(RO.NL)
