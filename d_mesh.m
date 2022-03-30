@@ -1745,14 +1745,15 @@ end
   if js>length(st); RO.Case='';else; RO.Case=st(js).subs; js=js+1; end
   if ~isempty(RO.Case)
    RO.name=sprintf('%s:%s',RO.name,RO.Case);
-   if js<=length(st)&&strcmp(st(js).type,'{}') %% Mesh:V{data}:NL
-    RO.CaseVal=st(3).subs; js=js+1;  
+   if js<length(st)&&strcmp(st(js).type,'{}') %% Mesh:V{data}:NL
+    RO.CaseVal=st(js).subs; js=js+1;  
+   else; RO.CaseVal={};
    end
    mo1=feval(RO.MeshCb.subs,'Case',mo1,RO); RO.MeshCb=st(1); 
   end
 
 %% 3; now add the NLdata 
-  if strcmpi(st(js).type,'()'); 
+  if js<=length(st)&&strcmpi(st(js).type,'()'); 
     RO.MeshCb=st(js);js=js+1; % :MatFun(Mat)
   end
 NLdata=[];
