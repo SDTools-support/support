@@ -1739,7 +1739,7 @@ else
   end
 end
 %% 2: deal with case building (possibly Mesh::NL for empty)
-  if strcmpi(st(js).type,'()'); 
+  if js<=length(st)&&strcmpi(st(js).type,'()'); 
     RO.MeshCb=st(js);js=js+1; % :CaseFun(Case)
   end
   if js>length(st); RO.Case='';else; RO.Case=st(js).subs; js=js+1; end
