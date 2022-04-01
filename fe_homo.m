@@ -2520,7 +2520,8 @@ for j1=1:2
  if strcmpi(RO.ktype,st) % no change
  else
   r2=r1(strcmpi(r1(:,1),[st,RO.ktype]),:);
-  if isempty(r2); dbstack; keyboard
+  if isempty(r2);
+      error('%s not known',st);
   elseif j1==1; RO.defKtype=r2(2:4);
      if ~isempty(def);
          def.Range.lab{1}=RO.ktype;
