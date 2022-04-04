@@ -1511,8 +1511,7 @@ end
 elseif comstr(Cam,'tablecall');out='';
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs');
- out=sdtcheck('revision');
- %out='$Revision: 527 $  $Date: 2020-10-21 19:10:15 +0200 (Wed, 21 Oct 2020) $'; return;
+ out=sdtcheck('revision','$Revision: 4763f10 $  $Date: 2022-03-18 19:08:47 +0100 $');
 else;sdtw('''%s'' not known',CAM);
 end
 end

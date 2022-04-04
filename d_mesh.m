@@ -1724,9 +1724,15 @@ elseif comstr(Cam,'meshcfg'); [CAM,Cam]=comstr(CAM,8);
 % see also sdtweb d_fetime SimuCfg
 % sdth.findobj('_sub:~','d_hbm(Mesh):(Case):(NL)');comstr(ans,-30)
 Range=RO;%varargin{carg};carg=carg+1;
-RO=varargin{carg};carg=carg+1;
-if ischar(RO);RO=struct('urn',RO);end
-st=sdth.findobj('_sub:~',RO.urn);js=1; 
+if isfield(Range,'subs')&&isfield(Range,'type')&&length(Range)==1
+ %st=struct('type','.','subs',Range.subs);
+ RO=struct('urn',Range.subs);Range=struct;
+ st=sdth.findobj('_sub:~',RO.urn);js=1;
+else
+ RO=varargin{carg};carg=carg+1;
+ if ischar(RO);RO=struct('urn',RO);end
+ st=sdth.findobj('_sub:~',RO.urn);js=1;
+end
 % 1 : create/load base mesh
 if length(st)>1&&exist(st(1).subs,'file')% d_hbm(Mesh0D:cub)
   mo1=feval(st(js).subs,['Mesh' st(js+1).subs],Range,RO); 
@@ -1745,7 +1751,7 @@ end
   if js>length(st); RO.Case='';else; RO.Case=st(js).subs; js=js+1; end
   if ~isempty(RO.Case)
    RO.name=sprintf('%s:%s',RO.name,RO.Case);
-   if js<length(st)&&strcmp(st(js).type,'{}') %% Mesh:V{data}:NL
+   if js<=length(st)&&strcmp(st(js).type,'{}') %% Mesh:V{data}:NL
     RO.CaseVal=st(js).subs; js=js+1;  
    else; RO.CaseVal={};
    end
@@ -1801,8 +1807,7 @@ elseif comstr(Cam,'tuto');
  if nargout==0; clear out; end
 
 elseif comstr(Cam,'cvs')
- out=sdtcheck('revision');
- %out='$Revision: 520 $  $Date: 2020-07-24 18:27:50 +0200 (Fri, 24 Jul 2020) $';
+ out=sdtcheck('revision','$Revision: eeb3f39 $  $Date: 2022-03-31 12:12:08 +0200 $ ');
 else; error('%s unknown',CAM);
 end 
 %% #End function

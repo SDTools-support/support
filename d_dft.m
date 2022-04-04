@@ -149,8 +149,7 @@ elseif comstr(Cam,'tuto');
  if nargout==0; clear out; end
 
 elseif comstr(Cam,'cvs')
- out=sdtcheck('revision');
- %out='$Revision: 507 $  $Date: 2020-05-13 08:54:00 +0200 (Wed, 13 May 2020) $';
+ out=sdtcheck('revision','$Revision: a244ccc $  $Date: 2021-04-15 20:25:44 +0200 $');
 
 %% #End function
 end
