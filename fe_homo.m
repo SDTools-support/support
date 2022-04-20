@@ -2215,13 +2215,15 @@ RO.rel=NaN;
 for j1=1:length(RO.Lc)
  mo1=feutil(sprintf('objecthexa %i %i',model.pl(1),model.il(1)),[0 0 0;eye(3)], ...
      [0 RO.Lc(j1)],[0 RO.Lc(j1)],[0 RO.Lc(j1)]);
+ if isfield(RO,'quad')&&RO.quad; mo1=feutil('lin2quad',mo1);end
  mo1.pl=model.pl;mo1.il=model.il;
  mo1=fe_case(mo1,'fixdof','z','z==0 -DOF3','fixdof','y','y==0 -DOF2');
- mo1=fe_homo('dftbuild;',mo1,RO.Lc(j1)*[1 1 1]);
+ if isfield(RO,'epsl');st=sprintf('dftbuild epsl%g;',RO.epsl);else; st='dftbuild;';end
+ mo1=fe_homo(st,mo1,RO.Lc(j1)*[1 1 1]);
  mo1=stack_set(mo1,'info','EigOpt',[5 10 0]);
  mo1.name='';
  RT=sdth.sfield('addselected',struct('Range',struct('ncx',RO.nc,'ncy',1,'ncz',1)),RO,'MatDes');
- [def,hist]=fe_homo('dftDisp',mo1,RT);
+ [def,hist]=fe_homo('dftDisp',mo1,RT); hist.Y=hist.Y(:,1);
  r1=fe_homo('dftVg',hist,struct('unit',model.unit,'ind',1,'hold','on','cf',gf,'rel',RO.rel));
  RO.rel=r1.rel;
  %hold on; plot(hist.Y(:,1)/1e3,pi*hist.X{1},'-+');hold off;
