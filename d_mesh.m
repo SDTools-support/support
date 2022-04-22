@@ -1726,17 +1726,21 @@ elseif comstr(Cam,'meshcfg'); [CAM,Cam]=comstr(CAM,8);
 Range=RO;%varargin{carg};carg=carg+1;
 if isfield(Range,'subs')&&isfield(Range,'type')&&length(Range)==1
  %st=struct('type','.','subs',Range.subs);
- RO=struct('urn',Range.subs);Range=struct;
+ RO=struct('urn',Range.subs);if isfield(Range,'nmap');RO.nmap=Range.nmap;end
+ Range=struct;
  st=sdth.findobj('_sub:~',RO.urn);js=1;
 else
  RO=varargin{carg};carg=carg+1;
  if ischar(RO);RO=struct('urn',RO);end
  st=sdth.findobj('_sub:~',RO.urn);js=1;
 end
+if ~isfield(RO,'nmap');RO.nmap=containers.Map;end
 % 1 : create/load base mesh
 if length(st)>1&&exist(st(1).subs,'file')% d_hbm(Mesh0D:cub)
+  RO.name=st(js+1).subs;
+  if RO.nmap.isKey(RO.name); st(js+1).subs=RO.nmap(RO.name);end % 'rail19(Ref21):21ref'
   mo1=feval(st(js).subs,['Mesh' st(js+1).subs],Range,RO); 
-  RO.MeshCb=st(js); RO.name=st(js+1).subs; js=js+2;
+  RO.MeshCb=st(js); js=js+2;
 else
   st1=st;
   st=sdtroot('param.Project.MeshCb -safe');
