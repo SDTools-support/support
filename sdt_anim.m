@@ -27,8 +27,8 @@ function setup(block)
   
   block.OutputPort(1).Dimensions       = size(ref.b,2)-1;
   
-  %% Set block sample time to variable sample time
-  block.SampleTimes = [-.01 0];
+  %% Set block sample time to fixed sample time
+  block.SampleTimes = [.01 0];
   
   %% Set the block simStateCompliance to default (i.e., same as a built-in block)
   block.SimStateCompliance = 'DefaultSimState';

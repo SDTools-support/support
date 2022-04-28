@@ -1726,6 +1726,9 @@ elseif comstr(Cam,'meshcfg'); [CAM,Cam]=comstr(CAM,8);
 Range=RO;%varargin{carg};carg=carg+1;
 if isfield(Range,'subs')&&isfield(Range,'type')&&length(Range)==1
  %st=struct('type','.','subs',Range.subs);
+ if iscell(Range.subs)&&length(Range.subs)>1; 
+  error('Use "" to splitting MeshCfg{"d_contact(cube)::n1e13{c1}"}');
+ end
  RO=struct('urn',Range.subs);if isfield(Range,'nmap');RO.nmap=Range.nmap;end
  Range=struct;
  st=sdth.findobj('_sub:~',RO.urn);js=1;
@@ -1774,12 +1777,19 @@ if js<=length(st); %  'd_hbm(Mesh0D):d_hbm(NL0Dm1t)' % sdtweb d_hbm NL
   end
   RO.NL=st(js).subs; 
   if ~iscell(RO.NL);RO.NL={il(1) RO.NL};end 
+  if js<=length(st)&&strcmpi(st(js+1).type,'{}') % d_contact(cube)::n3e13{Kc1e12}
+   RO.NL{end}=sprintf('%s%s',RO.NL{end},strrep(comstr(st(js+1).subs,-30),'''',''));
+  end
+
   for j2=1:2:length(RO.NL)
     if isempty(RO.NL{j2+1}); continue;end
     RO.name=sprintf('%s:%s',RO.name,RO.NL{j2+1});% Mesh:Case:NL name convention
     RN=RO;RN.NL=RO.NL{j2+1};NLdata=feval(RO.MeshCb.subs,'NL',mo1,RN);
-    if isempty(NLdata); error('Expecting non empty NLdata');end
-    if ~isfield(NLdata,'type');error('missing .type,  ''nl_inout'' is usual');end
+    % Possibly return model rather than NLdata
+    if isfield(NLdata,'Elt')&&isequal(NLdata.Elt,mo1.Elt); mo1=NLdata;continue;
+    elseif isempty(NLdata); error('Expecting non empty NLdata');
+    elseif ~isfield(NLdata,'type');error('missing .type,  ''nl_inout'' is usual');
+    end
     i1=RO.NL{j2}; if ischar(i1);i1=str2double(i1);end
     mo1=feutil(sprintf('setpro %i',i1),mo1,'NLdata',NLdata,'name',RN.NL);
   end
