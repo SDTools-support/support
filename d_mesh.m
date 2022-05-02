@@ -1777,7 +1777,7 @@ if js<=length(st); %  'd_hbm(Mesh0D):d_hbm(NL0Dm1t)' % sdtweb d_hbm NL
   end
   RO.NL=st(js).subs; 
   if ~iscell(RO.NL);RO.NL={il(1) RO.NL};end 
-  if js<=length(st)&&strcmpi(st(js+1).type,'{}') % d_contact(cube)::n3e13{Kc1e12}
+  if js<length(st)&&strcmpi(st(js+1).type,'{}') % d_contact(cube)::n3e13{Kc1e12}
    RO.NL{end}=sprintf('%s%s',RO.NL{end},strrep(comstr(st(js+1).subs,-30),'''',''));
   end
 
