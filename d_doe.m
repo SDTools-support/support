@@ -61,18 +61,32 @@ elseif comstr(Cam,'nmap'); [CAM,Cam]=comstr(CAM,5);
 %% #nmap list of named experiments used for demos and non-regression tests ---
 
 nmap=vhandle.nmap;
-% SDT-contact two cube test cases 
-% CtcCube.B : load pressure and corner, exponential contact 
+%% #SDT-contact_two_cube test cases 
+
+%% #CtcCube.A : load pressure exponential contact -2
+li={'MeshCfg{"d_contact(cube)::n3e13{Kc1e12}"}',';', ...
+     'SimuCfg{"Static{1e-8,chandle1}","Imp{100u,.1,chandle1,acall.}","EigOpt{5 5 0}"}', ...
+     ';','RunCfg{nl_solve(Static),nlutil(HRbuild{q0m1}),run}'}';
+nmap('CtcCube.A')=li; 
+
+
+%% CtcCube.B : load pressure and corner, exponential contact 
 %    static followed by, hyperreduction
-li={'MeshCfg{"d_contact(cube{loPC})::n3e13{Kc1e12,Lambda500}"}',':', ...
-     'SimuCfg{"Static{1e-8,chandle1}","Imp{50u,.1,chandle1,acall.}","EigOpt{5 5 0}"}', ...
-     ':','RunCfg{nl_solve(Static),nlutil(HRbuild{q0m1})}'};
+li={'MeshCfg{"d_contact(cube{loPC})::n3e13{Kc1e12,Lambda500}"}';
+    ';';'SimuCfg{"Static{1e-8,chandle1}","Imp{50u,.1,chandle1,acall.}","EigOpt{5 5 0}"}';
+    ';';'RunCfg{nl_solve(Static),nlutil(HRbuild{q0m1})}'};
 nmap('CtcCube.B')=li; 
 
 % CtcCube.C : exponential contact; static followed by, hyperreduction
 % xxx add static load and point load 
 
-out=nmap(varargin{2});
+if comstr(Cam,'range')
+  st=horzcat(li{:});
+  fprintf('Running experiment\n %s\n',st)
+  out=sdtm.range(struct,st);
+else
+  out=nmap(varargin{2});
+end
 
 elseif comstr(Cam,'range'); [CAM,Cam]=comstr(CAM,6);
 %% #Range range_set_params ---------------------------------
@@ -234,8 +248,8 @@ end
   else;CAM=S{j1};Cam='cb';
   end
   switch Cam
-  case 'run'
- %% #stepRun.Run  -4
+  case {'time','run'}
+ %% #stepRun.Time  -4
   op1=stack_get(mo1,'','TimeOpt','g');
   op1.NeedUVA=[1 1 0]; 
   if ~isempty(stack_get(op1,'','Range'));op1.FinalCleanupFcn='';end
@@ -294,6 +308,7 @@ end
   end
   end
  end
+
 
 elseif comstr(Cam,'runcfg'); [CAM,Cam]=comstr(CAM,7);
 %% #RunCfg : define runcfg  ---------------------------------------
