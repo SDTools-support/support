@@ -239,8 +239,8 @@ else;
  mo1=Range.Res{1};
  S=sdth.findobj('_sub:',RO.urn);S=S.subs;if ischar(S);S={S};end
 end
-
- dr=[];out=[];
+if ~isa(mo1.nmap,'vhandle.nmap'); error('Not an expected case');end
+nmap=mo1.nmap; 
  %% #Solve.loop_level_30 do :  -3
  % earlier implementation see sdtweb d_tdoe LoadRun.Run
  for j1=1:length(S);js=j1; 
@@ -265,7 +265,7 @@ end
     Range=stack_get(op1,'','Range','g');
     i1=find(squeeze(~any(~isfinite(d1.Y),[1 2])));Range.val(i1,:)
   end
-  mo1.nmap('CurModel')=mo1b; mo1.nmap('CurTime')=d1;
+  nmap('CurModel')=mo1b; nmap('CurTime')=d1;
   %eval(iigui({'d1','mo1b'},'SetInCallerC')) % set with comments
   otherwise
   if strncmpi(Cam,'dfrf',4)
@@ -278,10 +278,10 @@ end
    end
    if length(Cam)>4; mo1=fe_def('freq',struct('urn',Cam(5:end)),mo1); end
    d1=fe_simul('dfrf',mo1);
-   mo1.nmap('CurModel')=mo1; mo1.nmap('CurFreq')=d1;
+   nmap('CurModel')=mo1; nmap('CurFreq')=d1;
   else      
    %% #stepRun.stepCb -4
-   EndEval='';       
+   EndEval='';  
    if isempty(Cam)
    elseif strcmpi(evt.RL.ifFail,'error')% Fail with error
      if ischar(CAM)&&~isempty(regexp(CAM,'[^\()]*=','once')); eval(CAM);
