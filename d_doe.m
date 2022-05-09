@@ -265,7 +265,7 @@ end
     Range=stack_get(op1,'','Range','g');
     i1=find(squeeze(~any(~isfinite(d1.Y),[1 2])));Range.val(i1,:)
   end
-  assignin('caller','Res',{mo1b,d1});
+  mo1.nmap('CurModel')=mo1b; mo1.nmap('CurTime')=d1;
   %eval(iigui({'d1','mo1b'},'SetInCallerC')) % set with comments
   otherwise
   if strncmpi(Cam,'dfrf',4)
@@ -278,7 +278,7 @@ end
    end
    if length(Cam)>4; mo1=fe_def('freq',struct('urn',Cam(5:end)),mo1); end
    d1=fe_simul('dfrf',mo1);
-   assignin('caller','Res',{mo1,d1});
+   mo1.nmap('CurModel')=mo1; mo1.nmap('CurFreq')=d1;
   else      
    %% #stepRun.stepCb -4
    EndEval='';       
@@ -287,9 +287,7 @@ end
      if ischar(CAM)&&~isempty(regexp(CAM,'[^\()]*=','once')); eval(CAM);
      else
       st=sdtm.urnCb(CAM);
-      ans=''; 
       feval(st{:});  % Attempt to run a step d_shm@va/d_shm(va)
-      if ~isempty(ans);out=ans;end
      end
    else % Attempt try /catch
    try; 
@@ -300,7 +298,7 @@ end
       feval(st{:})
      end
    catch e
-     eval(iigui({'d1','mo1b'},'SetInBaseC'))
+     mo1.nmap('CurModel')=mo1; 
      error('%s not implemented',CAM);
    end
    end
