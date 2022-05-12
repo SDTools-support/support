@@ -81,8 +81,11 @@ nmap('CtcCube.B')=li;
 % xxx add static load and point load 
 
 %% #HE1 : hyperelastic test with one element
+%  RO=struct('mat','simoA','Mesh','OneTrac','Case','DofSet:Sine{10}:C0{0}','NperPer',1e5,'Nper',3);RO.do='{run,va,pow}';dfr_ident('Load',RO);
 
-
+if 1==2
+    sdtm.range(struct,'MeshCfg{"d_fetime(OneTrac):TopZ:SimoA"}')
+end
 if comstr(Cam,'range')
   st=horzcat(li{:});
   fprintf('Running experiment\n %s\n',st)
