@@ -70,7 +70,7 @@ li={'MeshCfg{"d_contact(cube)::n3e13{Kc1e12}"}',';', ...
 nmap('CtcCube.A')=li; 
 
 
-%% CtcCube.B : load pressure and corner, exponential contact 
+%% #CtcCube.B : load pressure and corner, exponential contact 
 %    static followed by, hyperreduction
 li={'MeshCfg{"d_contact(cube{loPC})::n3e13{Kc1e12,Lambda500}"}';
     ';';'SimuCfg{"Static{1e-8,chandle1}","Imp{50u,.1,chandle1,acall.}","EigOpt{5 5 0}"}';
@@ -80,10 +80,14 @@ nmap('CtcCube.B')=li;
 % CtcCube.C : exponential contact; static followed by, hyperreduction
 % xxx add static load and point load 
 
+%% #HE1 : hyperelastic test with one element
+
+
 if comstr(Cam,'range')
   st=horzcat(li{:});
   fprintf('Running experiment\n %s\n',st)
   out=sdtm.range(struct,st);
+elseif nargin==1; out=nmap;
 else
   out=nmap(varargin{2});
 end
@@ -236,7 +240,8 @@ if isfield(Range,'Node')||isempty(Range)
  if ~isfield(evt,'RL');evt.RL.ifFail='error';end
 else;
  RO=fe_range('ValEvtMerge',Range,evt); 
- mo1=Range.Res{1};
+ mo1=Range.Res{1}; 
+ if ~isfield(mo1,'nmap')&&isfield(Range,'nmap');mo1.nmap=Range.nmap;end
  S=sdth.findobj('_sub:',RO.urn);S=S.subs;if ischar(S);S={S};end
 end
 if ~isa(mo1.nmap,'vhandle.nmap'); error('Not an expected case');end
