@@ -304,8 +304,9 @@ nmap=mo1.nmap;
    elseif strcmpi(evt.RL.ifFail,'error')% Fail with error
      if ischar(CAM)&&~isempty(regexp(CAM,'[^\()]*=','once')); eval(CAM);
      else
-      st=sdtm.urnCb(CAM);
+      st=sdtm.urnCb(CAM); ans='';
       feval(st{:});  % Attempt to run a step d_shm@va/d_shm(va)
+      if ~isempty(ans); sdth.PARAM('RunRes',ans); end
      end
    else % Attempt try /catch
    try; 
