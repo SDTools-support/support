@@ -83,8 +83,13 @@ nmap('CtcCube.B')=li;
 %% #HE1 : hyperelastic test with one element
 %  RO=struct('mat','simoA','Mesh','OneTrac','Case','DofSet:Sine{10}:C0{0}','NperPer',1e5,'Nper',3);RO.do='{run,va,pow}';dfr_ident('Load',RO);
 
+li={'MeshCfg{"d_fetime(OneTrac):TopZ:SimoA"}';';'
+      'SimuCfg{Imp{1m,3,chandle1},"SteppedSine{5}:C1{2.5,10}"}';';'
+      'RunCfg{Time}'};
+nmap('HE.1T')=li; 
 if 1==2
-    sdtm.range(struct,'MeshCfg{"d_fetime(OneTrac):TopZ:SimoA"}')
+  li=d_doe('nmap','HE.1T');mo2=sdtm.range(struct,horzcat(li{:}));d2=mo2.nmap('CurTime');
+  d2=fe_def('subdofind',d2,any(d2.def,2));iiplot(d2)
 end
 if comstr(Cam,'range')
   st=horzcat(li{:});
@@ -257,7 +262,7 @@ nmap=mo1.nmap;
   end
   switch Cam
   case {'time','run'}
- %% #stepRun.Time  -4
+ %% #stepRun.Time  -3
   op1=stack_get(mo1,'','TimeOpt','g');
   op1.NeedUVA=[1 1 0]; 
   if ~isempty(stack_get(op1,'','Range'));op1.FinalCleanupFcn='';end
@@ -277,7 +282,7 @@ nmap=mo1.nmap;
   %eval(iigui({'d1','mo1b'},'SetInCallerC')) % set with comments
   otherwise
   if strncmpi(Cam,'dfrf',4)
- %% #stepRun.Dfrf  -4
+ %% #stepRun.Dfrf  -3
    if ~isempty(stack_get(mo1,'','oProp'))
    elseif ~exist('mklserv_utils','file')|| ~exist('mklserv_client','file')
        warning('Consider installing mklserv_utils')
@@ -288,7 +293,7 @@ nmap=mo1.nmap;
    d1=fe_simul('dfrf',mo1);
    nmap('CurModel')=mo1; nmap('CurFreq')=d1;
   else      
-   %% #stepRun.stepCb -4
+   %% #stepRun.stepCb -3
    EndEval='';  
    if isempty(Cam)
    elseif strcmpi(evt.RL.ifFail,'error')% Fail with error
