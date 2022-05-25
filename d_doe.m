@@ -30,6 +30,11 @@ RP=struct('MeshCfg','d_hbm(0D):DofSet:0dm1t','SimuCfg','SteppedSine{.5,1,10}:C0{
          'NperPer',2e3,'Nper',1,'iteStab',20,'RunCfg','{run,dfr_ident@va}','PerFrac',.2);
 d_tdoe('Solve',RP)
 
+li={'MeshCfg{"d_hbm(0D):DofSet:0dm1t"}';';'
+      'SimuCfg{RO{NperPer2e3,Nper1,iteStab20},"SteppedSine{5}:C1{2.5,10}"}';';'
+      'RunCfg{Time,dfr_ident@va}'};
+mo2=sdtm.range(struct,horzcat(li{:}));%d2=mo2.nmap('CurTime');
+
 %RP.Mesh='d_hbm(Mesh0D):t_vibrac(0Dm1tsvli)';dfr_ident('Load',RP); % Stresss rate relax + Dahl: OK
 
 % RP=struct('MeshCfg','0D:cub','SimuCfg','DofLoad:Sine{1}:C0{-30,-15,0,15,30,45,60}:C1{2.5,10}');
