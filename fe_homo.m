@@ -2510,6 +2510,8 @@ r1={'ncxkcx',@(x)2*pi./x,'kcx','rad/cell';
    'ncxkx',@(x)2*pi/RO.CellDir./x,'kx','rad/len'
    'kxncx',@(x)2*pi./x./RO.CellDir,'ncx','cell'
    'kxlx',@(x)2*pi./x,'lx','length'
+   'lxkx',@(x)2*pi./x,'kx','rad/len xxx'
+   'lxkcx',@(x)2*pi*RO.CellDir./x,'kcx','rad/cell xxx'
    'kxkcx',@(x)x*RO.CellDir,'kcx','rad/cell';
    'kxkc',@(x)x*RO.CellDir/(2*pi),'kc','1/cell';
    };
@@ -2521,6 +2523,7 @@ for j1=1:2
  if iscell(st);st=st{1};end
  if strcmpi(RO.ktype,st) % no change
  else
+  if strncmpi(st,'lambda',6);st='lx';end
   r2=r1(strcmpi(r1(:,1),[st,RO.ktype]),:);
   if isempty(r2);
       error('%s not known',st);
