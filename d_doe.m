@@ -88,14 +88,16 @@ nmap('CtcCube.B')=li;
 %% #HE1 : hyperelastic test with one element
 %  RO=struct('mat','simoA','Mesh','OneTrac','Case','DofSet:Sine{10}:C0{0}','NperPer',1e5,'Nper',3);RO.do='{run,va,pow}';dfr_ident('Load',RO);
 
-li={'MeshCfg{"d_fetime(OneTrac):TopZ:SimoA"}';';'
+li={'MeshCfg{"d_fetime(OneTrac):TopZ:SimoA"}';';' % RivlinCube experiment
       'SimuCfg{Imp{1m,3,chandle1},"SteppedSine{5}:C1{2.5,10}"}';';'
       'RunCfg{Time}'};
 nmap('HE.1T')=li; 
-if 1==2
-  li=d_doe('nmap','HE.1T');mo2=sdtm.range(struct,horzcat(li{:}));d2=mo2.nmap('CurTime');
-  d2=fe_def('subdofind',d2,any(d2.def,2));iiplot(d2)
-end
+li={'MeshCfg{"d_fetime(OneTrac):TopZa:SimoA"}';';' % RivlinCube experiment
+      'SimuCfg{Exp{.2m,.2,chandle1},"SteppedSine{5}:C1(*100=%){60}"}';';'
+      'RunCfg{Time}'};
+nmap('HE.1Ta')=li; 
+
+%% deal with outputs 
 if comstr(Cam,'range')
   st=horzcat(li{:});
   fprintf('Running experiment\n %s\n',st)
