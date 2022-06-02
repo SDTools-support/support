@@ -66,16 +66,16 @@ elseif comstr(Cam,'nmap'); [CAM,Cam]=comstr(CAM,5);
 %% #nmap list of named experiments used for demos and non-regression tests ---
 
 nmap=vhandle.nmap;
-%% #SDT-contact_two_cube test cases 
+%% #SDT-contact_two_cube test cases -2
 
-%% #CtcCube.A : load pressure exponential contact -2
+%% #CtcCube.A : load pressure exponential contact -3
 li={'MeshCfg{"d_contact(cube)::n3e13{Kc1e12}"}',';', ...
      'SimuCfg{"Static{1e-8,chandle1}","Imp{100u,.1,chandle1,acall.}","EigOpt{5 5 0}"}', ...
      ';','RunCfg{nl_solve(Static),nlutil(HRbuild{q0m1}),run}'}';
 nmap('CtcCube.A')=li; 
 
 
-%% #CtcCube.B : load pressure and corner, exponential contact 
+%% #CtcCube.B : load pressure and corner, exponential contact  -3
 %    static followed by, hyperreduction
 li={'MeshCfg{"d_contact(cube{loPC})::n3e13{Kc1e12,Lambda500}"}';
     ';';'SimuCfg{"Static{1e-8,chandle1}","Imp{50u,.1,chandle1,acall.}","EigOpt{5 5 0}"}';
@@ -85,11 +85,11 @@ nmap('CtcCube.B')=li;
 % CtcCube.C : exponential contact; static followed by, hyperreduction
 % xxx add static load and point load 
 
-%% #HE1 : hyperelastic test with one element
+%% #HE1 : hyperelastic test with one element -2
 %  RO=struct('mat','simoA','Mesh','OneTrac','Case','DofSet:Sine{10}:C0{0}','NperPer',1e5,'Nper',3);RO.do='{run,va,pow}';dfr_ident('Load',RO);
 
-li={'MeshCfg{"d_fetime(OneTrac):TopZ:SimoA"}';';' % RivlinCube experiment
-      'SimuCfg{Imp{1m,3,chandle1},"SteppedSine{5}:C1{2.5,10}"}';';'
+li={'MeshCfg{"d_fetime(OneTrac{d2 2 2,MatSimoA}):Rivlin{.2 .2 .4}"}';';' % RivlinCube experiment
+      'SimuCfg{Imp{1m,3,chandle1,rt-1e-3},Sig{Tri(.1,/2,5)}}';';'
       'RunCfg{Time}'};
 nmap('HE.1T')=li; 
 li={'MeshCfg{"d_fetime(OneTrac):TopZa:SimoA"}';';' % RivlinCube experiment

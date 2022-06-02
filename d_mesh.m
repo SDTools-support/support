@@ -1646,10 +1646,35 @@ else; out=model;
 end 
  
  
-%% #Mat
+%% #Mat : prototype material database handling
 elseif comstr(Cam,'mat');[CAM,Cam]=comstr(CAM,4);
   
-if comstr(Cam,'rve');[CAM,Cam]=comstr(CAM,4);% #MatRve -2
+if isempty(Cam)
+ model=RO; RO=varargin{carg};carg=carg+1;
+ switch regexprep(RO.mat,'([^{,]*)','$1')
+ case 'SimoA'
+  % #MatSimoA : sample Mooney Rivlin in large def rewritten from sdtweb dfr_ident matsimo
+  r1=m_hyper('urn','SimoA{1,1,0,30,3,f5 20,g .33 .33,rho2.33n}');
+  model.pl=r1.pl; 
+  model=feutil('setpro 1 isop100',model,'NLdata',r1.NLdata);
+  out=model;return;
+ case 'DamA'
+  %% #MatDamA : test case for damage testing
+  NLdata=struct('type','nl_inout','opt',zeros(1,3), ...
+     'iopt',int32([0 0 6 2]),'adofi',[-.96;-.97], ...
+     'MexCb',{{nlutil('@dama_g'),[]}},'wy',1e3,'gamma',1,'snl',[],'StoreType',3);
+  model=feutil('setpro 1',model,'NLdata',NLdata);
+  model.pl=m_elastic('dbval 1 steel -unit TM');model.unit='TM';
+  out=model;return;
+ case 'PadA'
+         dbstack; keyboard;
+
+ otherwise; 
+         dbstack; keyboard;
+
+ end
+elseif comstr(Cam,'rve');[CAM,Cam]=comstr(CAM,4);
+ % #MatRve -2
  if comstr(Cam,'berth'); 
   % #MatRveBerth comp12('matrveBerth car dx') -3
   % Berthelot2007423, table 2 page 424
