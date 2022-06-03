@@ -1650,7 +1650,11 @@ end
 elseif comstr(Cam,'mat');[CAM,Cam]=comstr(CAM,4);
   
 if isempty(Cam)
- model=RO; RO=varargin{carg};carg=carg+1;
+ if nargin==2; model=struct; if carg==2;RO=varargin{2};carg=3;end
+ else; model=RO;RO=varargin{carg};carg=carg+1;
+ end
+ if ischar(RO);RO=struct('mat',RO);end
+
  switch regexprep(RO.mat,'([^{,]*)','$1')
  case 'SimoA'
   % #MatSimoA : sample Mooney Rivlin in large def rewritten from sdtweb dfr_ident matsimo
@@ -1660,19 +1664,24 @@ if isempty(Cam)
   out=model;return;
  case 'DamA'
   %% #MatDamA : test case for damage testing
-  NLdata=struct('type','nl_inout','opt',zeros(1,3), ...
+  r2=struct; r2.NLdata=struct('type','nl_inout','opt',zeros(1,3), ...
      'iopt',int32([0 0 6 2]),'adofi',[-.96;-.97], ...
      'MexCb',{{nlutil('@dama_g'),[]}},'wy',1e3,'gamma',1,'snl',[],'StoreType',3);
-  model=feutil('setpro 1',model,'NLdata',NLdata);
-  model.pl=m_elastic('dbval 1 steel -unit TM');model.unit='TM';
-  out=model;return;
+  r2.pl=m_elastic('dbval 1 steel -unit TM');r2.unit='TM';
  case 'PadA'
-         dbstack; keyboard;
+  % R. Zhuravlev, PhD Thesis, ENSAM, 2017. https://pastel.archives-ouvertes.fr/tel-01744302
+  r2=m_hyper('urn','PadA{2.5264,-0.9177,0.4711,1200,3,f .35,g .5688,rho1n,tyYeoh,unTM}');
 
  otherwise; 
          dbstack; keyboard;
 
  end
+ if isfield(model,'Elt')
+  model=feutil('setpro 1',model,'NLdata',r2.NLdata);
+  model.pl=r2.pl; model.unit=r2.unit;
+  out=model;
+ else;out=r2; %r2=d_mesh('mat','PadA')
+ end 
 elseif comstr(Cam,'rve');[CAM,Cam]=comstr(CAM,4);
  % #MatRve -2
  if comstr(Cam,'berth'); 
