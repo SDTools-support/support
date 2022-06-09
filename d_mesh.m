@@ -1654,6 +1654,11 @@ if isempty(Cam)
  else; model=RO;RO=varargin{carg};carg=carg+1;
  end
  if ischar(RO);RO=struct('mat',RO);end
+ st=regexprep(RO.mat,'([\d]*)[^\d]','$1'); 
+ % 10Simo % affect MatId10
+ if isfield(RO,'pl');elseif isempty(st);RO.pl=1;
+ else; RO.pl=str2double(st);RO.mat=comstr(RO.mat(length(st)+1:end),1);
+ end
 
  switch regexprep(RO.mat,'([^{,]*)','$1')
  case 'SimoA'
@@ -1676,8 +1681,10 @@ if isempty(Cam)
          dbstack; keyboard;
 
  end
+ r2.pl(1)=RO.pl(1); 
  if isfield(model,'Elt')
-  model=feutil('setpro 1',model,'NLdata',r2.NLdata);
+  i1=feutil('mpid',model); i1=unique(i1,'rows'); i1(i1(:,1)~=RO.pl,:)=[];
+  model=feutil(sprintf('setpro %i',i1(1,2)),model,'NLdata',r2.NLdata);
   model.pl=r2.pl; model.unit=r2.unit;
   out=model;
  else;out=r2; %r2=d_mesh('mat','PadA')
