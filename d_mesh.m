@@ -6,7 +6,7 @@ function [out,out1,out2]=d_mesh(varargin); %#ok<*NOSEM,*STOUT>
 %     sdtweb('_taglist','d_mesh') to view current contents
 %     d_mesh('tuto')  % to see integrated tutorials
 
-%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2022 by SDTools, All Rights Reserved.
 %       For revision information use d_mesh('cvs')
 
 if nargin==0; d_mesh('tuto'); return; end
@@ -1772,75 +1772,76 @@ else
  st=sdth.findobj('_sub:~',RO.urn);js=1;
 end
 if ~isfield(RO,'nmap');RO.nmap=containers.Map;end
-% 1 : create/load base mesh
+%% 1 : create/load base mesh
 if length(st)>1&&exist(st(1).subs,'file')% d_hbm(Mesh0D:cub)
-  RO.name=st(js+1).subs;
-  if RO.nmap.isKey(RO.name); st(js+1).subs=RO.nmap(RO.name);end % 'rail19(Ref21):21ref'
-  mo1=feval(st(js).subs,['Mesh' st(js+1).subs],Range,RO); 
-  RO.MeshCb=st(js); js=js+2;
+ RO.name=st(js+1).subs;
+ if RO.nmap.isKey(RO.name); st(js+1).subs=RO.nmap(RO.name);end % 'rail19(Ref21):21ref'
+ mo1=feval(st(js).subs,['Mesh' st(js+1).subs],Range,RO);
+ RO.MeshCb=st(js); js=js+2;
 else
-  st1=st;
-  st=sdtroot('param.Project.MeshCb -safe');
-  if isempty(st); 
-      error('Project.MeshCb not set and ''%s'' not found',st1(1).subs);
-  end
+ st1=st;
+ st=sdtroot('param.Project.MeshCb -safe');
+ if isempty(st);
+  error('Project.MeshCb not set and ''%s'' not found',st1(1).subs);
+ end
 end
 %% 2: deal with case building (possibly Mesh::NL for empty)
-  if js<=length(st)&&strcmpi(st(js).type,'()'); 
-    RO.MeshCb=st(js);js=js+1; % :CaseFun(Case)
-  end
-  if js>length(st); RO.Case='';else; RO.Case=st(js).subs; js=js+1; end
-  if ~isempty(RO.Case)
-   RO.name=sprintf('%s:%s',RO.name,RO.Case);
-   if js<=length(st)&&strcmp(st(js).type,'{}') %% Mesh:V{data}:NL
-    RO.CaseVal=st(js).subs; js=js+1;  
-   else; RO.CaseVal={};
-   end
-   mo1=feval(RO.MeshCb.subs,'Case',mo1,RO); RO.MeshCb=st(1); 
-  end
+if js<=length(st)&&strcmpi(st(js).type,'()');
+ RO.MeshCb=st(js);js=js+1; % :CaseFun(Case)
+end
+if js>length(st); RO.Case='';else; RO.Case=st(js).subs; js=js+1; end
+if ~isempty(RO.Case)
+ RO.name=sprintf('%s:%s',RO.name,RO.Case);
+ if js<=length(st)&&strcmp(st(js).type,'{}') %% Mesh:V{data}:NL
+  RO.CaseVal=st(js).subs; js=js+1; RO.name=sprintf('%s%s',RO.name,sprintf('-%s',RO.CaseVal{:}));
+ else; RO.CaseVal={};
+ end
+ mo1=feval(RO.MeshCb.subs,'Case',mo1,RO); RO.MeshCb=st(1);
+end
 
-%% 3; now add the NLdata 
-  if js<=length(st)&&strcmpi(st(js).type,'()'); 
-    RO.MeshCb=st(js);js=js+1; % :MatFun(Mat)
-  end
+%% 3; now add the NLdata
+if js<=length(st)&&strcmpi(st(js).type,'()');
+ RO.MeshCb=st(js);js=js+1; % :MatFun(Mat)
+end
 NLdata=[];
-if js<=length(st); %  'd_hbm(Mesh0D):d_hbm(NL0Dm1t)' % sdtweb d_hbm NL 
-  il=feutil('getil',mo1);
-  if js+1<=length(st)&&strcmpi(st(js+1).type,'()');
-    RO.MeshCb=st(js);js=js+1;
+if js<=length(st); %  'd_hbm(Mesh0D):d_hbm(NL0Dm1t)' % sdtweb d_hbm NL
+ il=feutil('getil',mo1);
+ if js+1<=length(st)&&strcmpi(st(js+1).type,'()');
+  RO.MeshCb=st(js);js=js+1;
+ end
+ RO.NL=st(js).subs;
+ if ~iscell(RO.NL);RO.NL={il(1) RO.NL};end
+ if js<length(st)&&strcmpi(st(js+1).type,'{}') % d_contact(cube)::n3e13{Kc1e12}
+  RO.NL{end}=sprintf('%s%s',RO.NL{end},strrep(comstr(st(js+1).subs,-30),'''',''));
+ end
+ 
+ for j2=1:2:length(RO.NL)
+  if isempty(RO.NL{j2+1}); continue;end
+  RO.name=sprintf('%s:%s',RO.name,RO.NL{j2+1});% Mesh:Case:NL name convention
+  RN=RO;RN.NL=RO.NL{j2+1};NLdata=feval(RO.MeshCb.subs,'NL',mo1,RN);
+  % Possibly return model rather than NLdata
+  if isfield(NLdata,'Elt')&&isequal(NLdata.Elt,mo1.Elt); mo1=NLdata;continue;
+  elseif isempty(NLdata); error('Expecting non empty NLdata');
+  elseif ~isfield(NLdata,'type');error('missing .type,  ''nl_inout'' is usual');
   end
-  RO.NL=st(js).subs; 
-  if ~iscell(RO.NL);RO.NL={il(1) RO.NL};end 
-  if js<length(st)&&strcmpi(st(js+1).type,'{}') % d_contact(cube)::n3e13{Kc1e12}
-   RO.NL{end}=sprintf('%s%s',RO.NL{end},strrep(comstr(st(js+1).subs,-30),'''',''));
-  end
-
-  for j2=1:2:length(RO.NL)
-    if isempty(RO.NL{j2+1}); continue;end
-    RO.name=sprintf('%s:%s',RO.name,RO.NL{j2+1});% Mesh:Case:NL name convention
-    RN=RO;RN.NL=RO.NL{j2+1};NLdata=feval(RO.MeshCb.subs,'NL',mo1,RN);
-    % Possibly return model rather than NLdata
-    if isfield(NLdata,'Elt')&&isequal(NLdata.Elt,mo1.Elt); mo1=NLdata;continue;
-    elseif isempty(NLdata); error('Expecting non empty NLdata');
-    elseif ~isfield(NLdata,'type');error('missing .type,  ''nl_inout'' is usual');
-    end
-    i1=RO.NL{j2}; if ischar(i1);i1=str2double(i1);end
-    mo1=feutil(sprintf('setpro %i',i1),mo1,'NLdata',NLdata,'name',RN.NL);
-  end
+  i1=RO.NL{j2}; if ischar(i1);i1=str2double(i1);end
+  mo1=feutil(sprintf('setpro %i',i1),mo1,'NLdata',NLdata,'name',RN.NL);
+ end
 end
 
 if ~isfield(mo1,'name');mo1.name=RO.name;end
+sdth.PARAM('MeshRes',mo1); % high level storage
 if ~isfield(Range,'param');Range.param=struct;end
 if ~isfield(Range,'val')%mo1=d_mesh('MeshCfg','cbi21(CoupStiff):StaticA:');
-  out=mo1; 
+ out=mo1;
 else
  r1=struct('type','pop','value',1,'level',10,...
-      'choices',{{}},'data',{{}},'SetFcn',{{@d_mesh,'stepMesh'}},...
-      'ShortFmt',1, ...
-      'RepList', ... % 'TestEvtData',1,
-      {{'M_(.*)_([^_]+)', ... % start with M_ and end with non_ parameter name
-      struct('type',{'.','{}'},'subs',{'list',{'@token{1}',3}})
-      }});
+  'choices',{{}},'data',{{}},'SetFcn',{{@d_mesh,'stepMesh'}},...
+  'ShortFmt',1, ...
+  'RepList', ... % 'TestEvtData',1,
+  {{'M_(.*)_([^_]+)', ... % start with M_ and end with non_ parameter name
+  struct('type',{'.','{}'},'subs',{'list',{'@token{1}',3}})
+  }});
  Range=sdtm.range('SafeParamInit-name',Range,'MeshCfg',r1);
  Range=sdtm.range('popMerge',Range,'MeshCfg',{mo1.name,mo1});
  if isfield(Range,'MeshCfg'); Range.MeshCfg=Range.param.MeshCfg.choices;end
