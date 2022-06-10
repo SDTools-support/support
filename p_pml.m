@@ -1108,13 +1108,15 @@ n1=feutil(['getnode ' RO.SetPro],model);
 RO.box=[min(n1(:,5:7)) max(n1(:,5:7))];
 
 else
+%% Add PML on a box 
+if isfield(RO,'Lcyl')
+   RO.Lp=[0 0 RO.Lcyl(1:2) 0 RO.Lcyl(3)];
+  model.Node=basis('rect2cyl',model.Node);
+end
 RO.box=[min(model.Node(:,5:7)) max(model.Node(:,5:7))];
 RO.nElt=size(model.Elt,1); RO.OnePml=[];RO.PmlNode=[];
 for j1=reshape(find(RO.Lp),1,[])
  RO.Elt=model.Elt;
- r1=feutil('mpid',RO.Elt(1:2,:)); % material used for extrusion
- r1=feutil(sprintf('getmat%i struct',r1(2,1)),model);
- cp=sqrt(r1.E.*(1-r1.Nu)./r1.Rho./(1+r1.Nu)./(1-2*r1.Nu));%pressure wave speed
 
  if j1==1;     model.Elt=feutil('selelt selface&innode {x==}',model,RO.box(j1)); r1=[-1 0 0];
  elseif j1==2; model.Elt=feutil('selelt selface&innode {y==}',model,RO.box(j1));r1=[0 -1 0];
@@ -1123,6 +1125,10 @@ for j1=reshape(find(RO.Lp),1,[])
  elseif j1==5; model.Elt=feutil('selelt selface&innode {y==}',model,RO.box(j1));r1=[0 1 0];
  elseif j1==6; model.Elt=feutil('selelt selface&innode {z==}',model,RO.box(j1));r1=[0 0 1];
  end
+ r3=feutil('mpid',model.Elt(1:2,:)); % material used for extrusion
+ r3=feutil(sprintf('getmat%i struct',r3(2,1)),model);
+ cp=sqrt(r3.E.*(1-r3.Nu)./r3.Rho./(1+r3.Nu)./(1-2*r3.Nu));%pressure wave speed
+
  if strcmpi(RO.MeshType,'one')
   %% single coarse quad on edge
   if ~isempty(RO.PmlNode)
@@ -1171,7 +1177,6 @@ for j1=reshape(find(RO.Lp),1,[])
  model=feutil(sprintf('extrude 0 %g %g %g',r1),model,r2);
  RO.PmlNode=[RO.PmlNode;feutil('findnode groupall',model)];
  model=feutil('addelt',model,RO.Elt);
- 
  if ~isfield(RO,'a0')||RO.a0<=0
  %% Default a0 see (4.30) in Hadrien's
    RO.a0=-log(.001)*3/2*max(cp)/norm(RO.Lp,'inf');
@@ -1179,10 +1184,11 @@ for j1=reshape(find(RO.Lp),1,[])
    % R1.Lp=(0:.15:5*.15); 
  end
  
-end
+end % Loop on adds
 if size(model.Elt,1)==RO.nElt;
     error('No PML added : wrong box in model.Node ?');
 end
+%% SetPro or Lp
 end
 if ~isfield(RO,'a0')
    RO.a0=1000; warning('Missing a0 init');
@@ -1246,6 +1252,9 @@ model.il(end+(1:size(RO.il,1)),1:size(RO.il,2))=RO.il;
 model.Elt=feutilb('SeparatebyProp -max 2000000',model.Elt);
 
 if isfield(RO,'quad')&&RO.quad==1;model=feutil('lin2quad',model);end
+if isfield(RO,'Lcyl')
+    model.Node=basis('cyl2rect',model.Node);
+end
 
 if RO.subtype==1
  %% Constraint on q=qx+qy+qz for time PML
