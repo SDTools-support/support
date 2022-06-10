@@ -300,6 +300,15 @@ nmap=mo1.nmap;
    if length(Cam)>4; mo1=fe_def('freq',struct('urn',Cam(5:end)),mo1); end
    d1=fe_simul('dfrf',mo1);
    nmap('CurModel')=mo1; nmap('CurFreq')=d1;
+  elseif strncmpi(Cam,'save',4)
+   %% #stepRun.Save: intermediate save -3
+   try
+    RunRes=sdth.PARAM('RunRes');
+    sdtm.save(RO.fStep{j1},'RunRes');
+   catch err
+    sdtw('_nb','Failed save step with %s',err.message);
+   end
+   
   else      
    %% #stepRun.stepCb -3
    EndEval='';  
