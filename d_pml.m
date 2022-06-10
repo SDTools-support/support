@@ -33,37 +33,34 @@ elseif comstr(Cam,'ulb1d')
 %% #Shear/pressure frequency domain -2
 
  % Pressure wave
- RP=struct('MeshCfg','d_pml(Ulb1d{v1,quad,Lc2})','SimuCfg','', 'RunCfg','{dfrf{10,100},d_pml(View1DPS)}');
- R1=d_tdoe('Solve',RP);
+ li={'MeshCfg{"d_pml(Ulb1d{v1,quad,Lc2})"}',';','RunCfg{dfrf{10,100},d_pml(View1DPS -cf3)}'};
+ mo2=sdtm.range(struct,horzcat(li{:}));
 
  % Shear wave 
- RP=struct('MeshCfg','d_pml(Ulb1dSW{v1,quad,Lc2})','SimuCfg','', 'RunCfg','{dfrf{10,50},d_pml(View1DPS)}');
- R2=d_tdoe('Solve',RP);
+ li={'MeshCfg{"d_pml(Ulb1dSW{v1,quad,Lc2})"}',';','RunCfg{dfrf{10,50},d_pml(View1DPS -cf3)}'};
+ mo2=sdtm.range(struct,horzcat(li{:}));
 
-feplot(R2.Res{1},R2.Res{2});fecom('ShowFiMdef');
 %comgui('imwrite',2);
 
 %% #Pressure_wave_time domain formulation -2
 
 % Not clean
 mo1=d_pml('MeshUlb1D',struct('subtype',1,'Lc',2,'quad',1,'EdgeMpc',0,'pow',2,'Freq',[10 100],'Np',20));feplot(mo1);
-d1=fe_simul('dfrf',stack_set(mo1,'info','Freq',[10;100]));d_pml('View1Dps',mo1,d1);feutilb('_write',mo1)
+d1=fe_simul('dfrf',stack_set(mo1,'info','Freq',[10;100]));d_pml('View1Dps -cf3',mo1,d1);feutilb('_write',mo1)
 
 % Clean regular mesh
 mo1=d_pml('MeshUlb1D',struct('subtype',1,'Lc',2,'quad',1,'EdgeMpc',0,'pow',2,'Lp',30));feplot(mo1);
-d1=fe_simul('dfrf',stack_set(mo1,'info','Freq',[10;100]));d_pml('View1Dps',mo1,d1);feutilb('_write',mo1)
+d1=fe_simul('dfrf',stack_set(mo1,'info','Freq',[10;100]));d_pml('View1Dps -cf3',mo1,d1);feutilb('_write',mo1)
 
 
 %% #Shear_wave_time domain formulation -2
 
 mo1=d_pml('MeshUlb1D SW',struct('subtype',1,'Lc',2,'quad',1,'EdgeMpc',0));
 % -3000 smooth, -2000 oscilations
-mo1=feutil('setpro 100 a0 2000 pow2 form -3000',mo1);d1=fe_simul('dfrf',stack_set(mo1,'info','Freq',[10;100]));d_pml('View1Dps',mo1,d1);feutilb('_write',mo1)
-mo1=feutil('setpro 100 a0 2000 pow2 form -2000',mo1);d1=fe_simul('dfrf',stack_set(mo1,'info','Freq',[10;100]));d_pml('View1Dps',mo1,d1);feutilb('_write',mo1)
-feplot(mo1,d1);fecom('ShowFiMdef');
+mo1=feutil('setpro 100 a0 2000 pow2 form -3000',mo1);d1=fe_simul('dfrf',stack_set(mo1,'info','Freq',[10;100]));d_pml('View1Dps -cf3',mo1,d1);feutilb('_write',mo1)
+mo1=feutil('setpro 100 a0 2000 pow2 form -2000',mo1);d1=fe_simul('dfrf',stack_set(mo1,'info','Freq',[10;100]));d_pml('View1Dps -cf3',mo1,d1);feutilb('_write',mo1)
 
-
-if 1==1
+if 1==2
  [SE,CE]=fe_case(mo1,'assemble -matdes 2 3 1 -SE -NoT',mo1);
  IA=CE.GroupInfo{1,7};IA.lab(~any(IA.data,2))
  p_pml('viewTopo',SE,CE);set(findall(1,'type','line','marker','.'),'color','k')
@@ -96,9 +93,7 @@ ofact spfmex;%ofact umfpack
 d1=fe_time(opt,mo1);d1.TR=struct('def',CE.T,'DOF',mo1.DOF);
 d_pml('View1Dtime',mo1,d1);
 
-cf.def=fe_def('subdef',d1,1:100:size(d1.def,2));
-fecom(';showfimdef;ch5;scc5e10;view1');
-
+cf.def=fe_def('subdef',d1,1:100:size(d1.def,2));fecom(';showfimdef;ch5;scc5e10;view1');
 
 % #ShearTransient_Unl  xxxEB : disp/stress formulation
 mo1=d_pml('MeshUlb1D SW',struct('subtype',1,'Lc',2,'quad',1,'Transient',1));
@@ -233,7 +228,8 @@ out=model;out1=RO;
 elseif comstr(Cam,'ulb1d');[CAM,Cam]=comstr(CAM,6);
 %% #MeshUlb1D : sample ULB test for S and P waves
 if any(Cam=='{') % struct('v',1,'quad',1,'Lc',2)
-  [CAM,RO]=sdtm.urnPar(CAM,struct('li',{{'v','%g';'quad',3;'Lc','%g'}}),RO);
+  %[CAM,RO]=sdtm.urnPar(CAM,struct('cst',{{'v','%g';'quad','%3';'Lc','%g'}}),RO);
+  [CAM,RO]=sdtm.urnPar(CAM,'{}{v%ug,quad%3,Lc%ug}',RO);
 end
 
 [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
@@ -436,7 +432,7 @@ for jpar=1:length(RO.fmax)
   fecom('colordataEvalX');
  end
 end
-ci=comgui('guiiiplot -reset',3);
+ci=comgui('guiiiplot -reset',2);
 iicom(ci,'curveinit','Test',C1);iicom(ci,';submagpha;chall;xlogall');
 
 elseif comstr(Cam,'perred')
@@ -509,11 +505,18 @@ ks = 2*pi/vw*d1.data(:,1)';
 C1.Xlab{3}='Mdl';C1.X{3}={'PML';st};
 C1.Y(:,:,2)=exp(-1i*ks(:)*C1.X{2}');C1.DimPos=[2 1 3];
 
-ci=iiplot;
+ci=comgui('gui iiplot -reset;',2);
 cingui('plotwd',ci,'@OsDic',{'ImToFigN','ImSw60','WrW49c','FNN'});
-iicom('curveinit','C1',C1);iicom showPiSubRi
+iicom(ci,'curveinit','C1',C1);iicom(ci,'showPiSubRi');
 iicom('ch',{'Freq',1:size(C1.Y,1);'Mdl',1:2})
+
 try;d_imw('LiL1M0S2',ci);end
+% Possibly display shapes
+[CAM,Cam,cf]=comstr('cf',[-25 31],CAM,Cam);
+if ~isempty(cf)&&cf
+    cf=comgui('guifeplot -reset;',cf);
+    feplot(mo1,d1);fecom(cf,'ShowFiMdef');
+end
 
 elseif comstr(Cam,'1dtime')
 %% #view1Dtime : validation of time response to Ricker
@@ -527,7 +530,7 @@ C1=fe_case('sensobserve',sens,fe_def('subdef',d1,1:step:size(d1.def,2)));
 C1.X{2}=mo1.Node(NNode(sens.tdof(:,2)),7);
 C1.PlotInfo=ii_plp('PlotInfo2D -type surface',C1);
 C1=sdsetprop(C1,'PlotInfo','ua.YFcn','r3=r3;');
-ci=comgui('guiiiplot -reset',3);
+ci=comgui('guiiiplot -reset',2);
 iicom(ci,'curveinit',C1);
 
 

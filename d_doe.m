@@ -297,8 +297,7 @@ nmap=mo1.nmap;
    else % Default assume complex sym
      mo1=stack_set(mo1,'info','oProp',mklserv_utils('opropCpxSym'));
    end
-   if length(Cam)>4; mo1=fe_def('freq',struct('urn',Cam(5:end),'unit','Hz'),mo1); end
-   d1=fe_simul('dfrf',mo1);
+   d1=fe_simul(CAM,mo1);
    nmap('CurModel')=mo1; nmap('CurFreq')=d1;
   elseif strncmpi(Cam,'save',4)
    %% #stepRun.Save: intermediate save -3
