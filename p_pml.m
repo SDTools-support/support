@@ -1635,6 +1635,13 @@ if 1==2
  %fecom('showdefarrow') % to see the load as vectors
  % pause
 end
+mpid=feutil('mpid',feutil(['SelEltWithnode{ ' RM.SelNode '}'],model));
+mpid=setdiff(mpid(:,1),0); 
+if length(mpid)>1; error('Multi-material not yet implemented');end
+r1=feutil(sprintf('getmat%i -struct',mpid(1)),model);
+ Vs = sqrt(r1.E/(2*(1+r1.Nu)*r1.Rho)); 
+ Vp = sqrt((1-r1.Nu)*r1.E/((1-2*r1.Nu)*(1+r1.Nu)*r1.Rho)); 
+ RM.ci=[r1.Rho*[Vp Vs Vs] 0 0 0];
 
 % Node to apply cbush
 [~,NR] = feutil(['findnode ' RM.SelNode ],model); % Ok the nodes are fine
@@ -1643,7 +1650,7 @@ Elfact = [10 0];
 elem_data=[];
 
 model.bas=[]; 
-if ~isfield(RM,'ki');RM.ki=1e2*ones(1,6);end % Default spring stiffness
+if ~isfield(RM,'ki');RM.ki=1e2*[1 1 1 0 0 0];end % Default spring stiffness
 
 for i_n =1:length(NR);
     % Position/direction actual spring
