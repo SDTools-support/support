@@ -88,7 +88,7 @@ nmap('CtcCube.B')=li;
 %% #HE1 : hyperelastic test with one element -2
 %  RO=struct('mat','simoA','Mesh','OneTrac','Case','DofSet:Sine{10}:C0{0}','NperPer',1e5,'Nper',3);RO.do='{run,va,pow}';dfr_ident('Load',RO);
 
-li={'MeshCfg{"d_fetime(OneTrac{d2 2 2,MatSimoA}):Rivlin{.2 .2 .4}"}';';' % RivlinCube experiment
+li={'MeshCfg{"d_fetime(OneTrac{d2 2 2,MatSimoA}):Rivlin{-.2 -.2 -.4}"}';';' % RivlinCube experiment
       'SimuCfg{Imp{1m,3,chandle1,rt-1e-3},Sig{Tri(.1,/2,5)}}';';'
       'RunCfg{Time}'};
 nmap('HE.1T')=li; 
