@@ -272,7 +272,6 @@ nmap=mo1.nmap;
  %% #stepRun.Time  -3
   if ~exist('mo1','var')&&isKey(nmap,'CurModel');mo1=nmap('CurModel');end
   op1=stack_get(mo1,'','TimeOpt','g');
-  op1.NeedUVA=[1 1 0]; 
   if ~isempty(stack_get(op1,'','Range'));op1.FinalCleanupFcn='';end
   % Actually run simulation
   [d1,mo1b]=fe_time(stack_set(mo1,'info','TimeOpt',op1));
