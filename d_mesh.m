@@ -1667,6 +1667,12 @@ if isempty(Cam)
   model.pl=r1.pl; 
   model=feutil('setpro 1 isop100',model,'NLdata',r1.NLdata);
   out=model;return;
+ case 'HyOpenFEM' % Hyperelastic used by OpenFEM RivlinCube
+  r1=m_hyper('urn','Ref{.3,.2,.3,.3,.1,rho1u}');
+  %model.pl=m_hyper('dbval 1 Ref'); 
+  model.pl=r1.pl; 
+  model=feutil('setpro 1 isop100',model,'NLdata',r1.NLdata);
+  out=model;return;
  case 'DamA'
   %% #MatDamA : test case for damage testing
   r2=struct; r2.NLdata=struct('type','nl_inout','opt',zeros(1,3), ...
@@ -1678,8 +1684,7 @@ if isempty(Cam)
   r2=m_hyper('urn','PadA{2.5264,-0.9177,0.4711,1200,3,f .35,g .5688,rho1n,tyYeoh,unTM}');
 
  otherwise; 
-         dbstack; keyboard;
-
+   error('Mat%s not implemented',RO.mat)
  end
  r2.pl(1)=RO.pl(1); 
  if isfield(model,'Elt')
