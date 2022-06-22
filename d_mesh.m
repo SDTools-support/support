@@ -1668,11 +1668,7 @@ if isempty(Cam)
   model=feutil('setpro 1 isop100',model,'NLdata',r1.NLdata);
   out=model;return;
  case 'HyOpenFEM' % Hyperelastic used by OpenFEM RivlinCube
-  r1=m_hyper('urn','Ref{.3,.2,.3,.3,.1,rho1u}');
-  %model.pl=m_hyper('dbval 1 Ref'); 
-  model.pl=r1.pl; 
-  model=feutil('setpro 1 isop100',model,'NLdata',r1.NLdata);
-  out=model;return;
+  r2=m_hyper('urn','Ref{.3,.2,.3,.3,.1,rho1u}');r2.isop=100;
  case 'DamA'
   %% #MatDamA : test case for damage testing
   r2=struct; r2.NLdata=struct('type','nl_inout','opt',zeros(1,3), ...
@@ -1680,16 +1676,18 @@ if isempty(Cam)
      'MexCb',{{nlutil('@dama_g'),[]}},'wy',1e3,'gamma',1,'snl',[],'StoreType',3);
   r2.pl=m_elastic('dbval 1 steel -unit TM');r2.unit='TM';
  case 'PadA'
-  % R. Zhuravlev, PhD Thesis, ENSAM, 2017. https://pastel.archives-ouvertes.fr/tel-01744302
+  %% #MatPadA R. Zhuravlev, PhD Thesis, ENSAM, 2017 https://pastel.archives-ouvertes.fr/tel-01744302
   r2=m_hyper('urn','PadA{2.5264,-0.9177,0.4711,1200,3,f .35,g .5688,rho1n,tyYeoh,unTM}');
-
+  r2.isop=100; 
  otherwise; 
    error('Mat%s not implemented',RO.mat)
  end
  r2.pl(1)=RO.pl(1); 
  if isfield(model,'Elt')
   i1=feutil('mpid',model); i1=unique(i1,'rows'); i1(i1(:,1)~=RO.pl,:)=[];
-  model=feutil(sprintf('setpro %i',i1(1,2)),model,'NLdata',r2.NLdata);
+  st=sprintf('setpro %i',i1(1,2));
+  if isfield(r2,'isop');st=sprintf('%s isop%i',st,r2.isop);end % isop100 for large def
+  model=feutil(st,model,'NLdata',r2.NLdata);
   model.pl=r2.pl; model.unit=r2.unit;
   out=model;
  else;out=r2; %r2=d_mesh('mat','PadA')
