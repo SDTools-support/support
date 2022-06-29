@@ -1654,13 +1654,18 @@ if isempty(Cam)
  else; model=RO;RO=varargin{carg};carg=carg+1;
  end
  if ischar(RO);RO=struct('mat',RO);end
- st=regexprep(RO.mat,'([\d]*)[^\d]','$1'); 
+ st=regexp(RO.mat,'(^[\d]+)','tokens'); 
  % 10Simo % affect MatId10
- if isfield(RO,'pl');elseif isempty(st);RO.pl=1;
- else; RO.pl=str2double(st);RO.mat=comstr(RO.mat(length(st)+1:end),1);
+ if isfield(RO,'mpid');elseif isfield(model,'Elt')
+     i1=feutil('mpid',model);RO.mpid=unique(i1,'rows');RO.mpid(RO.mpid(:,1)==0,:)=[];
+ else; RO.mpid=[1 1];
+ end
+ if isfield(RO,'pl');
+ elseif isempty(st);RO.pl=RO.mpid(1);
+ else; st=st{1}{1};RO.pl=str2double(st);RO.mat=comstr(RO.mat(length(st)+1:end),1);
  end
 
- switch regexprep(RO.mat,'([^{,]*)','$1')
+ switch regexprep(RO.mat,'([^{,]*).*','$1')
  case 'SimoA'
   % #MatSimoA : sample Mooney Rivlin in large def rewritten from sdtweb dfr_ident matsimo
   r1=m_hyper('urn','SimoA{1,1,0,30,3,f5 20,g .33 .33,rho2.33n}');
@@ -1669,6 +1674,16 @@ if isempty(Cam)
   out=model;return;
  case 'HyOpenFEM' % Hyperelastic used by OpenFEM RivlinCube
   r2=m_hyper('urn','Ref{.3,.2,.3,.3,.1,rho1u}');r2.isop=100;
+ case 'HyUP' 
+  %% Hyperelastic to test UP formulation
+  [st,r2]=sdtm.urnPar(RO.mat,'{}{pro%s,mat%s}');
+  RO.k1=4200; RO.k2=33; RO.kb=930000;
+  RO.mu=2*(RO.k1+RO.k2); RO.lambda=RO.kb-4/3*(RO.k1+RO.k2); RO.K=RO.lambda+2/3*RO.mu;
+  RO.E=RO.mu*(3*RO.lambda+2*RO.mu)/(RO.lambda+RO.mu);
+  RO.nu=RO.lambda/2/(RO.lambda+RO.mu); RO.rho=1000;
+  r2.pl=[100,fe_mat('m_elastic','SI',1),RO.E,RO.nu, RO.rho, RO.E/2/(1+RO.nu)];
+  model.info=RO;
+  
  case 'DamA'
   %% #MatDamA : test case for damage testing
   r2=struct; r2.NLdata=struct('type','nl_inout','opt',zeros(1,3), ...
@@ -1684,11 +1699,18 @@ if isempty(Cam)
  end
  r2.pl(1)=RO.pl(1); 
  if isfield(model,'Elt')
-  i1=feutil('mpid',model); i1=unique(i1,'rows'); i1(i1(:,1)~=RO.pl,:)=[];
-  st=sprintf('setpro %i',i1(1,2));
-  if isfield(r2,'isop');st=sprintf('%s isop%i',st,r2.isop);end % isop100 for large def
-  model=feutil(st,model,'NLdata',r2.NLdata);
-  model.pl=r2.pl; model.unit=r2.unit;
+  if isfield(r2,'pro')
+   model.il=p_solid(model.il,['dbval ' r2.pro]);
+  else
+   i1=RO.mpid; i1(i1(:,1)~=RO.pl,:)=[];
+   st=sprintf('setpro %i',i1(1,2));
+   if ~isfield(r2,'isop');elseif ischar(RO.isop);st=sprintf('%s %s',st,r2.isop); 
+   else; st=sprintf('%s isop%i',st,r2.isop); % isop100 for large def
+   end
+  end
+  if isfield(r2,'NLdata');model=feutil(st,model,'NLdata',r2.NLdata);end
+  if isfield(r2,'unit');model.unit=r2.unit;end
+  model.pl=r2.pl; 
   out=model;
  else;out=r2; %r2=d_mesh('mat','PadA')
  end 
@@ -1770,59 +1792,60 @@ elseif comstr(Cam,'meshcfg'); [CAM,Cam]=comstr(CAM,8);
 Range=RO;%varargin{carg};carg=carg+1;
 if isfield(Range,'subs')&&isfield(Range,'type')&&length(Range)==1
  %st=struct('type','.','subs',Range.subs);
- if iscell(Range.subs)&&length(Range.subs)>1; 
-  error('Use "" to splitting MeshCfg{"d_contact(cube)::n1e13{c1}"}');
- end
- RO=struct('urn',Range.subs);if isfield(Range,'nmap');RO.nmap=Range.nmap;end
+ if iscell(Range.subs)&&length(Range.subs)>1; RO=struct;RO.urn=Range.subs;
+ else;  RO=struct('urn',Range.subs);end
+ if isfield(Range,'nmap');RO.nmap=Range.nmap;end
  Range=struct;
- st=sdth.findobj('_sub:~',RO.urn);js=1;
+ % S=sdth.findobj('_sub,~','t_pmlulb(sensor:{x60,1,foam,1}),FullA','merge');disp(comstr(S,-30))
+ % S=sdth.findobj('_sub,~',{'t_pmlulb(sensor:{x60,1,foam,1})','FullA'},'merge');disp(comstr(S,-30))
+ S=sdth.findobj('_sub:~',RO.urn,'merge');js=1;
 else
  RO=varargin{carg};carg=carg+1;
  if ischar(RO);RO=struct('urn',RO);end
- st=sdth.findobj('_sub:~',RO.urn);js=1;
+ S=sdth.findobj('_sub:~',RO.urn);js=1;
 end
 if ~isfield(RO,'nmap');RO.nmap=containers.Map;end
 %% 1 : create/load base mesh
-if length(st)>1&&exist(st(1).subs,'file')% d_hbm(Mesh0D:cub)
- RO.name=st(js+1).subs;
- if RO.nmap.isKey(RO.name); st(js+1).subs=RO.nmap(RO.name);end % 'rail19(Ref21):21ref'
- mo1=feval(st(js).subs,['Mesh' st(js+1).subs],Range,RO);
- RO.MeshCb=st(js); js=js+2;
+if length(S)>1&&exist(S(1).subs,'file')% d_hbm(Mesh0D:cub)
+ RO.name=S(js+1).subs;
+ if RO.nmap.isKey(RO.name); S(js+1).subs=RO.nmap(RO.name);end % 'rail19(Ref21):21ref'
+ mo1=feval(S(js).subs,['Mesh' S(js+1).subs],Range,RO);
+ RO.MeshCb=S(js); js=js+2;
 else
- st1=st;
- st=sdtroot('param.Project.MeshCb -safe');
- if isempty(st);
+ st1=S; error('obsolete')
+ S=sdtroot('param.Project.MeshCb -safe');
+ if isempty(S);
   error('Project.MeshCb not set and ''%s'' not found',st1(1).subs);
  end
 end
 %% 2: deal with case building (possibly Mesh::NL for empty)
-if js<=length(st)&&strcmpi(st(js).type,'()');
- RO.MeshCb=st(js);js=js+1; % :CaseFun(Case)
+if js<=length(S)&&strcmpi(S(js).type,'()');
+ RO.MeshCb=S(js);js=js+1; % :CaseFun(Case)
 end
-if js>length(st); RO.Case='';else; RO.Case=st(js).subs; js=js+1; end
+if js>length(S); RO.Case='';else; RO.Case=S(js).subs; js=js+1; end
 if ~isempty(RO.Case)
  RO.name=sprintf('%s:%s',RO.name,RO.Case);
- if js<=length(st)&&strcmp(st(js).type,'{}') %% Mesh:V{data}:NL
-  RO.CaseVal=st(js).subs; js=js+1; RO.name=sprintf('%s%s',RO.name,sprintf('-%s',RO.CaseVal{:}));
+ if js<=length(S)&&strcmp(S(js).type,'{}') %% Mesh:V{data}:NL
+  RO.CaseVal=S(js).subs; js=js+1; RO.name=sprintf('%s%s',RO.name,sprintf('-%s',RO.CaseVal{:}));
  else; RO.CaseVal={};
  end
- mo1=feval(RO.MeshCb.subs,'Case',mo1,RO); RO.MeshCb=st(1);
+ mo1=feval(RO.MeshCb.subs,'Case',mo1,RO); RO.MeshCb=S(1);
 end
 
 %% 3; now add the NLdata
-if js<=length(st)&&strcmpi(st(js).type,'()');
- RO.MeshCb=st(js);js=js+1; % :MatFun(Mat)
+if js<=length(S)&&strcmpi(S(js).type,'()');
+ RO.MeshCb=S(js);js=js+1; % :MatFun(Mat)
 end
 NLdata=[];
-if js<=length(st); %  'd_hbm(Mesh0D):d_hbm(NL0Dm1t)' % sdtweb d_hbm NL
+if js<=length(S); %  'd_hbm(Mesh0D):d_hbm(NL0Dm1t)' % sdtweb d_hbm NL
  il=feutil('getil',mo1);
- if js+1<=length(st)&&strcmpi(st(js+1).type,'()');
-  RO.MeshCb=st(js);js=js+1;
+ if js+1<=length(S)&&strcmpi(S(js+1).type,'()');
+  RO.MeshCb=S(js);js=js+1;
  end
- RO.NL=st(js).subs;
+ RO.NL=S(js).subs;
  if ~iscell(RO.NL);RO.NL={il(1) RO.NL};end
- if js<length(st)&&strcmpi(st(js+1).type,'{}') % d_contact(cube)::n3e13{Kc1e12}
-  RO.NL{end}=sprintf('%s%s',RO.NL{end},strrep(comstr(st(js+1).subs,-30),'''',''));
+ if js<length(S)&&strcmpi(S(js+1).type,'{}') % d_contact(cube)::n3e13{Kc1e12}
+  RO.NL{end}=sprintf('%s%s',RO.NL{end},strrep(comstr(S(js+1).subs,-30),'''',''));
  end
  
  for j2=1:2:length(RO.NL)

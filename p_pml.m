@@ -18,7 +18,7 @@ function [out,out1,out2,out3]=p_pml(varargin)
 
 
 %       Etienne Balmes
-%       Copyright (c) 2001-2021 by SDTools, All Rights Reserved.
+%       Copyright (c) 2001-2022 by SDTools, All Rights Reserved.
 %       For revision information use p_pml('cvs')
 
 
@@ -1097,9 +1097,7 @@ end
 if isfield(RO,'Dp') % Allow scalar Lp and vector Dp [1 1 1  0 1 0]
   RO.Lp=RO.Dp*RO.Lp;
 end
-if ~isfield(RO,'Lc')
-    error('Missing mesh size check');
-end
+if ~isfield(RO,'Lc'); error('Missing mesh size check');end
 if ~isfield(model,'unit');error('Missing model.unit');end
 % .Lp [Lx-,Ly-,Lz-,Lx+,Ly+,Lz+] 
 if isfield(RO,'SetPro')
@@ -1124,6 +1122,9 @@ for j1=reshape(find(RO.Lp),1,[])
  elseif j1==4; model.Elt=feutil('selelt selface&innode {x==}',model,RO.box(j1));r1=[1 0 0];
  elseif j1==5; model.Elt=feutil('selelt selface&innode {y==}',model,RO.box(j1));r1=[0 1 0];
  elseif j1==6; model.Elt=feutil('selelt selface&innode {z==}',model,RO.box(j1));r1=[0 0 1];
+ end
+ if isempty(model.Elt); 
+     continue;
  end
  r3=feutil('mpid',model.Elt(1:2,:)); % material used for extrusion
  r3=feutil(sprintf('getmat%i struct',r3(2,1)),model);
@@ -1241,7 +1242,12 @@ if ~isfield(model,'il');model.il=[];
 elseif ~isempty(model.il)
  model.il(ismember(model.il(:,1),RO.il(:,1)),:)=[];
 end
-if RO.subtype==2% subtype 2 freq
+
+if RO.subtype==2
+ %% subtype 2 freq
+ if ~isfield(RO,'a');warning('Setting default fe/fi dependency')
+    RO.a=struct('X',{{[10;115],{'fe';'fi'}}},'Y',[5 0;15 20]');
+ end
  for j1=1:size(RO.il,1)
   r2=struct('name','pml','il',RO.il(j1),'unit','SI','type','p_pml','a',RO.a, ...
       'Form',RO.Form);
@@ -1694,10 +1700,10 @@ function lx=stretch(x,xiL,pow,fei,Vslw)
      lx=1+complex(real(fei),Vslw*imag(fei))*rpos;
     end
 end
+function [m,k]=stretchD(obs,freqRad) 
 %% #stretchD : vectorized streching
 % xxx missing ref to PML.tex equations
 % should actually be a single Z matrix
-function [m,k]=stretchD(obs,freqRad) 
 
 freq=freqRad/2/pi;
 fei=interp1(obs.a.X{1},obs.a.Y,freq,'linear','extrap')*[1;-1i];
@@ -1719,15 +1725,16 @@ for jw=1:size(obs.Node,1)
            0 1/ly 0   1/lx 0 0  0 0 0;
            ];
   if jw==1&&any(~isfinite(Lambda(:))); error('Problem with data');end
-  Ce=(Lambda.'*obs.C*Lambda)*lx*ly*lz*obs.wjdet(jw);
+  Ce=(Lambda.'*obs.C*Lambda)*lx*ly*lz*obs.wjdet(jw);  % sdtweb _textag {pml.ce}
   DK(:,jw)=Ce(:);IK(:,jw)=ik(:);JK(:,jw)=jk(:);ik=ik+9;jk=jk+9;
-  DM(:,jw)=obs.rho*lx*ly*lz*obs.wjdet(jw)*[1;1;1];
+  DM(:,jw)=obs.rho*lx*ly*lz*obs.wjdet(jw)*[1;1;1]; % sdtweb _textag {pml.me}
   IM(:,jw)=im(:);JM(:,jw)=jm(:);im=im+3;jm=jm+3;
 end
 DK=sparse(IK,JK,DK);
 DM=sparse(IM,JM,DM);
 m=obs.trans.cta'*DM*obs.trans.cta;
 k=obs.cta'*DK*obs.cta;
+%tic; obs.cta'*DK*obs.cta;toc;tic; feutilb('tkt',obs.cta,DK);toc;
 if nargout==1; % Return Z for implicit/zmatrix implementation
  m=k-(freqRad)^2*m; 
 end
