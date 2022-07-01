@@ -54,7 +54,7 @@ elseif comstr(Cam,'duff2')
  RS.RunCfg='{run,gui21@postproto}'; %RS.RunCfg='{run,@keyboard}'
  d_tdoe('Solve',RS);
  % RS.CbFcn=@gui21; 
- PA=sdtroot('paramVh'); PA.TDOE=struct('MeshCb','gui21');st=sdtroot('param.TDOE.MeshCb -safe')
+ PA=sdtroot('paramVh'); PA.TDOE=struct('MeshCb','gui21');st=sdtroot('param.TDOE.MeshCb -safe');
  % sdtweb d_hbm FirstStab % xxx should work on harmonic convergence checking
  % sdtweb d_hbm SteppedSineDefFNL % xxx 
  % sdtweb cbi20b scriptproto
