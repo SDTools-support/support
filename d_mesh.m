@@ -1675,14 +1675,22 @@ if isempty(Cam)
  case 'HyOpenFEM' % Hyperelastic used by OpenFEM RivlinCube
   r2=m_hyper('urn','Ref{.3,.2,.3,.3,.1,rho1u}');r2.isop=100;
  case 'HyUP' 
-  %% Hyperelastic to test UP formulation
-  [st,r2]=sdtm.urnPar(RO.mat,'{}{pro%s,mat%s}');
-  RO.k1=4200; RO.k2=33; RO.kb=930000;
-  RO.mu=2*(RO.k1+RO.k2); RO.lambda=RO.kb-4/3*(RO.k1+RO.k2); RO.K=RO.lambda+2/3*RO.mu;
+  %% #MatHyUP Hyperelastic to test UP formulation
+  [st,r2]=sdtm.urnPar(RO.mat,'{}{pro%s,mat%s,kappa%ug,NL%ug}');
+  RO.k1=4200; RO.k2=33;RO.kappa=930000;
+  RO=sdth.sfield('addmissing',r2,RO);
+  RO.mu=2*(RO.k1+RO.k2); RO.lambda=RO.kappa-4/3*(RO.k1+RO.k2); 
+  if abs((RO.lambda+2/3*RO.mu)/RO.kappa-1)>1e-4;error('Mismatch on Kappa');end
   RO.E=RO.mu*(3*RO.lambda+2*RO.mu)/(RO.lambda+RO.mu);
   RO.nu=RO.lambda/2/(RO.lambda+RO.mu); RO.rho=1000;
   r2.pl=[100,fe_mat('m_elastic','SI',1),RO.E,RO.nu, RO.rho, RO.E/2/(1+RO.nu)];
   model.info=RO;
+  if isfield(r2,'NL')
+   NLdata=struct('type','nl_inout', ...
+     'opt',[0,0,0], ...
+     'MexCb',{{m_hyper('@hyper_g'),struct}},'adofi',-.99*ones(29,1));
+   model=feutil('setpro 1 isop100',model,'NLdata',NLdata);
+  end
   
  case 'DamA'
   %% #MatDamA : test case for damage testing
@@ -1704,7 +1712,7 @@ if isempty(Cam)
   else
    i1=RO.mpid; i1(i1(:,1)~=RO.pl,:)=[];
    st=sprintf('setpro %i',i1(1,2));
-   if ~isfield(r2,'isop');elseif ischar(RO.isop);st=sprintf('%s %s',st,r2.isop); 
+   if ~isfield(r2,'isop');elseif ischar(r2.isop);st=sprintf('%s %s',st,r2.isop); 
    else; st=sprintf('%s isop%i',st,r2.isop); % isop100 for large def
    end
   end
