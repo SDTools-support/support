@@ -307,17 +307,17 @@ nmap=mo1.nmap;
    catch err
     sdtw('_nb','Failed save step with %s',err.message);
    end
-  else      
+  else
    %% #stepRun.stepCb -3
-   EndEval='';  
+   EndEval='';  stRes='RunRes';
    if isempty(Cam)
    elseif strcmpi(evt.RL.ifFail,'error')% Fail with error
      if ischar(CAM)&&~isempty(regexp(CAM,'[^\()]*=','once')); eval(CAM);
      else
       st=sdtm.urnCb(CAM); ans='';
       feval(st{:});  % Attempt to run a step d_shm@va/d_shm(va)
-      if ~isempty(ans); sdth.PARAM('RunRes',ans);
-       mo1.nmap('RunRes')=ans;
+      if ~isempty(ans); sdth.PARAM(stRes,ans);
+       mo1.nmap(stRes)=ans;
       end
      end
    else % Attempt try /catch
@@ -328,7 +328,6 @@ nmap=mo1.nmap;
       st=sdtm.urnCb(Cam);
       feval(st{:})
      end
-     mo1.nmap('CurModel')=mo1; 
    catch e
      mo1.nmap('CurModel')=mo1; 
      error('%s not implemented',CAM);
