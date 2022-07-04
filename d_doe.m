@@ -31,9 +31,10 @@ RP=struct('MeshCfg','d_hbm(0D):DofSet:0dm1t','SimuCfg','SteppedSine{.5,1,10}:C0{
 d_tdoe('Solve',RP)
 
 li={'MeshCfg{"d_hbm(0D):DofSet:0dm1t"}';';'
-      'SimuCfg{RO{NperPer2e3,Nper1,iteStab20},"SteppedSine{5}:C1{2.5,10}"}';';'
+      'SimuCfg{RO{NperPer2e3,Nper1,iteStab20},"SteppedSine{5}:C0{0,15}:C1{2.5,10}"}';';'
       'RunCfg{Time,dfr_ident@va}'};
-mo2=sdtm.range(struct,horzcat(li{:}));%d2=mo2.nmap('CurTime');
+RT=struct('nmap',vhandle.nmap);
+r2=sdtm.range(RT,li);%d2=mo2.nmap('CurTime');
 
 %RP.Mesh='d_hbm(Mesh0D):t_vibrac(0Dm1tsvli)';dfr_ident('Load',RP); % Stresss rate relax + Dahl: OK
 
@@ -49,10 +50,24 @@ mo2=sdtm.range(struct,horzcat(li{:}));%d2=mo2.nmap('CurTime');
 elseif comstr(Cam,'duff2')
 %% #ScriptDuff2DOF : stepped sine on a duffing
 
- RS=struct('MeshCfg','d_hbm(Duffing2Dof)::CubFu', ...
-    'SimuCfg','SteppedSine{1}:C1(*.001=N){2.5,10}','NperPer',2e3,'Nper',1,'iteStab',500);
- RS.RunCfg='{run,gui21@postproto}'; %RS.RunCfg='{run,@keyboard}'
- d_tdoe('Solve',RS);
+ li={'MeshCfg{d_hbm(Duffing2Dof),,CubFu}';';' 
+     'SimuCfg{RO{NperPer2e3,Nper1},"SteppedSine{1}:C1(*.001=N){2.5,10}"}';';'
+     'RunCfg{run,gui21@postproto}'};
+ RT=struct('nmap',vhandle.nmap);
+ RT.nmap('FirstStab')=struct('FinalCleanup','d_hbm@FirstStab','ite',10,'cond','d_hbm@CountIte');
+ r2=sdtm.range(RT,li);%d2=mo2.nmap('CurTime');
+
+li={'MeshCfg{d_hbm(Duffing2Dof),,CubFu}';';' 
+     'SimuCfg{RO{NperPer2e3,Nper1},"SteppedSine{@ll(1,10,10)}:C1(*.001=N){2.5,10}"}';';'
+     'RunCfg{run,gui21@postproto}'};
+ RT=struct('nmap',vhandle.nmap);
+ RT.nmap('FirstStab')=struct('FinalCleanup','d_hbm@FirstStab','ite',10,'cond','d_hbm@CountIte');
+ r2=sdtm.range(RT,li);%d2=mo2.nmap('CurTime');
+
+
+
+% sdtweb d_hbm firststab
+
  % RS.CbFcn=@gui21; 
  PA=sdtroot('paramVh'); PA.TDOE=struct('MeshCb','gui21');st=sdtroot('param.TDOE.MeshCb -safe');
  % sdtweb d_hbm FirstStab % xxx should work on harmonic convergence checking
