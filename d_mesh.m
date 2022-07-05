@@ -1871,7 +1871,10 @@ if js<=length(S); %  'd_hbm(Mesh0D):d_hbm(NL0Dm1t)' % sdtweb d_hbm NL
 end
 
 if ~isfield(mo1,'name');mo1.name=RO.name;end
-sdth.PARAM('MeshRes',mo1); % high level storage
+if isfield(RO,'nmap')&&nargout==0
+    RO.nmap('CurModel')=mo1; return
+end
+%sdth.PARAM('MeshRes',mo1); % high level storage
 if ~isfield(Range,'param');Range.param=struct;end
 if ~isfield(Range,'val')%mo1=d_mesh('MeshCfg','cbi21(CoupStiff):StaticA:');
  out=mo1;

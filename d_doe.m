@@ -57,10 +57,12 @@ elseif comstr(Cam,'duff2')
  RT.nmap('FirstStab')=struct('FinalCleanup','d_hbm@FirstStab','ite',10,'cond','d_hbm@CountIte');
  r2=sdtm.range(RT,li);%d2=mo2.nmap('CurTime');
 
+ % xxx not yet functional see first example in cbi20b xxx 
 li={'MeshCfg{d_hbm(Duffing2Dof),,CubFu}';';' 
-     'SimuCfg{RO{NperPer2e3,Nper1},"SteppedSine{@ll(1,10,10)}:C1(*.001=N){2.5,10}"}';';'
-     'RunCfg{run,gui21@postproto}'};
+     'SimuCfg{RO{NperPer2e3,Nper1,Methodnl_solve ModalNewmark},"SteppedSine{@ll(1,10,10)}:C1(*.001=N){2.5,10}"}';';'
+     'RunCfg{Reduce,run,gui21@postproto}'};
  RT=struct('nmap',vhandle.nmap);
+ RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE)';
  RT.nmap('FirstStab')=struct('FinalCleanup','d_hbm@FirstStab','ite',10,'cond','d_hbm@CountIte');
  r2=sdtm.range(RT,li);%d2=mo2.nmap('CurTime');
 
@@ -268,12 +270,17 @@ if isfield(Range,'Node')||isempty(Range)
  mo1=Range; Range=[]; RO=evt; % d_tdoe(mo1,RO,'steprun')
  S=RO.S;
  if ~isfield(evt,'RL');evt.RL.ifFail='error';end
+elseif isfield(Range,'nmap')&&isfield(evt,'S')
+ mo1=Range; Range=[]; RO=evt; % d_tdoe(mo1,RO,'steprun')
+ S=RO.S;
+ if ~isfield(evt,'RL');evt.RL.ifFail='error';end    
 else;
  RO=fe_range('ValEvtMerge',Range,evt); 
  mo1=Range.Res{1}; 
  if ~isfield(mo1,'nmap')&&isfield(Range,'nmap');mo1.nmap=Range.nmap;end
  S=sdth.findobj('_sub:',RO.urn);S=S.subs;if ischar(S);S={S};end
 end
+%xxx should not be called mo1 but RL with mo1=RL.nmap('CurModel')
 if ~isa(mo1.nmap,'vhandle.nmap'); error('Not an expected case');end
 nmap=mo1.nmap; 
  %% #Solve.loop_level_30 do :  -3
@@ -285,12 +292,12 @@ nmap=mo1.nmap;
   switch Cam
   case {'time','run'}
  %% #stepRun.Time  -3
-  if ~exist('mo1','var')&&isKey(nmap,'CurModel');mo1=nmap('CurModel');end
-  op1=stack_get(mo1,'','TimeOpt','g');
+  if ~isKey(nmap,'CurModel');nmap('CurModel')=mo1;end
+  op1=stack_get(nmap('CurModel'),'','TimeOpt','g');
   if isempty(op1)||strncmpi(Cam,'sta',3); op1=stack_get(mo1,'','TimeOptStat','g');end
   if ~isempty(stack_get(op1,'','Range'));op1.FinalCleanupFcn='';end
   % Actually run simulation
-  [d1,mo1b]=fe_time(stack_set(mo1,'info','TimeOpt',op1));
+  [d1,mo1b]=fe_time(stack_set(nmap('CurModel'),'info','TimeOpt',op1));
   if iscell(d1); d1(cellfun(@isempty,d1(:,3)),:)=[];end
   if iscell(d1)&&size(d1,1)==1;d1=d1{1,3};
     d1=stack_set(d1,stack_get(op1,'','Range'));
@@ -331,8 +338,9 @@ nmap=mo1.nmap;
      else
       st=sdtm.urnCb(CAM); ans='';
       feval(st{:});  % Attempt to run a step d_shm@va/d_shm(va)
-      if ~isempty(ans); sdth.PARAM(stRes,ans);
+      if ~isempty(ans); sdth.PARAM(stRes,ans); % obsolete should use nmap
        mo1.nmap(stRes)=ans;
+       sdtw('_ewt','clean to use nmap')
       end
      end
    else % Attempt try /catch
