@@ -31,9 +31,10 @@ RP=struct('MeshCfg','d_hbm(0D):DofSet:0dm1t','SimuCfg','SteppedSine{.5,1,10}:C0{
 d_tdoe('Solve',RP)
 
 li={'MeshCfg{"d_hbm(0D):DofSet:0dm1t"}';';'
-      'SimuCfg{RO{NperPer2e3,Nper1,iteStab20},"SteppedSine{5}:C1{2.5,10}"}';';'
+      'SimuCfg{RO{NperPer2e3,Nper1,iteStab20},"SteppedSine{5}:C0{0,15}:C1{2.5,10}"}';';'
       'RunCfg{Time,dfr_ident@va}'};
-mo2=sdtm.range(struct,horzcat(li{:}));%d2=mo2.nmap('CurTime');
+RT=struct('nmap',vhandle.nmap);
+r2=sdtm.range(RT,li);%d2=mo2.nmap('CurTime');
 
 %RP.Mesh='d_hbm(Mesh0D):t_vibrac(0Dm1tsvli)';dfr_ident('Load',RP); % Stresss rate relax + Dahl: OK
 
@@ -49,12 +50,28 @@ mo2=sdtm.range(struct,horzcat(li{:}));%d2=mo2.nmap('CurTime');
 elseif comstr(Cam,'duff2')
 %% #ScriptDuff2DOF : stepped sine on a duffing
 
- RS=struct('MeshCfg','d_hbm(Duffing2Dof)::CubFu', ...
-    'SimuCfg','SteppedSine{1}:C1(*.001=N){2.5,10}','NperPer',2e3,'Nper',1,'iteStab',500);
- RS.RunCfg='{run,gui21@postproto}'; %RS.RunCfg='{run,@keyboard}'
- d_tdoe('Solve',RS);
+ li={'MeshCfg{d_hbm(Duffing2Dof),,CubFu}';';' 
+     'SimuCfg{RO{NperPer2e3,Nper1},"SteppedSine{1}:C1(*.001=N){2.5,10}"}';';'
+     'RunCfg{run,gui21@postproto}'};
+ RT=struct('nmap',vhandle.nmap);
+ RT.nmap('FirstStab')=struct('FinalCleanup','d_hbm@FirstStab','ite',10,'cond','d_hbm@CountIte');
+ r2=sdtm.range(RT,li);%d2=mo2.nmap('CurTime');
+
+ % xxx not yet functional see first example in cbi20b xxx 
+li={'MeshCfg{d_hbm(Duffing2Dof),,CubFu}';';' 
+     'SimuCfg{RO{NperPer2e3,Nper1,Methodnl_solve ModalNewmark},"SteppedSine{@ll(1,10,10)}:C1(*.001=N){2.5,10}"}';';'
+     'RunCfg{Reduce,run,gui21@postproto}'};
+ RT=struct('nmap',vhandle.nmap);
+ RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE)';
+ RT.nmap('FirstStab')=struct('FinalCleanup','d_hbm@FirstStab','ite',10,'cond','d_hbm@CountIte');
+ r2=sdtm.range(RT,li);%d2=mo2.nmap('CurTime');
+
+
+
+% sdtweb d_hbm firststab
+
  % RS.CbFcn=@gui21; 
- PA=sdtroot('paramVh'); PA.TDOE=struct('MeshCb','gui21');st=sdtroot('param.TDOE.MeshCb -safe')
+ PA=sdtroot('paramVh'); PA.TDOE=struct('MeshCb','gui21');st=sdtroot('param.TDOE.MeshCb -safe');
  % sdtweb d_hbm FirstStab % xxx should work on harmonic convergence checking
  % sdtweb d_hbm SteppedSineDefFNL % xxx 
  % sdtweb cbi20b scriptproto
@@ -253,12 +270,17 @@ if isfield(Range,'Node')||isempty(Range)
  mo1=Range; Range=[]; RO=evt; % d_tdoe(mo1,RO,'steprun')
  S=RO.S;
  if ~isfield(evt,'RL');evt.RL.ifFail='error';end
+elseif isfield(Range,'nmap')&&isfield(evt,'S')
+ mo1=Range; Range=[]; RO=evt; % d_tdoe(mo1,RO,'steprun')
+ S=RO.S;
+ if ~isfield(evt,'RL');evt.RL.ifFail='error';end    
 else;
  RO=fe_range('ValEvtMerge',Range,evt); 
  mo1=Range.Res{1}; 
  if ~isfield(mo1,'nmap')&&isfield(Range,'nmap');mo1.nmap=Range.nmap;end
  S=sdth.findobj('_sub:',RO.urn);S=S.subs;if ischar(S);S={S};end
 end
+%xxx should not be called mo1 but RL with mo1=RL.nmap('CurModel')
 if ~isa(mo1.nmap,'vhandle.nmap'); error('Not an expected case');end
 nmap=mo1.nmap; 
  %% #Solve.loop_level_30 do :  -3
@@ -270,12 +292,12 @@ nmap=mo1.nmap;
   switch Cam
   case {'time','run'}
  %% #stepRun.Time  -3
-  if ~exist('mo1','var')&&isKey(nmap,'CurModel');mo1=nmap('CurModel');end
-  op1=stack_get(mo1,'','TimeOpt','g');
+  if ~isKey(nmap,'CurModel');nmap('CurModel')=mo1;end
+  op1=stack_get(nmap('CurModel'),'','TimeOpt','g');
   if isempty(op1)||strncmpi(Cam,'sta',3); op1=stack_get(mo1,'','TimeOptStat','g');end
   if ~isempty(stack_get(op1,'','Range'));op1.FinalCleanupFcn='';end
   % Actually run simulation
-  [d1,mo1b]=fe_time(stack_set(mo1,'info','TimeOpt',op1));
+  [d1,mo1b]=fe_time(stack_set(nmap('CurModel'),'info','TimeOpt',op1));
   if iscell(d1); d1(cellfun(@isempty,d1(:,3)),:)=[];end
   if iscell(d1)&&size(d1,1)==1;d1=d1{1,3};
     d1=stack_set(d1,stack_get(op1,'','Range'));
@@ -307,17 +329,19 @@ nmap=mo1.nmap;
    catch err
     sdtw('_nb','Failed save step with %s',err.message);
    end
-   
-  else      
+  else
    %% #stepRun.stepCb -3
-   EndEval='';  
+   EndEval='';  stRes='RunRes';
    if isempty(Cam)
    elseif strcmpi(evt.RL.ifFail,'error')% Fail with error
      if ischar(CAM)&&~isempty(regexp(CAM,'[^\()]*=','once')); eval(CAM);
      else
       st=sdtm.urnCb(CAM); ans='';
       feval(st{:});  % Attempt to run a step d_shm@va/d_shm(va)
-      if ~isempty(ans); sdth.PARAM('RunRes',ans); end
+      if ~isempty(ans); sdth.PARAM(stRes,ans); % obsolete should use nmap
+       mo1.nmap(stRes)=ans;
+       sdtw('_ewt','clean to use nmap')
+      end
      end
    else % Attempt try /catch
    try; 

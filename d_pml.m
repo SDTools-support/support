@@ -34,7 +34,7 @@ elseif comstr(Cam,'ulb1d')
 
  % Pressure wave
  li={'MeshCfg{"d_pml(Ulb1d{v1,quad,Lc2})"}',';','RunCfg{dfrf{10 100},d_pml(View1DPS -cf3)}'};
- mo2=sdtm.range(struct,horzcat(li));
+ mo2=sdtm.range(struct,li);
 
  % Shear wave 
  li={'MeshCfg{"d_pml(Ulb1dSW{v1,quad,Lc2})"}',';','RunCfg{dfrf{10 50},d_pml(View1DPS -cf3)}'};
