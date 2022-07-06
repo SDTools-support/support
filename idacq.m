@@ -35,7 +35,7 @@ if comstr(Cam,'init');[CAM,Cam]=comstr(CAM,5);
   % AcqFcn
   % xxx : should be callback
   d = daq("ni"); d.UserData=struct; % When init create new instance
-  stack_set(PA,'info','daqsdt',d); % Store in PA for exernal access
+  stack_set(PA,'info','daqsdt',d); % Store in PA for external access
   addinput(d,"Dev1","ai0","IEPE");
   addinput(d,"Dev1","ai1","IEPE");
   addinput(d,"Dev1","ai2","IEPE");
