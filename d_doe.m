@@ -294,7 +294,7 @@ nmap=mo1.nmap;
  %% #stepRun.Time  -3
   if ~isKey(nmap,'CurModel');nmap('CurModel')=mo1;end
   op1=stack_get(nmap('CurModel'),'','TimeOpt','g');
-  if isempty(op1)||strncmpi(Cam,'sta',3); op1=stack_get(mo1,'','TimeOptStat','g');end
+  if isempty(op1)||strncmpi(Cam,'sta',3); op1=stack_get(nmap('CurModel'),'','TimeOptStat','g');end
   if ~isempty(stack_get(op1,'','Range'));op1.FinalCleanupFcn='';end
   % Actually run simulation
   [d1,mo1b]=fe_time(stack_set(nmap('CurModel'),'info','TimeOpt',op1));
@@ -313,6 +313,7 @@ nmap=mo1.nmap;
   otherwise
   if strncmpi(Cam,'dfrf',4)
  %% #stepRun.Dfrf  -3
+   if ~isfield(mo1,'Elt'); mo1=nmap('CurModel');end
    if ~isempty(stack_get(mo1,'','oProp'))
    elseif ~exist('mklserv_utils','file')|| ~exist('mklserv_client','file')
        warning('Consider installing mklserv_utils')
