@@ -1871,6 +1871,8 @@ if js<=length(S); %  'd_hbm(Mesh0D):d_hbm(NL0Dm1t)' % sdtweb d_hbm NL
 end
 
 if ~isfield(mo1,'name');mo1.name=RO.name;end
+if isfield(RO,'nmap'); mo1.nmap=RO.nmap; sdtw('_ewt','xxxeb xxxgv need to clarify nmap recovery')
+end % sdtw('xxxeb xxxgv need to clarify
 if isfield(RO,'nmap')&&nargout==0
     RO.nmap('CurModel')=mo1; return
 end
