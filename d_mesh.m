@@ -844,6 +844,9 @@ out=mo1;
 
 elseif comstr(Cam,'gen'); [CAM,Cam]=comstr(CAM,4);
 %% #PlateGen_eric : variants of plates for parametric studies-------------2
+if any(Cam=='{')
+ [st,RO]=sdtm.urnPar(CAM,'{div%g}:{o%s,i%s}');
+else
 [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
  '-BC("free"#%s#"Clamping option (default : free plate)")' ...
  '-div(10#%i#"Division in X and Y")' ...
@@ -851,6 +854,7 @@ elseif comstr(Cam,'gen'); [CAM,Cam]=comstr(CAM,4);
  '-Sens("patch"#%s#"Small patch of sensors in the middle of the plate")' ...
  '-Load("botleft"#%s#Unit input at bottom left of the plate")'
  ],{RO,CAM}); Cam=lower(CAM);
+end
 if comstr(Cam,'mesh'); [CAM,Cam]=comstr(CAM,5);
  %% #PlateGenMesh : Mesh with varying number of elts + clamp strat---------3
  node=[0 0 0;0 1 0;1 1 0;1 0 0];
@@ -873,6 +877,7 @@ if comstr(Cam,'mesh'); [CAM,Cam]=comstr(CAM,5);
 
 elseif comstr(Cam,'sens'); [CAM,Cam]=comstr(CAM,5);
  %% #PlateGenSens : Place sensors (right side, ...)------------------------3
+ sdtw('_ewt','report EB obsolete')
  if ~isfield(RO,'model'); error('Provide RO.model'); end
  model=RO.model;
  if strcmpi(RO.Sens,'patch'); % patch of sensors in the middle of the plate
@@ -885,6 +890,7 @@ elseif comstr(Cam,'sens'); [CAM,Cam]=comstr(CAM,5);
  model=fe_case(model,'SensDof append trans','Test',tdof);
 elseif comstr(Cam,'load'); [CAM,Cam]=comstr(CAM,5);
  %% #PlateGenLoad : Place Load (first quarter of beam,...)-----------------3
+ sdtw('_ewt','report EB obsolete')
  if ~isfield(RO,'model'); error('Provide RO.model'); end
  model=RO.model;
  if strcmpi(RO.Load,'botleft');
@@ -1792,7 +1798,61 @@ model=evt.data;
 
 assignin('caller','Res',model);
 
-elseif comstr(Cam,'meshcfg'); [CAM,Cam]=comstr(CAM,8);
+elseif comstr(Cam,'mesh'); [CAM,Cam]=comstr(CAM,5);
+ %% if not found edit MeshCmd to Cmd
+
+if comstr(Cam,'plate')
+%% #MeshPlate {div,o%s,i%s}
+ [st,RO]=sdtm.urnPar(CAM,'{div%g}:{o%s,i%s}');
+% [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
+%  '-BC("free"#%s#"Clamping option (default : free plate)")' ...
+%  '-div(10#%i#"Division in X and Y")' ...
+%  '-PatchWidth(0.5#%g#"Relative patch width")' ...
+%  '-Sens("patch"#%s#"Small patch of sensors in the middle of the plate")' ...
+%  '-Load("botleft"#%s#Unit input at bottom left of the plate")'
+%  ],{RO,CAM}); Cam=lower(CAM);
+ %% #PlateGenMesh : Mesh with varying number of elts + clamp strat---------3
+ node=[0 0 0;0 1 0;1 1 0;1 0 0];
+ model=feutil('ObjectQuad 1 1',node,RO.div,RO.div);
+ 
+ dof=[]; % List of fixed dofs
+ if ~isfield(RO,'BC')||strcmpi(RO.BC,'free'); dof=[]; % Free plate
+ else; error('BC %s unknown');
+ end
+ %Fix dofs
+ if ~isempty(dof)
+  model=fe_case(model,'fixdof','fixed',dof);
+ end
+ % Default mat + damp
+ model.pl=m_elastic('dbval 1 Aluminum');
+ model.il=p_shell('dbval 1 kirchoff 5e-2');
+
+ % Add loss factor (hysteretic damping)
+ model=feutil('setmat 1 eta=0.02',model);
+
+%elseif comstr(Cam,'sens'); [CAM,Cam]=comstr(CAM,5);
+ %% Place sensors (right side, ...)-
+ if strncmpi(RO.o,'patch',5); % patch of sensors in the middle of the plate
+  RO.PatchWidth=str2double(RO.o(6:end));
+  i1=[.5-RO.PatchWidth/2 .5+RO.PatchWidth/2];
+  n1=feutil('findnode',model,sprintf('x>=%g&x<=%g&y>=%g&y<=%g',i1,i1));
+  tdof=feutil('getdof',n1,.03); % Sensors only in z direction
+ else; error('unknown Sens command');
+ end
+ % Place sensors over the model
+ model=fe_case(model,'SensDof append trans','Test',tdof);
+
+ %% Load : Place Load (first quarter of beam,...)-----------------3
+ if ~isfield(RO,'i')||strcmpi(RO.i,'bl');
+  % Add Load at the middle left of the beam
+  i1=feutilb('AddNode -nearest',[0.1 0.1 0],model.Node(:,5:7));
+  i1=model.Node(find(i1),1);
+  model=fe_case(model,'DofLoad','In',struct('def',1,'DOF',i1+.03,'curve',{{'Input'}}));
+ else; error('unknown Load command');
+ end
+out=model;
+
+elseif comstr(Cam,'cfg'); [CAM,Cam]=comstr(CAM,4);
 %% #MeshCfg : obtain/generate mesh  ---------------------------------------
 % Default MeshCfg callback for simulation experiments
 % see also sdtweb d_fetime SimuCfg
@@ -1893,7 +1953,9 @@ else
  if isfield(Range,'MeshCfg'); Range.MeshCfg=Range.param.MeshCfg.choices;end
  out=Range;
 end
-
+else; % Redirect to Cmd
+        eval(iigui({'d_mesh(CAM,varargin{2:end})',nargout},'OutReDir'));
+end
 %% clean end
 elseif comstr(Cam,'@');out=eval(CAM);
 %% #Tuto: recover model from a specific tuto step -3
