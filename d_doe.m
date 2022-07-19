@@ -324,7 +324,7 @@ nmap=mo1.nmap;
    nmap('CurModel')=mo1; nmap('CurFreq')=d1;
   elseif strncmpi(Cam,'save',4)
    %% #stepRun.Save: intermediate save -3
-   try
+   try % xxx missing need to optimize what is saved in nmap
     RunRes=sdth.PARAM('RunRes');
     sdtm.save(RO.fStep{j1},'RunRes');
    catch err
