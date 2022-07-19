@@ -289,7 +289,7 @@ nmap=mo1.nmap;
   if ischar(S{j1});[CAM,Cam]=comstr(S{j1},1);
   else;CAM=S{j1};Cam='cb';
   end
-  switch Cam
+  switch regexprep(Cam,'[{(].*','')
   case {'time','run'}
  %% #stepRun.Time  -3
   if ~isKey(nmap,'CurModel');nmap('CurModel')=mo1;end
@@ -297,8 +297,12 @@ nmap=mo1.nmap;
   if isempty(op1)||strncmpi(Cam,'sta',3); op1=stack_get(nmap('CurModel'),'','TimeOptStat','g');end
   if ~isempty(stack_get(op1,'','Range'));op1.FinalCleanupFcn='';end
   % Actually run simulation
+  if sdtm.Contains(Cam,'profile');profile clear;profile on;end
   [d1,mo1b]=fe_time(stack_set(nmap('CurModel'),'info','TimeOpt',op1));
-  if iscell(d1); d1(cellfun(@isempty,d1(:,3)),:)=[];end
+  if sdtm.Contains(Cam,'profile');profile viewer;end
+  if isa(d1,'vhandle.linkprop'); continue;
+  elseif iscell(d1); d1(cellfun(@isempty,d1(:,3)),:)=[];
+  end
   if iscell(d1)&&size(d1,1)==1;d1=d1{1,3};
     d1=stack_set(d1,stack_get(op1,'','Range'));
   end
