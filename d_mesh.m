@@ -1872,7 +1872,7 @@ else
  if ischar(RO);RO=struct('urn',RO);end
  S=sdth.findobj('_sub:~',RO.urn);js=1;
 end
-if ~isfield(RO,'nmap');RO.nmap=containers.Map;end
+if ~isfield(RO,'nmap');RO.nmap=vhandle.nmap([],'standard');end
 %% 1 : create/load base mesh
 if length(S)>1&&exist(S(1).subs,'file')% d_hbm(Mesh0D:cub)
  RO.name=S(js+1).subs;
