@@ -345,7 +345,7 @@ nmap=mo1.nmap;
       feval(st{:});  % Attempt to run a step d_shm@va/d_shm(va)
       if ~isempty(ans); sdth.PARAM(stRes,ans); % obsolete should use nmap
        mo1.nmap(stRes)=ans;
-       sdtw('_ewt','clean to use nmap')
+       sdtw('_ewt','clean %s to use nmap(''%s'')',comstr(CAM,-30),stRes)
       end
      end
    else % Attempt try /catch
