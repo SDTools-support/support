@@ -114,6 +114,17 @@ li={'MeshCfg{"d_fetime(OneTrac):TopZa:SimoA"}';';' % RivlinCube experiment
       'RunCfg{Time}'};
 nmap('HE.1Ta')=li; 
 
+%% #HBM : harmonic balance testing -2
+nmap('Hbm.DoRange')={nl_solve('@DoTimeRangeb'),'ok';
+     nl_solve('@chQueueSrc'),struct;nl_solve('@chGetBuffer'),struct
+     d_hbm('@FirstStab'),'{outH 1:3,condd_hbm@ShootCheck}'};
+nmap('Hbm.ExpList')={ ...
+    ['SimuCfg{RO{NperPer200,Nper3,Methodnl_solve ModalNewmark},' ...
+      '"SteppedSine{@ll(10,120,50)}:C1(*.001=N){1}"}'];
+    ';'
+    'RunCfg{Time,d_hbm@viewHarm,SetCI}'}; % Time{Profile}
+
+
 %% deal with outputs 
 if comstr(Cam,'range')
   st=horzcat(li{:});

@@ -203,6 +203,7 @@ model.pl = fe_mat('convert SI mm',model.pl);
 %% Step 2 - Compute response due to V and visualize
 % low freq response to avoid rigid body modes
 model=stack_set(model,'info','Freq',10);
+model=fe_case(model,'pcond','Piezo','d_piezo(''Pcond'')');
 def=fe_simul('dfrf',model);
 % Plot deformed shape
 cf=feplot(model,def); fecom('view3'); fecom('viewy-90'); fecom('viewz+90')
