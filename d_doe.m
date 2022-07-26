@@ -115,15 +115,23 @@ li={'MeshCfg{"d_fetime(OneTrac):TopZa:SimoA"}';';' % RivlinCube experiment
 nmap('HE.1Ta')=li; 
 
 %% #HBM : harmonic balance testing -2
-nmap('Hbm.DoRange')={nl_solve('@DoTimeRangeb'),'ok';
-     nl_solve('@chQueueSrc'),struct;nl_solve('@chGetBuffer'),struct
-     d_hbm('@FirstStab'),'{outH 1:3,condd_hbm@ShootCheck}'};
+nmap('Hbm.DoRange')={'nl_solve@DoTimeRangeb','ok';
+     'nl_solve@chQueueSrc',struct;'nl_solve@chGetBuffer',struct
+     'd_hbm@FirstStab','{outH 1:3,condd_hbm@ShootCheck}'};
 nmap('Hbm.ExpList')={ ...
     ['SimuCfg{RO{NperPer200,Nper3,Methodnl_solve ModalNewmark},' ...
       '"SteppedSine{@ll(10,120,50)}:C1(*.001=N){1}"}'];
     ';'
     'RunCfg{Time,d_hbm@viewHarm,SetCI}'}; % Time{Profile}
 
+% nmap and list for reduced one DOF [RT,li]=d_doe('nmap','Hbm.OneDofRed');
+RT=struct('nmap',vhandle.nmap([],'standard'));
+RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE)';
+RT.nmap('SetCI')='ci=iiplot;cingui(''plotwd'',ci,''@OsDic(SDT Root)'',{''FnI'',''ImSw80'',''WrW49c''});;';
+li={'MeshCfg{d_fetime(1DOF):MaxwellA{F2}}';';'
+     'SimuCfg{ModalNewmark{1m,.1,fc,chandle1}}';';'
+     'RunCfg{Reduce}'};
+nmap('Hbm.OneDofRed')={RT,li};
 
 %% deal with outputs 
 if comstr(Cam,'range')
@@ -133,6 +141,7 @@ if comstr(Cam,'range')
 elseif nargin==1; out=nmap;
 else
   out=nmap(varargin{2});
+  if nargout==2&&iscell(out)&&numel(out)==2;out1=out{2};out=out{1};end
 end
 
 elseif comstr(Cam,'range'); [CAM,Cam]=comstr(CAM,6);
