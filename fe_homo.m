@@ -1380,7 +1380,8 @@ elseif (~isfield(RO,'type')||isempty(RO.type))&& ...
         length(def.Xlab{2})>1&&strcmpi(def.Xlab{2}{2},'IndDef')
     RO.type='dfrf';
 elseif isfield(RO,'type')
-elseif isfield(RO,'sens'); RO.type='dfrf';% non recombined FRF
+elseif isfield(RO,'sens')&&size(def.data,1)/length(unique(def.data(:,1)))>1.9 
+  RO.type='dfrf';% non recombined FRF
 else; RO.type='hist';
 end
 
@@ -1558,13 +1559,15 @@ elseif comstr(Cam,'sensobserve');
  if carg>nargin;RO=struct;else; RO=varargin{carg};carg=carg+1;end
  
  [RO,def]=ktypeCheck(RO,def);
- 
+ if 1==2% Does not work for mode tracking
+    RO.aFreq=def.data(:,1); def.data(:,1)=repmat((1:size(def.data,1)/size(def.Range.val,1))',size(def.Range.val,1),1);
+ end
  if rem(def.DOF(end),1)>.5;def=fe_cyclic('defdouble',def);end% Long
  if ~isfield(SE,'TR')
  elseif size(SE.TR.def,2)==size(def.def,1);def.TR=SE.TR;
  else; error('Inconsistent TR');
  end
- C1=fe_case(CAM,SE,sens,def);
+ C1=fe_case(CAM,SE,sens,def);% Problem with mode tracking 
  i1=cellfun(@(x)isequal(x,'jPar'),C1.Xlab);
  C1.X{i1}=def.Range.val(:,1);C1.Xlab{i1}={RO.defKtype{2:3},[]};
  if isequal(C1.X{1},'Freq');C1.X{1}={'Frequency','Hz',[]};end
