@@ -125,7 +125,7 @@ nmap('Hbm.ExpList')={ ...
     'RunCfg{Time,d_hbm@viewHarm,SetCI}'}; % Time{Profile}
 
 % nmap and list for reduced one DOF [RT,li]=d_doe('nmap','Hbm.OneDofRed');
-RT=struct('nmap',vhandle.nmap([],'standard'));
+RT=struct('nmap',vhandle.nmap);
 RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE)';
 RT.nmap('SetCI')='ci=iiplot;cingui(''plotwd'',ci,''@OsDic(SDT Root)'',{''FnI'',''ImSw80'',''WrW49c''});;';
 li={'MeshCfg{d_fetime(1DOF):MaxwellA{F2}}';';'
