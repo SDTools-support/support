@@ -55,11 +55,12 @@ if comstr(Cam,'build');[CAM,Cam]=comstr(CAM,6);
  if size(dir,2)>2&&any(dir(:,3))
  % builds periodicity /z :
   mdl0=fe_cyclic(sprintf('build -1 %.15g %.15g %.15g %s',dir(:,3),CAM),mdl0);
-  r1=fe_case('GetDataSymmetry',mdl0);
+  r1=fe_case(mdl0,'getdata','Symmetry');
   r0.IntZNodes=r1.IntNodes;
  end
  r0.CellDir=dir;r0=feutil('rmfield',r0,'trans');
  mdl0=fe_case(mdl0,'stack_set','cyclic','Symmetry',r0);
+ if isfield(mdl0,'Case');mdl0.Case=stack_set(mdl0.Case,'cyclic','Symmetry',r0);end
  out=mdl0;
  
 elseif comstr(Cam,'ref') 
@@ -1857,11 +1858,12 @@ if comstr(Cam,'pbc')||comstr(Cam,'simpleload')||comstr(Cam,'kubc')||comstr(Cam,'
  
  [z,RO,mo1,C1,Load,w,ft,carg]=safeInitDfrf([{CAM,model,RO},varargin(carg:end)],2);
 
+ mo2=mo1;fe_case(mo2,'stack_rm','DofSet'); [Case,NNode,DOF]=fe_case(mo2,'gett');
  mo1.Case=C1;[R2,d2,mo1]=BuildUb(mo1,RO);c=R2.c;% Possibly deal with visco
 
  % cg=feplot(10);cg.model=model;cg.def=d2;
  % Now enforced motion but use MPCs
-% cg=feplot;cg.sel={['selface & innode' sprintf('%i ',data.IntNodes)],'colorfacew'}
+ % cg=feplot;cg.sel={['selface & innode' sprintf('%i ',data.IntNodes)],'colorfacew'}
  
  r2=fe_case(model,'stack_get','Dofset');
  if ~isempty(r2);r2(~ismember(lower(r2(:,2)),lower(RO.Load)),:)=[];end
@@ -1872,11 +1874,10 @@ if comstr(Cam,'pbc')||comstr(Cam,'simpleload')||comstr(Cam,'kubc')||comstr(Cam,'
   end
   d2.def(:,end+(1:size(mo1.Case.TIn,2)))=mo1.Case.TIn;
  end
- mo1=fe_case(mo1,'stack_rm','DofSet'); [Case,NNode,DOF]=fe_case(mo1,'gett');
  % Now compute the forced response
  if strcmpi(RO.btype,'mubc') 
- elseif strcmpi(RO.btype,'kubc') % Enforce motion on full edge
-  c=find(sum(abs(c),1));c=sparse(1:length(c),c,1,length(c),length(Case.DOF));
+ elseif any(strcmpi(RO.btype,{'kubc','SimpleLoad'})) % Enforce motion on full edge
+  c=find(sum(abs(c),1));c=sparse(1:length(c),c,1,length(c),length(d2.DOF));
   %[C1.T,C1.TIn] = fe_coor(c,[4 1 2],(c*d2.def));
   T = fe_coor('lu',struct('c',c,'TIn',d2.def));C1.T=T.T;C1.TIn=T.TIn;
   1;
