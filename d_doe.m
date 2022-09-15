@@ -133,6 +133,20 @@ li={'MeshCfg{d_fetime(1DOF):MaxwellA{F2}}';';'
      'RunCfg{Reduce}'};
 nmap('Hbm.OneDofRed')={RT,li};
 
+%% #TV : time varying system tests -2
+
+RT=struct('nmap',vhandle.nmap);
+RB=struct('spec','BufTime 2 Overlap .90 fmax500 -window hanning','ci',3);
+RT.nmap('PostA')={'FinalCleanupFcn','Tip', ...
+      struct('Cb',{{'nl_solve','PostCdof',struct('DOF',2.03,'DoFreq',RB,'name','AR')}})
+      };
+li={'MeshCfg{"d_fetime(1DOF):ARTV{z.01}"}'; ';'
+     'SimuCfg{ModalNewmark{.2m,50,sPostA}}';';';'RunCfg{run}'};
+nmap('TV.AR')={RT,li};
+ 
+
+
+
 %% deal with outputs 
 if comstr(Cam,'range')
   st=horzcat(li{:});
