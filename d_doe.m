@@ -143,9 +143,6 @@ RT.nmap('PostA')={'FinalCleanupFcn','Tip', ...
 li={'MeshCfg{"d_fetime(1DOF):ARTV{z.01}"}'; ';'
      'SimuCfg{ModalNewmark{.2m,50,sPostA}}';';';'RunCfg{run}'};
 nmap('TV.AR')={RT,li};
- 
-
-
 
 %% deal with outputs 
 if comstr(Cam,'range')
