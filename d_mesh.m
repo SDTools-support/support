@@ -1906,7 +1906,7 @@ if js<=length(S)&&strcmpi(S(js).type,'()');
 end
 NLdata=[];
 if js<=length(S); %  'd_hbm(Mesh0D):d_hbm(NL0Dm1t)' % sdtweb d_hbm NL
- il=feutil('getil',mo1);
+ il=feutil('getil',mo1); if isempty(il); il=1; end
  if js+1<=length(S)&&strcmpi(S(js+1).type,'()');
   RO.MeshCb=S(js);js=js+1;
  end
