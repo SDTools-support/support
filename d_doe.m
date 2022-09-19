@@ -133,6 +133,15 @@ li={'MeshCfg{d_fetime(1DOF):MaxwellA{F2}}';';'
      'RunCfg{Reduce}'};
 nmap('Hbm.OneDofRed')={RT,li};
 
+%% Hbm.Gart 
+RT=struct('nmap',vhandle.nmap);
+RT.nmap('Reduce')='nl_solve(ReducFree 2 15 0 -SetDiag -SE)';
+li={'MeshCfg{d_fetime(Gart)}';';'
+     'SimuCfg{ModalNewmark{1m,10,fc,chandle1}}';';'
+     'RunCfg{Reduce}'};
+nmap('Hbm.Gart')={RT,li};
+
+
 %% #TV : time varying system tests -2
 
 RT=struct('nmap',vhandle.nmap);
