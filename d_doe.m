@@ -136,7 +136,7 @@ nmap('Hbm.OneDofRed')={RT,li};
 %% #Hbm.Gart : transient of Garteur testbed -2
 RT=struct('nmap',vhandle.nmap);
 RT.nmap('Reduce')='nl_solve(ReducFree 2 15 1e3 -SetDiag -SE)';
-li={'MeshCfg{d_fetime(Gart)}';';' % see sdtweb MeshGart
+li={'MeshCfg{d_fetime(Gart):VtGart}';';' % see sdtweb MeshGart
      'SimuCfg{ModalNewmark{1m,10,fc,chandle1}}';';'
      'RunCfg{Reduce}'};
 nmap('Hbm.Gart')={RT,li};
