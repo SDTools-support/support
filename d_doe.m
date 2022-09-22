@@ -124,7 +124,7 @@ nmap('Hbm.ExpList')={ ...
     ';'
     'RunCfg{Time,d_hbm@viewHarm,SetCI}'}; % Time{Profile}
 
-% nmap and list for reduced one DOF [RT,li]=d_doe('nmap','Hbm.OneDofRed');
+%% #Hbm.OneDof nmap and list for reduced one DOF [RT,li]=d_doe('nmap','Hbm.OneDofRed'); -2
 RT=struct('nmap',vhandle.nmap);
 RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE)';
 RT.nmap('SetCI')='ci=iiplot;cingui(''plotwd'',ci,''@OsDic(SDT Root)'',{''FnI'',''ImSw80'',''WrW49c''});;';
@@ -132,6 +132,15 @@ li={'MeshCfg{d_fetime(1DOF):MaxwellA{F2}}';';'
      'SimuCfg{ModalNewmark{1m,.1,fc,chandle1}}';';'
      'RunCfg{Reduce}'};
 nmap('Hbm.OneDofRed')={RT,li};
+
+%% #Hbm.Gart : transient of Garteur testbed -2
+RT=struct('nmap',vhandle.nmap);
+RT.nmap('Reduce')='nl_solve(ReducFree 2 15 1e3 -SetDiag -SE)';
+li={'MeshCfg{d_fetime(Gart)}';';' % see sdtweb MeshGart
+     'SimuCfg{ModalNewmark{1m,10,fc,chandle1}}';';'
+     'RunCfg{Reduce}'};
+nmap('Hbm.Gart')={RT,li};
+
 
 %% #TV : time varying system tests -2
 
@@ -143,9 +152,6 @@ RT.nmap('PostA')={'FinalCleanupFcn','Tip', ...
 li={'MeshCfg{"d_fetime(1DOF):ARTV{z.01}"}'; ';'
      'SimuCfg{ModalNewmark{.2m,50,sPostA}}';';';'RunCfg{run}'};
 nmap('TV.AR')={RT,li};
- 
-
-
 
 %% deal with outputs 
 if comstr(Cam,'range')
