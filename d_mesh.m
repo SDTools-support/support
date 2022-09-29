@@ -1862,6 +1862,7 @@ if isfield(Range,'subs')&&isfield(Range,'type')&&length(Range)==1
  %st=struct('type','.','subs',Range.subs);
  if iscell(Range.subs)&&length(Range.subs)>1; RO=struct;RO.urn=Range.subs;
  else;  RO=struct('urn',Range.subs);end
+ if carg<=nargin; RO=sdth.sfield('addmissing',RO,varargin{carg});carg=carg+1;end
  if isfield(Range,'nmap');RO.nmap=Range.nmap;end
  Range=struct;
  % S=sdth.findobj('_sub,~','t_pmlulb(sensor:{x60,1,foam,1}),FullA','merge');disp(comstr(S,-30))
