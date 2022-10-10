@@ -1683,14 +1683,14 @@ if isempty(Cam)
  case 'HyUP' 
   %% #MatHyUP Hyperelastic to test UP formulation
   [st,r2]=sdtm.urnPar(RO.mat,'{}{pro%s,mat%s,kappa%ug,NL%ug}');
-  RO.k1=4200; RO.k2=33;RO.kappa=930000;
+  RO.k1=4200; RO.k2=33;RO.kappa=930000; RO.rho=1000e-6;% default values 
   RO=sdth.sfield('addmissing',r2,RO);
   RO.mu=2*(RO.k1+RO.k2); RO.lambda=RO.kappa-4/3*(RO.k1+RO.k2); 
   if abs((RO.lambda+2/3*RO.mu)/RO.kappa-1)>1e-4;error('Mismatch on Kappa');end
   RO.E=RO.mu*(3*RO.lambda+2*RO.mu)/(RO.lambda+RO.mu);
-  RO.nu=RO.lambda/2/(RO.lambda+RO.mu); RO.rho=1000;
-  r2.pl=[100,fe_mat('m_elastic','SI',1),RO.E,RO.nu, RO.rho, RO.E/2/(1+RO.nu)];
-  model.info=RO;
+  RO.nu=RO.lambda/2/(RO.lambda+RO.mu); 
+  r2.pl=[100,fe_mat('m_elastic','MM',1),RO.E,RO.nu, RO.rho, RO.E/2/(1+RO.nu)];
+  model.info=RO;model.unit='MM';
   if isfield(r2,'NL')
    NLdata=struct('type','nl_inout', ...
      'opt',[0,0,0], ...
@@ -1705,7 +1705,7 @@ if isempty(Cam)
      'MexCb',{{nlutil('@dama_g'),[]}},'wy',1e3,'gamma',1,'snl',[],'StoreType',3);
   r2.pl=m_elastic('dbval 1 steel -unit TM');r2.unit='TM';
  case 'PadA'
-  %% #MatPadA R. Zhuravlev, PhD Thesis, ENSAM, 2017 https://pastel.archives-ouvertes.fr/tel-01744302
+  %% #MatPadA R. Zhuravlev, table 2.3 PhD Thesis, ENSAM, 2017 https://pastel.archives-ouvertes.fr/tel-01744302
   r2=m_hyper('urn','PadA{2.5264,-0.9177,0.4711,1200,3,f .35,g .5688,rho1n,tyYeoh,unTM}');
   r2.isop=100; 
  otherwise; 
