@@ -1679,7 +1679,7 @@ if isempty(Cam)
   model=feutil('setpro 1 isop100',model,'NLdata',r1.NLdata);
   out=model;return;
  case 'HyOpenFEM' % Hyperelastic used by OpenFEM RivlinCube
-  r2=m_hyper('urn','Ref{.3,.2,.3,.3,.1,rho1u}');r2.isop=100;
+  r2=m_hyper('urn','Ref{.3,.2,.3,.3,.1,rho1u,unSI}');r2.isop=100;
  case 'HyUP' 
   %% #MatHyUP Hyperelastic to test UP formulation
   [st,r2]=sdtm.urnPar(RO.mat,'{}{pro%s,mat%s,kappa%ug,NL%ug}');
