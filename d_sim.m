@@ -69,13 +69,20 @@ elseif comstr(Cam,'testubeam');[CAM,Cam]=comstr(CAM,10);
   open_system sweep_ss.slx
   mdl=fe_case(mdl,'remove','Rel');
   [sys,TR] = fe2ss('free 6 10',mdl);  
+  %[sys,TR] = fe2ss('free 6 500',mdl);  
 
-  ref=struct('a',sys.a,'b',sys.b,'c',sys.c,'d',sys.d, ...
-      'AnSampleTime',[.005 0]);
+  ref=struct('a',sys.a,'b',sys.b(:,1),'c',sys.c,'d',sys.d(:,1), ...
+      'AnSampleTime',[.005 0]);assignin('base','ref',ref)
 
-  r1=sim('sweep_ss', ...
-      'SaveOutput','on','OutputSaveName','yout','SaveFormat', 'Dataset');
-  
+  r1=sim('sweep_ss','SaveOutput','on','OutputSaveName','yout','SaveFormat', 'Dataset');
+  cfg=getActiveConfigSet('sweep_ss');
+  so=cfg.Components(1);get(so)
+  set(so,'FixedStep','1e-5','StopTime','10')
+  profile on;
+   r1=sim('sweep_ss','SaveOutput','on','OutputSaveName','yout','SaveFormat', 'Dataset');
+  profile report
+  d1=r1.logsout{1}.Values
+
   C1s=r1.logsout{1}.Values;
   C1=resample(C1s,0:ref.AnSampleTime(1):4);
   C1=struct('X',{{C1.Time,sys.OutputName}},'Xlab',{{'Time','out'}}, 'Y',C1.Data)
@@ -83,6 +90,8 @@ elseif comstr(Cam,'testubeam');[CAM,Cam]=comstr(CAM,10);
   iicom('curveinit','x',C1); 
 
   %set_param('sweep_ss/fext','WaveForm','sine','Frequency','60');
+ elseif comstr(Cam,'xxx')
+
 
  else
   [sys,TR] = fe2ss('free 6 10',mdl);  

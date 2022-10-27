@@ -84,6 +84,10 @@ elseif comstr(Cam,'nmap'); [CAM,Cam]=comstr(CAM,5);
 
 nmap=vhandle.nmap;
 %% #SDT-contact_two_cube test cases -2
+ key=''; if carg<=nargin; key=varargin{2};end
+ if any(key=='{')
+   [key,nmap]=sdtm.keyRep(nmap,key,'_ParSet');%sdtsys('nmap','VtDaq{dt,1e-6}')
+ end
 
 %% #CtcCube.A : load pressure exponential contact -3
 li={'MeshCfg{"d_contact(cube)::n3e13{Kc1e12}"}',';', ...
@@ -126,6 +130,7 @@ nmap('Hbm.ExpList')={ ...
 
 %% #Hbm.OneDof nmap and list for reduced one DOF [RT,li]=d_doe('nmap','Hbm.OneDofRed'); -2
 RT=struct('nmap',vhandle.nmap);
+if ~isKey(nmap,'zeta'); nmap('zeta')=1e-2;end
 RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE)';
 RT.nmap('SetCI')='ci=iiplot;cingui(''plotwd'',ci,''@OsDic(SDT Root)'',{''FnI'',''ImSw80'',''WrW49c''});;';
 li={'MeshCfg{d_fetime(1DOF):MaxwellA{F2}}';';'
@@ -135,9 +140,12 @@ nmap('Hbm.OneDofRed')={RT,li};
 
 %% #Hbm.Gart : transient of Garteur testbed -2
 RT=struct('nmap',vhandle.nmap);
-RT.nmap('Reduce')='nl_solve(ReducFree 2 15 1e3 -SetDiag -SE)';
+if ~isKey(nmap,'NM'); nmap('NM')=10;end
+if ~isKey(nmap,'dt'); nmap('dt')=1e-3;end
+RT.nmap('NM')=nmap('NM'); RT.nmap('dt')=nmap('dt'); 
+RT.nmap('Reduce')='nl_solve(ReducFree 2 $NM$ 1e3 -Float2 -SetDiag -SE)';
 li={'MeshCfg{d_fetime(Gart):VtGart}';';' % see sdtweb MeshGart
-     'SimuCfg{ModalNewmark{1m,10,fc,chandle1}}';';'
+     'SimuCfg{ModalNewmark{$dt$,10,fc,chandle1}}';';'
      'RunCfg{Reduce}'};
 nmap('Hbm.Gart')={RT,li};
 
@@ -159,8 +167,8 @@ if comstr(Cam,'range')
   fprintf('Running experiment\n %s\n',st)
   out=sdtm.range(struct,st);
 elseif nargin==1; out=nmap;
-else
-  out=nmap(varargin{2});
+elseif ~isempty(key)
+  out=nmap(key);
   if nargout==2&&iscell(out)&&numel(out)==2;out1=out{2};out=out{1};end
 end
 
@@ -381,6 +389,7 @@ nmap=mo1.nmap;
    elseif strcmpi(evt.RL.ifFail,'error')% Fail with error
      if ischar(CAM)&&~isempty(regexp(CAM,'[^\()]*=','once')); eval(CAM);
      else
+      if any(CAM=='$'); CAM=sdtm.keyRep(nmap,CAM);end
       st=sdtm.urnCb(CAM); ans='';
       feval(st{:});  % Attempt to run a step d_shm@va/d_shm(va)
       if ~isempty(ans); sdth.PARAM(stRes,ans); % obsolete should use nmap
