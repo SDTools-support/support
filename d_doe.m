@@ -144,7 +144,8 @@ if ~isKey(nmap,'NM'); nmap('NM')=10;end
 if ~isKey(nmap,'dt'); nmap('dt')=1e-3;end
 RT.nmap('NM')=nmap('NM'); RT.nmap('dt')=nmap('dt'); 
 RT.nmap('Reduce')='nl_solve(ReducFree 2 $NM$ 1e3 -Float2 -SetDiag -SE)';
-li={'MeshCfg{d_fetime(Gart):VtGart}';';' % see sdtweb MeshGart
+li={'MeshCfg{d_fetime(Gart):VtGart}';';' % Model Gart (2 DofLoad) sdtweb d_fetime MeshGart 
+     % Case VtGart (defines Act:In1 and Act:In2 : 2 DofLoad combinaisons = 2 impacts) sdtweb d_fetime VtGart 
      'SimuCfg{ModalNewmark{$dt$,10,fc,chandle1}}';';'
      'RunCfg{Reduce}'};
 nmap('Hbm.Gart')={RT,li};
