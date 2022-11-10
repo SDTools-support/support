@@ -1611,45 +1611,8 @@ elseif comstr(Cam,'shapedbar');[CAM,Cam]=comstr(CAM,10);
 %% #TestBlade an isolated blade example
 elseif comstr(Cam,'testblade'); [CAM,Cam]=comstr(CAM,10);
 
-[RO,st,CAM]=cingui('paramedit -DoClean',[ ...
- 'd1(12#%i#"divisions along length")' ...
- 'd2(1#%i#"divisions along tickness")' ...
- 'd3(5#%i#"divisions along width")' ...
- 'mat(iso#%s#"material variants")' ...
- ],{RO,CAM}); Cam=lower(CAM);
+    error('Moved to meshblade')
 
-node = [1  0  0;20  0  0;0 .2 0; 0  0 5];
-model=feutil('Objecthexa 1 1',node,RO.d1,RO.d2,RO.d3); % creates model 
-r1=basis('rect2cyl',model.Node);r1(:,6)=r1(:,6)-1*(r1(:,5)).*r1(:,7)/10;
-model.Node=basis('cyl2rect',r1);
-model.unit='CM'; model=m_elastic('default',model);
-model=p_solid('default',model);
-[eltid,model.Elt]=feutil('eltidfix;',model);
-
-if strncmpi(RO.mat,'ortho',5)
-%% Define a case with multiple orthotropic materials and orientation
- cEGI=find(eltid~=0);
- model.pl=repmat(fe_mat('convert SICM',[1 fe_mat('m_elastic','SI',6), ...
-       80e9 50e9 8e9, 0.4 0.06  0.027, 4.7e9  8.6e9  7.5e9, 1550]),3,1);
- model.pl(2:3,1)=2:3; model.pl(2,3:5)=model.pl(2,3:5)*1.1;
- model.pl(3,3:5)=model.pl(2,3:5)*1.1;
- model.Elt(feutil('findelt innode{x<5}',model),9)=3;
- model.Elt(feutil('findelt innode{x>14}',model),9)=2;
- data=struct('EltId',eltid(cEGI),'bas',eltid(cEGI));
- NNode=sparse(model.Node(:,1),1,1:size(model.Node,1));
- for jElt=1:length(cEGI)
-  n1=model.Node(NNode(model.Elt(cEGI(jElt),1:3)),:);
-  p=diff(n1(:,5:7));p=sp_util('basis',p(1,:),p(2,:));
-  data.bas(jElt,7:15)=p(:)';
- end
- model=stack_set(model,'info','EltOrient',data);
-end
-
-model=fe_case(model,'fixdof','base','r<2'); model.name='blade';
-
-if nargout==0; feplot(model);fecom showpatch
-else; out=model;
-end 
  
  
 %% #Mat : prototype material database handling
@@ -1692,9 +1655,12 @@ if isempty(Cam)
   r2.pl=[100,fe_mat('m_elastic','MM',1),RO.E,RO.nu, RO.rho, RO.E/2/(1+RO.nu)];
   model.info=RO;model.unit='MM';
   if isfield(r2,'NL')
-   NLdata=struct('type','nl_inout', ...
-     'opt',[0,0,0], ...
+   NLdata=struct('type','nl_inout','opt',[0,0,0], ...
      'MexCb',{{m_hyper('@hyper_g'),struct}},'adofi',-.99*ones(29,1));
+   if isKey(RO.nmap,'g1')
+     r1=RO.nmap('g1');
+     NLdata.g=r1(:,1); NLdata.f=r1(:,2); NLdata
+   end
    model=feutil('setpro 1 isop100',model,'NLdata',NLdata);
   end
   
@@ -1851,6 +1817,53 @@ if comstr(Cam,'plate')
  else; error('unknown Load command');
  end
 out=model;
+elseif comstr(Cam,'blade')
+%% #MeshBlade
+
+if any(Cam=='{');
+  [st,RO]=sdtm.urnPar(CAM,'{}:{div%g,mat%s,quad%31}');
+ if isempty(RO.div);RO.div=[12 1 5];end
+ RO.d1=RO.div(1);RO.d2=RO.div(2);RO.d3=RO.div(3);
+else
+ [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
+  'd1(12#%i#"divisions along length")' ...
+  'd2(1#%i#"divisions along tickness")' ...
+  'd3(5#%i#"divisions along width")' ...
+  'mat(iso#%s#"material variants")' ...
+  ],{RO,CAM}); Cam=lower(CAM);
+end
+node = [1  0  0;20  0  0;0 .2 0; 0  0 5];
+model=feutil('Objecthexa 1 1',node,RO.d1,RO.d2,RO.d3); % creates model 
+r1=basis('rect2cyl',model.Node);r1(:,6)=r1(:,6)-1*(r1(:,5)).*r1(:,7)/10;
+model.Node=basis('cyl2rect',r1);
+model.unit='CM'; model=m_elastic('default',model);
+model=p_solid('default',model);
+[eltid,model.Elt]=feutil('eltidfix;',model);
+
+if strncmpi(RO.mat,'ortho',5)
+%% Define a case with multiple orthotropic materials and orientation
+ cEGI=find(eltid~=0);
+ model.pl=repmat(fe_mat('convert SICM',[1 fe_mat('m_elastic','SI',6), ...
+       80e9 50e9 8e9, 0.4 0.06  0.027, 4.7e9  8.6e9  7.5e9, 1550]),3,1);
+ model.pl(2:3,1)=2:3; model.pl(2,3:5)=model.pl(2,3:5)*1.1;
+ model.pl(3,3:5)=model.pl(2,3:5)*1.1;
+ model.Elt(feutil('findelt innode{x<5}',model),9)=3;
+ model.Elt(feutil('findelt innode{x>14}',model),9)=2;
+ data=struct('EltId',eltid(cEGI),'bas',eltid(cEGI));
+ NNode=sparse(model.Node(:,1),1,1:size(model.Node,1));
+ for jElt=1:length(cEGI)
+  n1=model.Node(NNode(model.Elt(cEGI(jElt),1:3)),:);
+  p=diff(n1(:,5:7));p=sp_util('basis',p(1,:),p(2,:));
+  data.bas(jElt,7:15)=p(:)';
+ end
+ model=stack_set(model,'info','EltOrient',data);
+end
+
+model=fe_case(model,'fixdof','base','r<2'); model.name='blade';
+
+if nargout==0; feplot(model);fecom showpatch
+else; out=model;
+end 
 
 elseif comstr(Cam,'cfg'); [CAM,Cam]=comstr(CAM,4);
 %% #MeshCfg : obtain/generate mesh  ---------------------------------------

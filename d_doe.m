@@ -375,6 +375,10 @@ nmap=mo1.nmap;
    end
    d1=fe_simul(CAM,mo1);
    nmap('CurModel')=mo1; nmap('CurFreq')=d1;
+  elseif strncmpi(Cam,'eig',3)
+   %% #stepRun.Eig: compute normal modes -3
+   [st,R1]=sdtm.urnPar(CAM,'{EigOpt%g}:{oProp%s}');
+   d1=fe_eig(mo1,R1.EigOpt); nmap('CurEig')=d1;
   elseif strncmpi(Cam,'save',4)
    %% #stepRun.Save: intermediate save -3
    try % xxx missing need to optimize what is saved in nmap
