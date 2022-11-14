@@ -391,6 +391,8 @@ nmap=mo1.nmap;
    EndEval='';  stRes='RunRes';
    if isempty(Cam)
    elseif strcmpi(evt.RL.ifFail,'error')% Fail with error
+       st=dbstack; st={st.name};evt.RL.inParamAssign=any(strcmpi(st,'ParamAssign'));
+
      if ischar(CAM)&&~isempty(regexp(CAM,'[^\()]*=','once')); eval(CAM);
      else
       if any(CAM=='$'); CAM=sdtm.keyRep(nmap,CAM);end
