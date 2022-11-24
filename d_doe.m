@@ -1,4 +1,4 @@
-function [out,out1]=d_doe(varargin);
+function [out,out1,out2]=d_doe(varargin);
 
 % D_DOE sample files for design of numerical experiments
 %
@@ -128,7 +128,7 @@ nmap('Hbm.ExpList')={ ...
     ';'
     'RunCfg{Time,d_hbm@viewHarm,SetCI}'}; % Time{Profile}
 
-%% #Hbm.OneDof nmap and list for reduced one DOF [RT,li]=d_doe('nmap','Hbm.OneDofRed'); -2
+%% #Hbm.OneDof nmap and list for reduced one DOF [RT,li]=d_doe('nmap','Hbm.OneDofRed'); -3
 RT=struct('nmap',vhandle.nmap);
 if ~isKey(nmap,'zeta'); nmap('zeta')=1e-2;end
 RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE)';
@@ -136,9 +136,9 @@ RT.nmap('SetCI')='ci=iiplot;cingui(''plotwd'',ci,''@OsDic(SDT Root)'',{''FnI'','
 li={'MeshCfg{d_fetime(1DOF):MaxwellA{F2}}';';'
      'SimuCfg{ModalNewmark{1m,.1,fc,chandle1}}';';'
      'RunCfg{Reduce}'};
-nmap('Hbm.OneDofRed')={RT,li};
+RT.nmap('CurExp')=li;nmap('Hbm.OneDofRed')=RT;
 
-%% #Hbm.Gart : transient of Garteur testbed -2
+%% #Hbm.Gart : transient of Garteur testbed -3
 RT=struct('nmap',vhandle.nmap);
 if ~isKey(nmap,'NM'); nmap('NM')=10;end
 if ~isKey(nmap,'dt'); nmap('dt')=1e-3;end
@@ -148,7 +148,41 @@ li={'MeshCfg{d_fetime(Gart):VtGart}';';' % Model Gart (2 DofLoad) sdtweb d_fetim
      % Case VtGart (defines Act:In1 and Act:In2 : 2 DofLoad combinaisons = 2 impacts) sdtweb d_fetime VtGart 
      'SimuCfg{ModalNewmark{$dt$,10,fc,chandle1}}';';'
      'RunCfg{Reduce}'};
-nmap('Hbm.Gart')={RT,li};
+RT.nmap('CurExp')=li;nmap('Hbm.Gart')=RT;
+%% #Hbm.Duff : tabular with cubic non-linearity ready for VirtualTest -3
+  RT=struct('nmap',vhandle.nmap);
+  RB=struct('spec','BufTime 20 Overlap .75 fmin0 fmax60 -window hanning','ci',3);
+  RT.nmap('PostA')={'ExitFcn','Tip', ...
+      struct('FinalCleanup',{{'nl_solve','PostCdof'}},'DOF',2.03,'DoFreq',RB)
+      };
+  RT.nmap('ShowSpectro')='fe_simul(''fe_timeCleanup'')';
+  RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE)';
+  RT.nmap('Transient')='nmap(''CurTime'')=fe_time(nmap(''CurModel''));';
+  RT.nmap('SetCI')='ci=iiplot;cingui(''plotwd'',ci,''@OsDic(SDT Root)'',{''FnI'',''ImSw80'',''WrW49c''});;';
+  li={'MeshCfg{"d_fetime(1DOF):MaxwellA{Z.01,Fds}:FuDuff"}',';', ...
+      'SimuCfg{ModalNewmark{1m,100,sPostA,fcShowSpectro}}',';', ... % Stack PostA, FinalCleanup ShowSpectro
+      'RunCfg{Reduce,Transient,SetCI}'};
+RT.nmap('CurExp')=li;
+RT.tooltip='Single mass with gap contact'; 
+nmap('Hbm.Duff')=RT;
+
+
+
+%% #Hbm.Fu : piecewise linear currently used in t_nlspring -3
+  RT=struct('nmap',vhandle.nmap);
+  RT.nmap('PostA')={'ExitFcn','Tip', ...
+      struct('FinalCleanup',{{'nl_solve','PostCdof'}},'DOF',2.03,'DoFreq',RB)
+      };
+  RT.nmap('ShowSpectro')='fe_simul(''fe_timeCleanup'')';
+  RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE)';
+  RT.nmap('Transient')='nmap(''CurTime'')=fe_time(nmap(''CurModel''));';
+  RT.nmap('SetCI')='ci=iiplot;cingui(''plotwd'',ci,''@OsDic(SDT Root)'',{''FnI'',''ImSw80'',''WrW49c''});;';
+  li={'MeshCfg{"d_fetime(1DOF):MaxwellA{Z0}:FuA"}',';', ...
+      'SimuCfg{ModalNewmark{1m,100,sPostA,fcShowSpectro}}',';', ...
+      'RunCfg{Reduce,Transient,SetCI}'};
+RT.nmap('CurExp')=li;
+RT.tooltip='Single mass with gap contact'; 
+nmap('Hbm.Fu')=RT;
 
 
 %% #TV : time varying system tests -2
@@ -164,9 +198,20 @@ nmap('TV.AR')={RT,li};
 
 %% deal with outputs 
 if comstr(Cam,'range')
-  st=horzcat(li{:});
-  fprintf('Running experiment\n %s\n',st)
-  out=sdtm.range(struct,st);
+   if nargin==2&&isKey(nmap,varargin{2}) % r1= cbi21('nmapRange','SoKBenchB_static')
+    r1=nmap(varargin{2});li=r1.nmap('CurExp');
+    fprintf('Running %s\n %s',varargin{2},sdtm.toString(li));
+    out=sdtm.range(r1,li);
+    if nargout>1; out1=out.nmap('CurModel');end
+    if nargout>2; out2=out.nmap('CurTime');end
+    
+   else % mo2=daqsdt('nmaprange',{'SensA',';','RunVa'})
+    out=sdtm.range(struct('nmap',nmap,'silent',-1),varargin{2:end});
+   end
+
+  %st=horzcat(li{:});
+  %fprintf('Running experiment\n %s\n',st)
+  %out=sdtm.range(struct,st);
 elseif nargin==1; out=nmap;
 elseif ~isempty(key)
   out=nmap(key);
@@ -396,7 +441,7 @@ nmap=mo1.nmap;
 
      if ischar(CAM)&&~isempty(regexp(CAM,'[^\()]*=','once')); eval(CAM);
      else
-      if any(CAM=='$'); CAM=sdtm.keyRep(nmap,CAM);end
+      if ischar(CAM)&&any(CAM=='$'); CAM=sdtm.keyRep(nmap,CAM);end
       st=sdtm.urnCb(CAM); ans='';
       feval(st{:});  % Attempt to run a step d_shm@va/d_shm(va)
       if ~isempty(ans); sdth.PARAM(stRes,ans); % obsolete should use nmap
