@@ -150,39 +150,38 @@ li={'MeshCfg{d_fetime(Gart):VtGart}';';' % Model Gart (2 DofLoad) sdtweb d_fetim
      'RunCfg{Reduce}'};
 RT.nmap('CurExp')=li;nmap('Hbm.Gart')=RT;
 %% #Hbm.Duff : tabular with cubic non-linearity ready for VirtualTest -3
-  RT=struct('nmap',vhandle.nmap);
-  RB=struct('spec','BufTime 20 Overlap .75 fmin0 fmax60 -window hanning','ci',3);
-  RT.nmap('PostA')={'ExitFcn','Tip', ...
+RT=struct('nmap',vhandle.nmap);
+RB=struct('spec','BufTime 20 Overlap .75 fmin0 fmax60 -window hanning','ci',3);
+RT.nmap('PostA')={'ExitFcn','Tip', ...
       struct('FinalCleanup',{{'nl_solve','PostCdof'}},'DOF',2.03,'DoFreq',RB)
       };
-  RT.nmap('ShowSpectro')='fe_simul(''fe_timeCleanup'')';
-  RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE)';
-  RT.nmap('Transient')='nmap(''CurTime'')=fe_time(nmap(''CurModel''));';
-  RT.nmap('SetCI')='ci=iiplot;cingui(''plotwd'',ci,''@OsDic(SDT Root)'',{''FnI'',''ImSw80'',''WrW49c''});;';
-  li={'MeshCfg{"d_fetime(1DOF):MaxwellA{Z.01,Fds}:FuDuff"}',';', ...
-      'SimuCfg{ModalNewmark{1m,100,sPostA,fcShowSpectro}}',';', ... % Stack PostA, FinalCleanup ShowSpectro
-      'RunCfg{Reduce,Transient,SetCI}'};
-RT.nmap('CurExp')=li;
-RT.tooltip='Single mass with gap contact'; 
+RT.nmap('ShowSpectro')='fe_simul(''fe_timeCleanup'')';
+RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE)';
+RT.nmap('Transient')='nmap(''CurTime'')=fe_time(nmap(''CurModel''));';
+RT.nmap('SetCI')='ci=iiplot;cingui(''plotwd'',ci,''@OsDic(SDT Root)'',{''FnI'',''ImSw80'',''WrW49c''});;';
+li={'MeshCfg{"d_fetime(1DOF):MaxwellA{Z.01,Fds}:Duff"}',';', ...
+      'SimuCfg{ModalNewmark{1m,100,sPostA},Sig{cnInput,Table(0 1n .1,1 0 0,istair)}}',';', ... % Sig=step
+      'RunCfg{Reduce,Transient}'};
+RT.nmap('CurExp')=li;RT.tooltip='Single mass with cubic spring'; 
 nmap('Hbm.Duff')=RT;
 
 
-
 %% #Hbm.Fu : piecewise linear currently used in t_nlspring -3
-  RT=struct('nmap',vhandle.nmap);
-  RT.nmap('PostA')={'ExitFcn','Tip', ...
+RT=struct('nmap',vhandle.nmap);
+RT.nmap('PostA')={'ExitFcn','Tip', ...
       struct('FinalCleanup',{{'nl_solve','PostCdof'}},'DOF',2.03,'DoFreq',RB)
       };
-  RT.nmap('ShowSpectro')='fe_simul(''fe_timeCleanup'')';
-  RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE)';
-  RT.nmap('Transient')='nmap(''CurTime'')=fe_time(nmap(''CurModel''));';
-  RT.nmap('SetCI')='ci=iiplot;cingui(''plotwd'',ci,''@OsDic(SDT Root)'',{''FnI'',''ImSw80'',''WrW49c''});;';
-  li={'MeshCfg{"d_fetime(1DOF):MaxwellA{Z0}:FuA"}',';', ...
+RT.nmap('ShowSpectro')='fe_simul(''fe_timeCleanup'')';
+RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE)';
+RT.nmap('Transient')='nmap(''CurTime'')=fe_time(nmap(''CurModel''));';
+RT.nmap('SetCI')='ci=iiplot;cingui(''plotwd'',ci,''@OsDic(SDT Root)'',{''FnI'',''ImSw80'',''WrW49c''});;';
+li={'MeshCfg{"d_fetime(1DOF):MaxwellA{Z0}:FuA"}',';', ...
       'SimuCfg{ModalNewmark{1m,100,sPostA,fcShowSpectro}}',';', ...
       'RunCfg{Reduce,Transient,SetCI}'};
 RT.nmap('CurExp')=li;
 RT.tooltip='Single mass with gap contact'; 
 nmap('Hbm.Fu')=RT;
+
 
 
 %% #TV : time varying system tests -2

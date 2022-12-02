@@ -2843,6 +2843,7 @@ elseif comstr(Cam,'pcond')
  T=evalin('caller','T');
  pc=ones(size(Case.T,1),1);
  i1=fe_c(model.DOF,.21,'ind'); 
+% i2=fe_c(model.DOF,.19,'ind'); if ~isempty(i2);pc(i2)=1e-3;disp('xxxd_piezo');end
  if isfield(Case,'TIn')
      i1(any(Case.TIn(i1,:),2))=[];pc(i1)=r1;
      pc=diag(sparse(pc)); T=pc*T; Case.pc=pc;
