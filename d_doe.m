@@ -82,12 +82,18 @@ end
 elseif comstr(Cam,'nmap'); [CAM,Cam]=comstr(CAM,5);
 %% #nmap list of named experiments used for demos and non-regression tests ---
 
-nmap=vhandle.nmap;
-%% #SDT-contact_two_cube test cases -2
- key=''; if carg<=nargin; key=varargin{2};end
- if any(key=='{')
-   [key,nmap]=sdtm.keyRep(nmap,key,'_ParSet');%sdtsys('nmap','VtDaq{dt,1e-6}')
+ key=''; if nargin>1; key=varargin{2};end
+ if nargin>2;uo=varargin{3};carg=4; nmap=uo.nmap;
+   if isfield(uo,'Daq'); nmap('AcqTime')=uo.Daq.AcqTime;end
+ else; nmap=vhandle.nmap;
  end
+ if ~any(key=='{')
+ elseif strncmp(key,'@',1);out=sdtm.urnCb(key);return; % @gui21{nmap,DaqShakerPres}
+ else;[key,nmap]=sdtm.keyRep(nmap,key,'_ParSet');%sdtsys('nmap','VtDaq{dt,1e-6}')
+ end
+ if ~isKey(nmap,'AcqTime');nmap('AcqTime')=.3;end
+
+%% #SDT-contact_two_cube test cases -2
 
 %% #CtcCube.A : load pressure exponential contact -3
 li={'MeshCfg{"d_contact(cube)::n3e13{Kc1e12}"}',';', ...
@@ -160,8 +166,9 @@ RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE)';
 RT.nmap('Transient')='nmap(''CurTime'')=fe_time(nmap(''CurModel''));';
 RT.nmap('SetCI')='ci=iiplot;cingui(''plotwd'',ci,''@OsDic(SDT Root)'',{''FnI'',''ImSw80'',''WrW49c''});;';
 li={'MeshCfg{"d_fetime(1DOF):MaxwellA{Z.01,Fds}:Duff"}',';', ...
-      'SimuCfg{ModalNewmark{1m,100,sPostA},Sig{cnInput,Table(0 1n .1,1 0 0,istair)}}',';', ... % Sig=step
+      'SimuCfg{ModalNewmark{1m,$AcqTime$,sPostA},Sig{cnInput,Table(0 1n .1,1 0 0,istair)}}',';', ... % Sig=step
       'RunCfg{Reduce,Transient}'};
+li=sdtm.keyRep(nmap,li);
 RT.nmap('CurExp')=li;RT.tooltip='Single mass with cubic spring'; 
 nmap('Hbm.Duff')=RT;
 
