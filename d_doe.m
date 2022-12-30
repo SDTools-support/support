@@ -83,8 +83,10 @@ elseif comstr(Cam,'nmap'); [CAM,Cam]=comstr(CAM,5);
 %% #nmap list of named experiments used for demos and non-regression tests ---
 
  key=''; if nargin>1; key=varargin{2};end
- if nargin>2;uo=varargin{3};carg=4; nmap=uo.nmap;
-   if isfield(uo,'Daq'); nmap('AcqTime')=uo.Daq.AcqTime;end
+ if nargin>2;uo=varargin{3};carg=4; 
+  if ~isfield(uo,'nmap');uo.nmap=vhandle.nmap; end
+  nmap=uo.nmap;
+  if isfield(uo,'Daq'); nmap('AcqTime')=uo.Daq.AcqTime;end
  else; nmap=vhandle.nmap;
  end
  if ~any(key=='{')
