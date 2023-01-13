@@ -83,7 +83,8 @@ elseif comstr(Cam,'nmap'); [CAM,Cam]=comstr(CAM,5);
 %% #nmap list of named experiments used for demos and non-regression tests ---
 
  key=''; if nargin>1; key=varargin{2};end
- if nargin>2;uo=varargin{3};carg=4; nmap=uo.nmap;
+ if nargin>2;uo=varargin{3};carg=4; 
+   if isfield(uo,'nmap');nmap=uo.nmap;else; nmap=vhandle.nmap;end
    if isfield(uo,'Daq'); nmap('AcqTime')=uo.Daq.AcqTime;end
  else; nmap=vhandle.nmap;
  end
@@ -112,7 +113,8 @@ nmap('CtcCube.B')=li;
 % CtcCube.C : exponential contact; static followed by, hyperreduction
 % xxx add static load and point load 
 
-%% #HE1 : hyperelastic test with one element -2
+%% #HE : hyperelastic testing -2
+%% #HE.1T : hyperelastic test with one element -3
 %  RO=struct('mat','simoA','Mesh','OneTrac','Case','DofSet:Sine{10}:C0{0}','NperPer',1e5,'Nper',3);RO.do='{run,va,pow}';dfr_ident('Load',RO);
 
 li={'MeshCfg{"d_fetime(OneTrac{d2 2 2,MatSimoA}):Rivlin{-.2 -.2 -.4}"}';';' % RivlinCube experiment
@@ -123,6 +125,10 @@ li={'MeshCfg{"d_fetime(OneTrac):TopZa:SimoA"}';';' % RivlinCube experiment
       'SimuCfg{Exp{.2m,.2,chandle1},"SteppedSine{5}:C1(*100=%){60}"}';';'
       'RunCfg{Time}'};
 nmap('HE.1Ta')=li; 
+
+%% HE.relax : triangular with steps(Rep,Height,RaiseTime)
+% sdtsys('urnsig','dt1m:Step{1,.1 .02,re5}:Step{-1,.1 .02,re5}');figure(1);plot(ans.Y)
+% Think possibly Urnsig Table istair, iramp(v), 
 
 %% #HBM : harmonic balance testing -2
 nmap('Hbm.DoRange')={'nl_solve@DoTimeRangeb','ok';
@@ -189,7 +195,13 @@ RT.nmap('CurExp')=li;
 RT.tooltip='Single mass with gap contact'; 
 nmap('Hbm.Fu')=RT;
 
+%% #Hbm.SqBase : button groups for SqSig tab -3
 
+ nmap('Hbm.SqBase')=struct('blocklist',{{ ...
+   '@DefBut.Daq.Main';{'AcqSet',''}; '@DefBut.Daq.AcqSet';
+   {'procSig','FRF Estimation'}; '@DefBut.Daq.procSig.FRFestimation';
+   {'DoE','Not set'}}} ...
+  );
 
 %% #TV : time varying system tests -2
 
@@ -365,6 +377,7 @@ end
 elseif nargin==3&&strcmpi(varargin{3},'steprun')
 %% #stepRun  ---------------------------------------
 
+sdtw('_ewt','Move to sdtsys')
 Range=varargin{1};carg=2;evt=varargin{carg};carg=carg+1;
 if isfield(Range,'Node')||isempty(Range)
  mo1=Range; Range=[]; RO=evt; % d_tdoe(mo1,RO,'steprun')
