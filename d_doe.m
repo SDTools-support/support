@@ -84,7 +84,7 @@ elseif comstr(Cam,'nmap'); [CAM,Cam]=comstr(CAM,5);
 
  key=''; if nargin>1; key=varargin{2};end
  if nargin>2;uo=varargin{3};carg=4; 
-   if isfield(uo,'nmap');nmap=uo.nmap;else; nmap=vhandle.nmap;end
+   if isfield(uo,'nmap');nmap=uo.nmap;else; nmap=vhandle.nmap;uo.nmap=nmap;end
    if isfield(uo,'Daq'); nmap('AcqTime')=uo.Daq.AcqTime;end
  else; nmap=vhandle.nmap;
  end
