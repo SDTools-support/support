@@ -206,13 +206,29 @@ nmap('Hbm.Fu')=RT;
 %% #TV : time varying system tests -2
 
 RT=struct('nmap',vhandle.nmap);
-RB=struct('spec','BufTime 2 Overlap .90 fmax500 -window hanning','ci',3);
-RT.nmap('PostA')={'FinalCleanupFcn','Tip', ...
-      struct('Cb',{{'nl_solve','PostCdof',struct('DOF',2.03,'DoFreq',RB,'name','AR')}})
-      };
+RT.nmap('PostA')='nl_solve@doFreq{spec{BufTime 2 Overlap .90 Fmax 500 -window hanning},ci3,nameAR}';
+%RB=struct('spec','BufTime 2 Overlap .90 fmax500 -window hanning','ci',3);
+%RT.nmap('PostA')={'FinalCleanupFcn','Tip', ...
+%      struct('Cb',{{'nl_solve','PostCdof',struct('DOF',2.03,'DoFreq',RB,'name','AR')}})
+%      };
 li={'MeshCfg{"d_fetime(1DOF):ARTV{z.01}"}'; ';'
-     'SimuCfg{ModalNewmark{.2m,50,sPostA}}';';';'RunCfg{run}'};
-nmap('TV.AR')={RT,li};
+     'SimuCfg{ModalNewmark{.2m,50}}';';';'RunCfg{run,PostA}'};
+%     'SimuCfg{ModalNewmark{.2m,50,sPostA}}';';';'RunCfg{run}'};
+RT.nmap('CurExp')=li;
+nmap('TV.AR')=RT;
+
+%% Hoffman with time varying stiffness
+  RT=struct('nmap',vhandle.nmap);
+  %RT.nmap('PostA')='nl_solve@doFreq{spec{BufTime 20 Overlap .90 Fmax 50 -window hanning},ci3}';
+  RT.nmap('PostA')='d_squeal(ViewSpec{BufTime 50 Tmin 50 Overlap .90 Fmax 20 -window hanning},nameHoffKmuV)';
+  RT.nmap('PostB')='d_contact@autoCycle{tclip50 20,dmBand.5,ci3}';
+
+  li={'MeshCfg{d_contact(Hoffmann):TV:KmuV}';';'  % Mesh:Case:NL
+   'SimuCfg{ModalNewmark{1m,400,uva111,rt-1e-4}SQ0{vq1Amp__5}}';';'
+   'RunCfg{Time,PostB}'};
+  RT.nmap('CurExp')=li;
+nmap('TV.Hoff')=RT;
+
 
 %% deal with outputs 
 if comstr(Cam,'range')
