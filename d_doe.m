@@ -217,11 +217,11 @@ li={'MeshCfg{"d_fetime(1DOF):ARTV{z.01}"}'; ';'
 RT.nmap('CurExp')=li;
 nmap('TV.AR')=RT;
 
-%% Hoffman with time varying stiffness
+%% #Tv.Hoffman with time varying stiffness -3
   RT=struct('nmap',vhandle.nmap);
   %RT.nmap('PostA')='nl_solve@doFreq{spec{BufTime 20 Overlap .90 Fmax 50 -window hanning},ci3}';
   RT.nmap('PostA')='d_squeal(ViewSpec{BufTime 50 Tmin 50 Overlap .90 Fmax 20 -window hanning},nameHoffKmuV)';
-  RT.nmap('PostB')='d_contact@autoCycle{tclip50 20,dmBand.5,ci3}';
+  RT.nmap('PostB')='d_contact@autoCycle{tclip50 20,dmBand1.2,ci3}';
 
   li={'MeshCfg{d_contact(Hoffmann):TV:KmuV}';';'  % Mesh:Case:NL
    'SimuCfg{ModalNewmark{1m,400,uva111,rt-1e-4}SQ0{vq1Amp__5}}';';'
