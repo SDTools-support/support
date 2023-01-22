@@ -1022,7 +1022,7 @@ end
 data=struct('DOF',lst_dof,'c',vertcat(c{:}));
 mdl=fe_case(mdl,'mpc',[char(NAME),'_mpc'],data);
 % Add mass1 to master node if not already there (allows to keep mpc with feutilb submodel)
-i1=feutil('findnode inelt{eltname mass1}',mdl);
+i1=feutil('findnode inelt{eltname mass1};',mdl);
 if ~ismember(IDNODi,i1)
  mdl=feutil('AddElt',mdl,'mass1',IDNODi);
 end
