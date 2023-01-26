@@ -228,7 +228,7 @@ if comstr(Cam,'read'); [CAM,Cam]=comstr(CAM,5);
      % Now use sscanf to convert into numeric value
      elt=reshape(sscanf(st,repmat('%8d',1,5)),5,[])';
      % Store data [node_list partid partid node_bending_plane 0 0 eltid]
-     elt=[elt(:,[3 4 2 2 5]) zeros(size(elt,1,2)) elt(:,1)];
+     elt=[elt(:,[3 4 2 2 5]) zeros(size(elt,1),2) elt(:,1)];
      eltname='beam1'; % SDT eltname
      nb_beam=nb_beam+size(elt,1);
     elseif strncmpi(typ,'spring',6)
@@ -950,11 +950,12 @@ end
 % Merge data and store in Case (one case entry for all directions)
 data=struct('DOF',lst_dof,'c',vertcat(c{:}));
 mdl=fe_case(mdl,'mpc',[NAME,'_mpc'],data);
-% % Add mass1 to master node if not already there (allows to keep mpc with feutilb submodel)
+% % Add mass1 to master node (allows to keep mpc with feutilb submodel)
 % i1=feutil('findnode inelt{eltname mass1};',mdl);
 % if ~ismember(IDNODi,i1)
 %  mdl=feutil('AddElt',mdl,'mass1',IDNODi);
 % end
+mdl=feutil('AddElt',mdl,'mass1',IDNODi);
 %data=struct('DOF',[1.01;1.03],'c',[1 -1]);
 %mo2=fe_case(mo1,'mpc','z=x',data);
 
