@@ -186,7 +186,7 @@ if comstr(Cam,'read'); [CAM,Cam]=comstr(CAM,5);
      %% #Tetr4------------------------------------------------------------3
      error('Need revise, contact Guillaume Martin');
      % Get data from first line
-     n1=sscanf(line,'TETR4 / %8d%8d%8d%8d%8d%8d'); % eltid partid nodes_id
+     n1=sscanf(st,'TETR4 / %8d%8d%8d%8d%8d%8d'); % eltid partid nodes_id
      % Attempt to read all following TETR4 lines
      n2=fscanf(fid,'TETR4 / %8d%8d%8d%8d%8d%8d\n',[6 Inf]);
      % Store data [node_list partid partid eltid]
@@ -236,11 +236,11 @@ if comstr(Cam,'read'); [CAM,Cam]=comstr(CAM,5);
      error('Need revise, contact Guillaume Martin');
      if nb_spring==0; warning('Should speed up using fscanf, contact Guillaume Martin'); end
      nb_spring = nb_spring + 1 ;
-     IDEL = str2double(line(9:16));
-     IDPRT = str2double(line(17:24));
-     IDNOD1 = str2double(line(25:32));
-     IDNOD2 = str2double(line(33:40));
-     IFRA = str2double(line(41:48));
+     IDEL = str2double(st(9:16));
+     IDPRT = str2double(st(17:24));
+     IDNOD1 = str2double(st(25:32));
+     IDNOD2 = str2double(st(33:40));
+     IFRA = str2double(st(41:48));
      if IFRA ~= 0
       warning('SPRING : IFRA ~= 0, not yet used')
      end
@@ -257,32 +257,32 @@ if comstr(Cam,'read'); [CAM,Cam]=comstr(CAM,5);
      error('Need revise, contact Guillaume Martin');
      if nb_mass==0; warning('Should speed up using fscanf, contact Guillaume Martin'); end
      nb_mass = nb_mass+ 1 ;
-     IDNOD = str2double(line(9:16));
-     IFRA = str2double(line(17:24));
+     IDNOD = str2double(st(9:16));
+     IFRA = str2double(st(17:24));
      if IFRA ~= 0
       error('MASS : IFRA ~= 0 not yet handled')
      end
-     line=nextLine(fid) ;
+     st=nextLine(fid) ;
      %NAME = line(6:length(line)) ;
-     line=nextLine(fid) ;
-     Mx = str2double(line(9:24));
-     My = str2double(line(25:40));
-     Mz = str2double(line(41:56));
-     line=nextLine(fid) ;
-     Ix = str2double(line(9:24));
-     Iy = str2double(line(25:40));
-     Iz = str2double(line(41:56));
-     line=nextLine(fid) ;
-     Ixy = str2double(line(9:24));
-     Iyz = str2double(line(25:40));
-     Ixz = str2double(line(41:56));
+     st=nextLine(fid) ;
+     Mx = str2double(st(9:24));
+     My = str2double(st(25:40));
+     Mz = str2double(st(41:56));
+     st=nextLine(fid) ;
+     Ix = str2double(st(9:24));
+     Iy = str2double(st(25:40));
+     Iz = str2double(st(41:56));
+     st=nextLine(fid) ;
+     Ixy = str2double(st(9:24));
+     Iyz = str2double(st(25:40));
+     Ixz = str2double(st(41:56));
      mass_IDNOD(nb_mass) = IDNOD ;
      mass_Mixy(nb_mass) = [Mx, My, Mz] ;
      mass_J(nb_mass) = [Ix, Iy, Iz, Ixy, Iyz, Ixz] ;
     end
     mdl.Elt=feutil('AddElt',mdl.Elt,eltname,elt);
    case 'TITLE '
-    mdl.name = menage_str(line(8:length(line))) ;
+    mdl.name = menage_str(st(8:length(st))) ;
 
    case 'MATER '
     %% #MATER-------------------------------------------------------------2
@@ -359,12 +359,12 @@ if comstr(Cam,'read'); [CAM,Cam]=comstr(CAM,5);
    case 'PART  '
     %% #PART--------------------------------------------------------------2
     st2=strsplit(st,'\n');
-    line=st2{1};
-    IDPRT = str2double(line(9:16));
-    ATYPE = menage_str(line(17:24));
-    IDMAT = str2double(line(25:32));
-    line=st2{2};
-    NAME = line(6:length(line)) ;
+    st3=st2{1};
+    IDPRT = str2double(st3(9:16));
+    ATYPE = menage_str(st3(17:24));
+    IDMAT = str2double(st3(25:32));
+    st3=st2{2};
+    NAME = st3(6:length(st3)) ;
     %disp(['IDPRT = ',num2str(IDPRT),'  ATYPE = ',ATYPE, ...
     %      '  IDMAT = ',num2str(IDMAT), '  NAME = ',NAME])
     if strcmp(ATYPE(1:4),'BEAM')
@@ -409,8 +409,8 @@ if comstr(Cam,'read'); [CAM,Cam]=comstr(CAM,5);
      error('Frames : IAXIS ~= 0 not yet handled')
     end
     st2=strsplit(st,'\n');
-    line=st2{3};
-    NAME = menage_str(line(5:length(line)));
+    st3=st2{3};
+    NAME = menage_str(st3(5:length(st3)));
     [st,jhead,head]=nextBlock(txt,jhead,headind);
     Ux = str2double(st(9:24));
     Uy = str2double(st(25:40));
@@ -433,8 +433,8 @@ if comstr(Cam,'read'); [CAM,Cam]=comstr(CAM,5);
      warning('BOUNC : ISENS ~= 0 not yet used')
     end
     st2=strsplit(st,'\n');
-    line=st2{2};
-    bounc_names{nb_BOUNC} = line(6:length(line)) ;
+    st3=st2{2};
+    bounc_names{nb_BOUNC} = st3(6:length(st3)) ;
     %NAME = strcat(num2str(nb_BOUNC), ':',NAME) ;
     if IDNOD == 0
      lines=st2(3:end);
@@ -451,11 +451,11 @@ if comstr(Cam,'read'); [CAM,Cam]=comstr(CAM,5);
     mtoco_XYZUVW(nb_MTOCO) = str2double(st(27:32));
     mtoco_IFRA1(nb_MTOCO) = str2double(st(33:40));
     st2=strsplit(st,'\n');
-    line=st2{3};
-    mtoco_names{nb_MTOCO} = line(6:length(line)) ;
-    lines=st2(5:end);
+    st3=st2{3};
+    mtoco_names{nb_MTOCO} = st3(6:length(st3)) ;
+    st3=st2(5:end);
     %lst_nodes = read_nodesID(line,fid) ;
-    mtoco_lst_nodes{nb_MTOCO} = read_nodesID(lines);
+    mtoco_lst_nodes{nb_MTOCO} = read_nodesID(st3);
 
     %sdtBC = esi2sdt_BC(XYZUVW) ;
     %mdl=fe_case(mdl,'rigid',NAME,[IDNODi sdtBC lst_nodes]);
@@ -740,7 +740,7 @@ end %commands
 end % baseFunction
 %% #SubFunc --------------------------------------------------------------1
 function [st,jhead,head]=nextBlock(txt,jhead,headind,nb_line)
-%% #nextLine--------------------------------------------------------------2
+%% #nextBlock-------------------------------------------------------------2
 if nargin == 3
  nb_line = 1 ;
 end
@@ -752,14 +752,14 @@ st=st(i1+1:end);
 i2=regexp(st,'\n *$'); % Remove last line return and empty spaces
 if ~isempty(i2); st(i2:end)=''; end
 end
-function lst_nodesID = read_nodesID(lines)
+function lst_nodesID = read_nodesID(st)
 %% #read_nodesID----------------------------------------------------------2
 lst_nodesID = [];
 j1=0;
-while j1<length(lines)
- j1=j1+1; line=lines{j1};
- if strcmp(line(1:11),'        NOD')
-  n1=str2num(line(12:end));
+while j1<length(st)
+ j1=j1+1; st2=st{j1};
+ if strcmp(st2(1:11),'        NOD')
+  n1=str2num(st2(12:end));
   lst_nodesID=[lst_nodesID n1]; 
  end
 end
