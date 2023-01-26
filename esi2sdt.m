@@ -86,154 +86,156 @@ if comstr(Cam,'read'); [CAM,Cam]=comstr(CAM,5);
  mdl = struct('Node',[],'Elt',[],'pl',[],'il',[],'name',' ','unit','SI') ;
 
  %% First reading
- disp('> First reading')
+% Init empty lists
+  node_id = [];
+  node_xyz = [];
 
+  tet4 = [];
+  tet4_id = [];
+  tet4_part = [];
+  tet4_mat = [];
+
+  tet10 = [];
+  tet10_id = [];
+  tet10_part = [];
+  tet10_mat = [];
+
+  beam = [];
+  beam_id = [];
+  beam_part = [];
+  beam_mat = [];
+
+  spring_Id = [];
+  spring_IDPRT = [];
+  spring_IDNOD1 = [];
+  spring_IFRA = [];
+
+  mass_IDNOD = [];
+  mass_Mixy = [];
+  mass_J = [];
+
+  frame_id = [];
+  frame_inod = [];
+  %frame_U = zeros(nb_frame,3) ;
+  %frame_V = zeros(nb_frame,3) ;
+  frame_basis = [];
+
+  bounc_XYZUVW = [];
+  bounc_IFRA = [];
+  bounc_names = {};
+  bounc_lst_nodes = {} ;
+
+  mtoco_id = [];
+  mtoco_IDNODi = [];
+  mtoco_XYZUVW = [];
+  mtoco_IFRA1 = [];
+  mtoco_names ={};
+  mtoco_lst_nodes = {};
+
+  Part_Beam_IDPRT=[];
+  Part_Beam_IDMAT=[];
+  Part_Solid_IDPRT=[];
+  Part_Solid_IDMAT=[];
+  Part_Spring_IDPRT=[];
+  Part_Spring_IDMAT=[];
+
+ %% Reading
  tic ;
  fid = fopen(FileName,'r');
- while 1
-  line = fgetl(fid);
-  if ~ischar(line), break, end
-  if length(line) > 7
-   if strcmp(line(1:7),'NODE  /')
-    nb_nod = nb_nod+1 ;
-   elseif strcmp(line(1:7),'TETR4 /')
-    nb_T4 = nb_T4 + 1 ;
-   elseif strcmp(line(1:7),'TETR10/')
-    nb_T10 = nb_T10 + 1 ;
-   elseif strcmp(line(1:7),'BEAM  /')
-    nb_beam = nb_beam + 1 ;
-   elseif strcmp(line(1:7),'SPRING/')
-    nb_spring = nb_spring + 1;
-   elseif strcmp(line(1:7),'MASS  /')
-    nb_mass = nb_mass + 1;
-   elseif strcmp(line(1:7),'FRAME /')
-    nb_frame = nb_frame + 1;
-   elseif strcmp(line(1:7),'BOUNC /')
-    nb_BOUNC = nb_BOUNC + 1;
-   elseif strcmp(line(1:7),'MTOCO /')
-    nb_MTOCO = nb_MTOCO + 1;
-   end
-  end
- end
+ txt=fileread(FileName);
  fclose(fid);
- t_first = toc;
- disp(['> Reading time: ',num2str(t_first),' s'])
 
- node_id = zeros(nb_nod,1) ;
- node_xyz = zeros(nb_nod, 3);
+ % Get header indiced in char array
+ headind=strfind(txt,'$#');headind(end+1)=length(txt)+1;
+ % Loop on headers
+ jhead=0;
+ while jhead<length(headind)-1
+  [st,jhead,head]=nextBlock(txt,jhead,headind);
+  i1=regexp(st(1:7),'....../'); % Detect data type : NODE, TETR4, ...
+  if i1; typ=st(1:6);
+  else; typ='';
+  end
+  switch typ
+   case 'NODE  '
+    %% #Node-------------------------------------------------------------2
+    % Get data from first line
+    i2=0:65:length(st); % Line break indices (16*4+1=65)
+    i3=i2+(1:8)'; % indice containing NODE  / 
+    st(i3)=' '; % => replace NODE  / by empty char
+    st(i2(2:end))=''; % Remove line breaks
+    % Reshape by block of 16 charaters
+    st=reshape(st,16,[]);
+    st(end+1,:)=' '; % Add whitespace between each block of character
+    % Now use sscanf to convert into numeric value
+    n1=reshape(sscanf(st,'%16d%16f%16f%16f'),4,[])';
+    %n1=sscanf(st(i1+1:end),'NODE  / %8d%16f%16f%16f\n');
 
- tet4 = zeros(nb_T4, 4);
- tet4_id = zeros(nb_T4,1);
- tet4_part = zeros(nb_T4,1);
- tet4_mat = zeros(nb_T4,1);
+    % Store data (indice in col1 and  x y z in column 5 6 7)
+    mdl.Node(nb_nod+1:nb_nod+size(n1,1),[1 5:7])=n1;
+    % Increment node indice
+    nb_nod = nb_nod+size(n1,1);
 
- tet10 = zeros(nb_T10,10);
- tet10_id = zeros(nb_T10,1);
- tet10_part = zeros(nb_T10,1);
- tet10_mat = zeros(nb_T10,1);
-
- beam = zeros(nb_beam,3) ;
- beam_id = zeros(nb_beam,1);
- beam_part = zeros(nb_beam,1);
- beam_mat = zeros(nb_beam,1);
-
- spring_Id = zeros(nb_spring,1);
- spring_IDPRT = zeros(nb_spring,1);
- spring_IDNOD1 = zeros(nb_spring,1);
- spring_IFRA = zeros(nb_spring,1);
-
- mass_IDNOD = zeros(nb_mass,1) ;
- mass_Mixy = zeros(nb_mass,3) ;
- mass_J = zeros(nb_mass,6) ;
-
- frame_id = zeros(nb_frame,1) ;
- frame_inod = zeros(nb_frame,1) ;
- %frame_U = zeros(nb_frame,3) ;
- %frame_V = zeros(nb_frame,3) ;
- frame_basis = zeros(nb_frame,3,3) ;
-
- bounc_XYZUVW = zeros(nb_BOUNC, 1) ;
- bounc_IFRA = zeros(nb_BOUNC, 1) ;
- bounc_names = strings(nb_BOUNC, 1) ;
- bounc_lst_nodes = cell(nb_BOUNC, 1) ;
-
- mtoco_id = zeros(nb_MTOCO, 1) ;
- mtoco_IDNODi = zeros(nb_MTOCO, 1) ;
- mtoco_XYZUVW = zeros(nb_MTOCO, 1) ;
- mtoco_IFRA1 = zeros(nb_MTOCO, 1) ;
- mtoco_names = strings(nb_MTOCO, 1) ;
- mtoco_lst_nodes = cell(nb_BOUNC, 1) ;
-
-
- %% Second reading
- disp('> Second reading')
- tic ;
- fid = fopen(FileName,'r');
-
- i_nod = 0 ;
- i_T4 = 0 ;
- i_T10 = 0 ;
- i_beam = 0 ;
- i_spring = 0 ;
- i_mass = 0 ;
- i_frame = 0 ;
- i_bounc = 0 ;
- i_mtoco = 0 ;
-
- % Reading lines
- while 1
-  line = fgetl(fid);
-  if ~ischar(line), break, end
-  if (length(line) > 7) && strcmp(line(7),'/')
-   %disp(line)
-   switch line(1:6)
-
-    case 'NODE  '
-     i_nod = i_nod+1 ;
-     node_id(i_nod) = sscanf(line(9:16),'%8d') ;
-     node_xyz(i_nod,1) = sscanf(line(17:32),'%16f') ;
-     node_xyz(i_nod,2) = sscanf(line(33:48),'%16f') ;
-     node_xyz(i_nod,3) = sscanf(line(49:64),'%16f') ;
-     %cellfun(@str2double,textscan(tline,'%8c%16c%16c%16c'))
-
-    case 'TETR4 '
-     i_T4 = i_T4 + 1 ;
-     tet4_id(i_T4) = sscanf(line(9:16),'%8d');
-     tet4_part(i_T4) = sscanf(line(17:24),'%8d');
-     tet4(i_T4,1) = sscanf(line(25:32),'%8d');
-     tet4(i_T4,2) = sscanf(line(33:40),'%8d');
-     tet4(i_T4,3) = sscanf(line(41:48),'%8d');
-     tet4(i_T4,4) = sscanf(line(49:56),'%8d');
-
-    case 'TETR10'
-     i_T10 = i_T10 + 1 ;
-     tet10_id(i_T10) = sscanf(line(9:16),'%8d');
-     tet10_part(i_T10) = sscanf(line(17:24),'%8d');
-
-     line=nextLine(fid) ;
-     tet10(i_T10,1) = sscanf(line(17:24),'%8d');
-     tet10(i_T10,2) = sscanf(line(25:32),'%8d');
-     tet10(i_T10,3) = sscanf(line(33:40),'%8d');
-     tet10(i_T10,4) = sscanf(line(41:48),'%8d');
-     tet10(i_T10,5) = sscanf(line(49:56),'%8d');
-     tet10(i_T10,6) = sscanf(line(57:64),'%8d');
-     tet10(i_T10,7) = sscanf(line(65:72),'%8d');
-     tet10(i_T10,8) = sscanf(line(73:80),'%8d');
-
-     line=nextLine(fid) ;
-     tet10(i_T10,9)  = sscanf(line(17:24),'%8d');
-     tet10(i_T10,10) = sscanf(line(25:32),'%8d');
-
-    case 'BEAM  '
-     i_beam = i_beam + 1 ;
-     beam_id(i_beam) = sscanf(line(9:16),'%8d');
-     beam_part(i_beam) = sscanf(line(17:24),'%8d');
-     beam(i_beam,1) = sscanf(line(25:32),'%8d');
-     beam(i_beam,2) = sscanf(line(33:40),'%8d');
-     beam(i_beam,3) = sscanf(line(41:48),'%8d');
-
-    case 'SPRING'
-     i_spring = i_spring + 1 ;
+   case {'TETR4 ','TETR10','BEAM  ','SPRING','MASS  '}
+    %% #Elt--------------------------------------------------------------2
+    % Add Elt with list of node ids and ESI partid as matid and proid
+    % Conversion from ESI partid to matid and proid is done in SDT model
+    % filling section
+    % For each element type : fill elt lines and eltname
+    % elt line format : [nodes_id partid partid eltid]
+    if strncmpi(typ,'tetr4',5)
+     %% #Tetr4------------------------------------------------------------3
+     error('Need revise, contact Guillaume Martin');
+     % Get data from first line
+     n1=sscanf(line,'TETR4 / %8d%8d%8d%8d%8d%8d'); % eltid partid nodes_id
+     % Attempt to read all following TETR4 lines
+     n2=fscanf(fid,'TETR4 / %8d%8d%8d%8d%8d%8d\n',[6 Inf]);
+     % Store data [node_list partid partid eltid]
+     elt=[n1 n2]'; elt=elt(:,[3:6 2 2 1]);
+     eltname='tetra4'; % SDT eltname
+     nb_T4=nb_T4+size(elt,1);
+    elseif strncmpi(typ,'tetr10',6)
+     %% #Tetr10-----------------------------------------------------------3
+     % Get first element skipping headers and get remaining elements
+     [st2,jhead,head]=nextBlock(txt,jhead,headind);
+     [st3,jhead,head]=nextBlock(txt,jhead,headind);
+     st=sprintf('%s\n%s\n%s',st,st2,st3);
+     % 17 blocks of 8 digits + 3 line return = 139 characters
+     i2=0:139:length(st);
+     i3=i2+([1:8 25:41 106:122])'; % indice containing TETR10  / and empty 8 spaces
+     st(i3)='';
+     i2=8*12+1:8*12+1:length(st); % line return indices
+     st(i2)='';
+     % Reshape by block of 8 charaters
+     st=reshape(st,8,[]);
+     st(end+1,:)=' '; % Add whitespace between each block of character
+     % Now use sscanf to convert into numeric value
+     elt=reshape(sscanf(st,repmat('%8d',1,12)),12,[])';
+     % Store data [node_list partid partid eltid]
+     elt=elt(:,[3:12 2 2 1]);
+     eltname='tetra10'; % SDT eltname
+     nb_T10=nb_T10+size(elt,1);
+    elseif strncmpi(typ,'beam',4)
+     %% #Beam-------------------------------------------------------------3
+     % 10 blocks of 8 digits + 1 line return = 81 characters
+     i2=0:81:length(st);
+     i3=i2+([1:8 49:80])'; % indice containing TETR10  / and unused columns
+     st(i3)=''; 
+     i2=8*5+1:8*5+1:length(st); % line return indices
+     st(i2)='';
+     % Reshape by block of 8 charaters
+     st=reshape(st,8,[]);
+     st(end+1,:)=' '; % Add whitespace between each block of character
+     % Now use sscanf to convert into numeric value
+     elt=reshape(sscanf(st,repmat('%8d',1,5)),5,[])';
+     % Store data [node_list partid partid node_bending_plane 0 0 eltid]
+     elt=[elt(:,[3 4 2 2 5]) zeros(size(elt,1,2)) elt(:,1)];
+     eltname='beam1'; % SDT eltname
+     nb_beam=nb_beam+size(elt,1);
+    elseif strncmpi(typ,'spring',6)
+     %% #Spring-----------------------------------------------------------3
+     error('Need revise, contact Guillaume Martin');
+     if nb_spring==0; warning('Should speed up using fscanf, contact Guillaume Martin'); end
+     nb_spring = nb_spring + 1 ;
      IDEL = str2double(line(9:16));
      IDPRT = str2double(line(17:24));
      IDNOD1 = str2double(line(25:32));
@@ -245,13 +247,16 @@ if comstr(Cam,'read'); [CAM,Cam]=comstr(CAM,5);
      if IDNOD2 ~= 0
       error('SPRING : IDNOD2 ~= 0 not yet handled')
      end
-     spring_Id(i_spring) = IDEL ;
-     spring_IDPRT(i_spring) = IDPRT ;
-     spring_IDNOD1(i_spring) = IDNOD1 ;
-     spring_IFRA(i_spring) = IFRA ;
+     spring_Id(nb_spring) = IDEL ;
+     spring_IDPRT(nb_spring) = IDPRT ;
+     spring_IDNOD1(nb_spring) = IDNOD1 ;
+     spring_IFRA(nb_spring) = IFRA ;
 
-    case 'MASS  '
-     i_mass = i_mass+ 1 ;
+    elseif strncmpi(typ,'mass',4)
+     %% #Mass-------------------------------------------------------------3
+     error('Need revise, contact Guillaume Martin');
+     if nb_mass==0; warning('Should speed up using fscanf, contact Guillaume Martin'); end
+     nb_mass = nb_mass+ 1 ;
      IDNOD = str2double(line(9:16));
      IFRA = str2double(line(17:24));
      if IFRA ~= 0
@@ -271,190 +276,197 @@ if comstr(Cam,'read'); [CAM,Cam]=comstr(CAM,5);
      Ixy = str2double(line(9:24));
      Iyz = str2double(line(25:40));
      Ixz = str2double(line(41:56));
-     mass_IDNOD(i_mass) = IDNOD ;
-     mass_Mixy(i_mass) = [Mx, My, Mz] ;
-     mass_J(i_mass) = [Ix, Iy, Iz, Ixy, Iyz, Ixz] ;
+     mass_IDNOD(nb_mass) = IDNOD ;
+     mass_Mixy(nb_mass) = [Mx, My, Mz] ;
+     mass_J(nb_mass) = [Ix, Iy, Iz, Ixy, Iyz, Ixz] ;
+    end
+    mdl.Elt=feutil('AddElt',mdl.Elt,eltname,elt);
+   case 'TITLE '
+    mdl.name = menage_str(line(8:length(line))) ;
 
-    case 'TITLE '
-     mdl.name = menage_str(line(8:length(line))) ;
+   case 'MATER '
+    %% #MATER-------------------------------------------------------------2
+    IDMAT = str2double(st(9:16));
+    MATYP = str2double(st(17:24));
+    RHO = str2double(st(25:40));
+    [st,jhead,head]=nextBlock(txt,jhead,headind) ;
+    % Skip name ? For now yes
+    [st,jhead,head]=nextBlock(txt,jhead,headind) ;
+    if MATYP == 1
+     nb_mat_1 = nb_mat_1 + 1 ;
+     G = str2double(st(1:10));
+     [st,jhead,head]=nextBlock(txt,jhead,headind) ;
+     K = str2double(st(1:10));
+     mat_1_id(nb_mat_1) = IDMAT ;
+     mat_1_E(nb_mat_1) = 9*K*G/(3*K+G);
+     mat_1_nu(nb_mat_1)= (3*K-2*G)/(2*(3*K+G));
 
-    case 'MATER '
-     IDMAT = str2double(line(9:16));
-     MATYP = str2double(line(17:24));
-     RHO = str2double(line(25:40));
-     line=nextLine(fid) ;
-     line=nextLine(fid) ;
-     %NAME = line(6:length(line)) ;
-     line=nextLine(fid) ;
-     if MATYP == 1
-      nb_mat_1 = nb_mat_1 + 1 ;
-      G = str2double(line(1:10));
-      line=nextLine(fid) ;
-      K = str2double(line(1:10));
-      mat_1_id(nb_mat_1) = IDMAT ;
-      mat_1_E(nb_mat_1) = 9*K*G/(3*K+G);
-      mat_1_nu(nb_mat_1)= (3*K-2*G)/(2*(3*K+G));
+     %                     mat_1_E(nb_mat_1) = K ;
+     %                     mat_1_nu(nb_mat_1)= K/(2*G)-1;
+     mat_1_rho(nb_mat_1)= RHO;
 
-      %                     mat_1_E(nb_mat_1) = K ;
-      %                     mat_1_nu(nb_mat_1)= K/(2*G)-1;
-      mat_1_rho(nb_mat_1)= RHO;
+    elseif MATYP == 225
+     error('need revise. Contact GM')
+     nb_mat_225 = nb_mat_225 + 1;
+     mat_225_id(nb_mat_225) = IDMAT ;
 
-     elseif MATYP == 225
-      nb_mat_225 = nb_mat_225 + 1;
-      mat_225_id(nb_mat_225) = IDMAT ;
+     MASS = str2double(st(11:20));
+     INERTIA = str2double(st(21:30));
+     [st,jhead,head]=nextBlock(txt,jhead,headind) ;
+     STIFTR = str2double(st(1:10));
+     DAMVTR = str2double(st(11:20));
+     KSITR  = str2double(st(21:30));
+     [st,jhead,head]=nextBlock(txt,jhead,headind) ;
+     STIFTS = str2double(st(1:10));
+     DAMVTS = str2double(st(11:20));
+     KSITS  = str2double(st(21:30));
+     [st,jhead,head]=nextBlock(txt,jhead,headind) ;
+     STIFTT = str2double(st(1:10));
+     DAMVTT = str2double(st(11:20));
+     KSITT  = str2double(st(21:30));
+     [st,jhead,head]=nextBlock(txt,jhead,headind) ;
+     STIFRR = str2double(st(1:10));
+     DAMVRR = str2double(st(11:20));
+     KSIRR  = str2double(st(21:30));
+     [st,jhead,head]=nextBlock(txt,jhead,headind) ;
+     STIFRS = str2double(st(1:10));
+     DAMVRS = str2double(st(11:20));
+     KSIRS  = str2double(st(21:30));
+     [st,jhead,head]=nextBlock(txt,jhead,headind) ;
+     STIFRT = str2double(st(1:10));
+     DAMVRT = str2double(st(11:20));
+     KSIRT  = str2double(st(21:30));
+     [st,jhead,head]=nextBlock(txt,jhead,headind) ;
+     TTTR3 = str2double(st(1:10));
+     RRRR3 = str2double(st(11:20));
+     % Pour eviter les raideur nulles
+     mat_225_stiff(nb_mat_225,:) = [ STIFTR, STIFTS, STIFTT, STIFRR, STIFRS, STIFRT] ;
 
-      MASS = str2double(line(11:20));
-      INERTIA = str2double(line(21:30));
-      line=nextLine(fid) ;
-      STIFTR = str2double(line(1:10));
-      DAMVTR = str2double(line(11:20));
-      KSITR  = str2double(line(21:30));
-      line=nextLine(fid) ;
-      STIFTS = str2double(line(1:10));
-      DAMVTS = str2double(line(11:20));
-      KSITS  = str2double(line(21:30));
-      line=nextLine(fid) ;
-      STIFTT = str2double(line(1:10));
-      DAMVTT = str2double(line(11:20));
-      KSITT  = str2double(line(21:30));
-      line=nextLine(fid) ;
-      STIFRR = str2double(line(1:10));
-      DAMVRR = str2double(line(11:20));
-      KSIRR  = str2double(line(21:30));
-      line=nextLine(fid) ;
-      STIFRS = str2double(line(1:10));
-      DAMVRS = str2double(line(11:20));
-      KSIRS  = str2double(line(21:30));
-      line=nextLine(fid) ;
-      STIFRT = str2double(line(1:10));
-      DAMVRT = str2double(line(11:20));
-      KSIRT  = str2double(line(21:30));
-      line=nextLine(fid) ;
-      TTTR3 = str2double(line(1:10));
-      RRRR3 = str2double(line(11:20));
-      % Pour eviter les raideur nulles
-      mat_225_stiff(nb_mat_225,:) = [ STIFTR, STIFTS, STIFTT, STIFRR, STIFRS, STIFRT] ;
+    elseif MATYP == 213
+     % Beam elasto-plastic behaviour
+     nb_mat_213 = nb_mat_213 + 1;
+     mat_213_id(nb_mat_213) = IDMAT ;
+     mat_213_E(nb_mat_213) = str2double(st(1:10));
+     mat_213_nu(nb_mat_213)= str2double(st(11:20));
+     mat_213_rho(nb_mat_213)= RHO;
 
-     elseif MATYP == 213
-      % Beam elasto-plastic behaviour
-      nb_mat_213 = nb_mat_213 + 1;
-      mat_213_id(nb_mat_213) = IDMAT ;
-      mat_213_E(nb_mat_213) = str2double(line(1:10));
-      mat_213_nu(nb_mat_213)= str2double(line(11:20));
-      mat_213_rho(nb_mat_213)= RHO;
+    else
+     disp('MATER, MATYP:')
+     disp(MATYP)
+     error('MATER: MATYP not yet handled')
+    end
 
-     else
-      disp('MATER, MATYP:')
-      disp(MATYP)
-      error('MATER: MATYP not yet handled')
-     end
-
-    case 'PART  '
-     IDPRT = str2double(line(9:16));
-     ATYPE = menage_str(line(17:24));
-     IDMAT = str2double(line(25:32));
-     line=nextLine(fid) ;
-     NAME = line(6:length(line)) ;
-     %disp(['IDPRT = ',num2str(IDPRT),'  ATYPE = ',ATYPE, ...
-     %      '  IDMAT = ',num2str(IDMAT), '  NAME = ',NAME])
-     if strcmp(ATYPE(1:4),'BEAM')
-      nb_Part_Beam = nb_Part_Beam +1;
-      Part_Beam_IDPRT(nb_Part_Beam) = IDPRT ;
-      Part_Beam_IDMAT(nb_Part_Beam) = IDMAT ;
-      for ii=1:7
-       line=nextLine(fid) ;
+   case 'PART  '
+    %% #PART--------------------------------------------------------------2
+    st2=strsplit(st,'\n');
+    line=st2{1};
+    IDPRT = str2double(line(9:16));
+    ATYPE = menage_str(line(17:24));
+    IDMAT = str2double(line(25:32));
+    line=st2{2};
+    NAME = line(6:length(line)) ;
+    %disp(['IDPRT = ',num2str(IDPRT),'  ATYPE = ',ATYPE, ...
+    %      '  IDMAT = ',num2str(IDMAT), '  NAME = ',NAME])
+    if strcmp(ATYPE(1:4),'BEAM')
+     nb_Part_Beam = nb_Part_Beam +1;
+     Part_Beam_IDPRT(nb_Part_Beam) = IDPRT ;
+     Part_Beam_IDMAT(nb_Part_Beam) = IDMAT ;
+     % Skip 7 headers
+     [st,jhead,head]=nextBlock(txt,jhead,headind,7) ;
+     Part_Beam_IDSEC(nb_Part_Beam) = str2double(st(1:5));
+     Part_Beam_CA(nb_Part_Beam) = str2double(st(11:20));
+     if Part_Beam_IDSEC(nb_Part_Beam) ~= 2
+      Part_Beam_B(nb_Part_Beam) = str2double(st(21:30));
+      if Part_Beam_IDSEC(nb_Part_Beam) == 3
+       Part_Beam_C(nb_Part_Beam) = str2double(st(31:40));
       end
-      Part_Beam_IDSEC(nb_Part_Beam) = str2double(line(1:5));
-      Part_Beam_CA(nb_Part_Beam) = str2double(line(11:20));
-      if Part_Beam_IDSEC(nb_Part_Beam) ~= 2
-       Part_Beam_B(nb_Part_Beam) = str2double(line(21:30));
-       if Part_Beam_IDSEC(nb_Part_Beam) == 3
-        Part_Beam_C(nb_Part_Beam) = str2double(line(31:40));
-       end
-      end
-     elseif strcmp(ATYPE(1:5),'SOLID') || strcmp(ATYPE(1:5),'TETRA')
-      nb_Part_Solid = nb_Part_Solid + 1 ;
-      Part_Solid_IDPRT(nb_Part_Solid) = IDPRT;
-      Part_Solid_IDMAT(nb_Part_Solid) = IDMAT;
-
-     elseif strcmp(ATYPE(1:6),'SPRING')
-      nb_Part_Spring = nb_Part_Spring + 1;
-      Part_Spring_IDPRT(nb_Part_Spring) = IDPRT ;
-      Part_Spring_IDMAT(nb_Part_Spring) = IDMAT ;
-     else
-      disp('PART, ATYPE:')
-      disp(ATYPE)
-      error('PART: ATYPE not yet handled')
      end
+    elseif strcmp(ATYPE(1:5),'SOLID') || strcmp(ATYPE(1:5),'TETRA')
+     nb_Part_Solid = nb_Part_Solid + 1 ;
+     Part_Solid_IDPRT(nb_Part_Solid) = IDPRT;
+     Part_Solid_IDMAT(nb_Part_Solid) = IDMAT;
 
-    case 'FRAME '
-     i_frame = i_frame + 1;
-     frame_id(i_frame) = str2double(line(9:16));
-     IFRATY = str2double(line(17:24));
-     IAXIS = str2double(line(25:32));
-     if IFRATY ~= 1
-      error('Frames : IFRATY ~= 1 not yet handled')
-     end
-     if IAXIS ~= 0
-      error('Frames : IAXIS ~= 0 not yet handled')
-     end
-     line=nextLine(fid) ;
-     NAME = menage_str(line(5:length(line)));
-     line=nextLine(fid) ;
-     Ux = str2double(line(9:24));
-     Uy = str2double(line(25:40));
-     Uz = str2double(line(41:56));
-     line=nextLine(fid) ;
-     Vx = str2double(line(9:24));
-     Vy = str2double(line(25:40));
-     Vz = str2double(line(41:56));
-     frame_inod(i_frame) = str2double(line(57:64));
-     frame_basis(i_frame,:,:) = basis_UV([ Ux, Uy, Uz ],[ Vx, Vy, Vz ]) ;
+    elseif strcmp(ATYPE(1:6),'SPRING')
+     nb_Part_Spring = nb_Part_Spring + 1;
+     Part_Spring_IDPRT(nb_Part_Spring) = IDPRT ;
+     Part_Spring_IDMAT(nb_Part_Spring) = IDMAT ;
+    else
+     disp('PART, ATYPE:')
+     disp(ATYPE)
+     error('PART: ATYPE not yet handled')
+    end
 
-    case 'BOUNC '
-     i_bounc = i_bounc + 1 ;
-     IDNOD = str2double(line(9:16));
-     bounc_XYZUVW(i_bounc) = str2double(line(19:24));
-     bounc_IFRA(i_bounc) = str2double(line(25:32));
-     ISENS = str2double(line(33:40));
-     if ISENS ~= 0
-      warning('BOUNC : ISENS ~= 0 not yet used')
-     end
-     line=nextLine(fid) ;
-     bounc_names(i_bounc) = line(6:length(line)) ;
-     %NAME = strcat(num2str(i_bounc), ':',NAME) ;
-     if IDNOD == 0
-      line=nextLine(fid) ;
-      bounc_lst_nodes(i_bounc) = {read_nodesID(line,fid)} ;
-     else
-      bounc_lst_nodes(i_bounc) = {[IDNOD]} ;
-     end
+   case 'FRAME '
+    %% #FRAME-------------------------------------------------------------2
+    nb_frame = nb_frame + 1;
+    frame_id(nb_frame) = str2double(st(9:16));
+    IFRATY = str2double(st(17:24));
+    IAXIS = str2double(st(25:32));
+    if IFRATY ~= 1
+     error('Frames : IFRATY ~= 1 not yet handled')
+    end
+    if IAXIS ~= 0
+     error('Frames : IAXIS ~= 0 not yet handled')
+    end
+    st2=strsplit(st,'\n');
+    line=st2{3};
+    NAME = menage_str(line(5:length(line)));
+    [st,jhead,head]=nextBlock(txt,jhead,headind);
+    Ux = str2double(st(9:24));
+    Uy = str2double(st(25:40));
+    Uz = str2double(st(41:56));
+    [st,jhead,head]=nextBlock(txt,jhead,headind);
+    Vx = str2double(st(9:24));
+    Vy = str2double(st(25:40));
+    Vz = str2double(st(41:56));
+    frame_inod(nb_frame) = str2double(st(57:64));
+    frame_basis(nb_frame,:,:) = basis_UV([ Ux, Uy, Uz ],[ Vx, Vy, Vz ]) ;
 
-    case 'MTOCO '
-     i_mtoco = i_mtoco + 1 ;
-     mtoco_id(i_mtoco) = str2double(line(9:16));
-     mtoco_IDNODi(i_mtoco) = str2double(line(17:24));
-     mtoco_XYZUVW(i_mtoco) = str2double(line(27:32));
-     mtoco_IFRA1(i_mtoco) = str2double(line(33:40));
-     line=nextLine(fid) ;
-     mtoco_names(i_mtoco) = line(6:length(line)) ;
-     line=nextLine(fid) ;
-     %lst_nodes = read_nodesID(line,fid) ;
-     mtoco_lst_nodes(i_mtoco) = {read_nodesID(line,fid)} ;
+   case 'BOUNC '
+    %% #BOUNC-------------------------------------------------------------2
+    nb_BOUNC = nb_BOUNC + 1 ;
+    IDNOD = str2double(st(9:16));
+    bounc_XYZUVW(nb_BOUNC) = str2double(st(19:24));
+    bounc_IFRA(nb_BOUNC) = str2double(st(25:32));
+    ISENS = str2double(st(33:40));
+    if ISENS ~= 0
+     warning('BOUNC : ISENS ~= 0 not yet used')
+    end
+    st2=strsplit(st,'\n');
+    line=st2{2};
+    bounc_names{nb_BOUNC} = line(6:length(line)) ;
+    %NAME = strcat(num2str(nb_BOUNC), ':',NAME) ;
+    if IDNOD == 0
+     lines=st2(3:end);
+     bounc_lst_nodes{nb_BOUNC} = read_nodesID(lines) ;
+    else
+     bounc_lst_nodes{nb_BOUNC} = IDNOD ;
+    end
 
-     %sdtBC = esi2sdt_BC(XYZUVW) ;
-     %mdl=fe_case(mdl,'rigid',NAME,[IDNODi sdtBC lst_nodes]);
+   case 'MTOCO '
+    %% #MTOCO-------------------------------------------------------------2
+    nb_MTOCO = nb_MTOCO + 1 ;
+    mtoco_id(nb_MTOCO) = str2double(st(9:16));
+    mtoco_IDNODi(nb_MTOCO) = str2double(st(17:24));
+    mtoco_XYZUVW(nb_MTOCO) = str2double(st(27:32));
+    mtoco_IFRA1(nb_MTOCO) = str2double(st(33:40));
+    st2=strsplit(st,'\n');
+    line=st2{3};
+    mtoco_names{nb_MTOCO} = line(6:length(line)) ;
+    lines=st2(5:end);
+    %lst_nodes = read_nodesID(line,fid) ;
+    mtoco_lst_nodes{nb_MTOCO} = read_nodesID(lines);
 
-    otherwise
-     disp(['    Untreated key: ',line(1:7)])
-   end
+    %sdtBC = esi2sdt_BC(XYZUVW) ;
+    %mdl=fe_case(mdl,'rigid',NAME,[IDNODi sdtBC lst_nodes]);
+
+   otherwise
+    if isempty(typ) % Header without NODE  / ; TETR10 / ;..... => skip
+    else; disp(['    Untreated key: ',typ]);
+    end
   end
  end
 
- fclose(fid);
- t_second = toc;
-
- disp(['> Reading time: ',num2str(t_second),' s'])
  disp('> Summary of read data:')
  if nb_Part_Solid  > 0 ; disp(['    nb Part Solid  : ',num2str(nb_Part_Solid)]) ; end
  if nb_Part_Beam   > 0 ; disp(['    nb Part Beam   : ',num2str(nb_Part_Beam)]) ; end
@@ -462,6 +474,7 @@ if comstr(Cam,'read'); [CAM,Cam]=comstr(CAM,5);
  if nb_nod         > 0 ; disp(['    nb nodes       : ',num2str(nb_nod)])  ; end
  if nb_T4          > 0 ; disp(['    nb T4          : ',num2str(nb_T4)])  ; end
  if nb_T10         > 0 ; disp(['    nb T10         : ',num2str(nb_T10)]) ; end
+ if nb_beam        > 0 ; disp(['    nb beam        : ',num2str(nb_beam)]) ; end
  if nb_spring      > 0 ; disp(['    nb spring      : ',num2str(nb_spring)]); end
  if nb_mass        > 0 ; disp(['    nb mass        : ',num2str(nb_mass)]) ; end
  if nb_mat_1       > 0 ; disp(['    nb mat_1       : ',num2str(nb_mat_1)]) ; end
@@ -472,52 +485,20 @@ if comstr(Cam,'read'); [CAM,Cam]=comstr(CAM,5);
  if nb_frame       > 0 ; disp(['    nb FRAME       : ',num2str(nb_frame)]) ; end
 
 
- %% SDT model filling
+ %% #SDT_model_filling----------------------------------------------------2
  disp('> SDT model filling')
 
  %% Node declaration
- mdl.Node = zeros(nb_nod,7) ;
- for iNod=1:nb_nod
-  mdl.Node(iNod,1) = node_id(iNod) ;
-  mdl.Node(iNod,5:7) = node_xyz(iNod,1:3);
- end
- idx = 1:nb_nod;
- usr2idx = containers.Map(mdl.Node(:,1),idx) ;
-
+ usr2idx = containers.Map(mdl.Node(:,1),1:size(mdl.Node,1)) ;
 
  %% Association element / materiau (esi uses PART)
- % Computation of nbColElt
- nbColElt = 0 ;
- if nb_T4 > 0
-  nbColElt = max(nbColElt,4+3) ;
-  for iElt=1:nb_T4
-   for iPart=1:nb_Part_Solid
-    if tet4_part(iElt) == Part_Solid_IDPRT(iPart)
-     tet4_mat(iElt) = Part_Solid_IDMAT(iPart) ;
-    end
-   end
-  end
- end
- if nb_T10 > 0
-  nbColElt = max(nbColElt,10+3) ;
-  for iElt=1:nb_T10
-   for iPart=1:nb_Part_Solid
-    if tet10_part(iElt) == Part_Solid_IDPRT(iPart)
-     tet10_mat(iElt) = Part_Solid_IDMAT(iPart) ;
-    end
-   end
-  end
- end
- if nb_beam > 0
-  nbColElt = max(nbColElt,9) ;
-  for iElt=1:nb_beam
-   for iPart=1:nb_Part_Beam
-    if beam_part(iElt) == Part_Beam_IDPRT(iPart)
-     beam_mat(iElt) = Part_Beam_IDMAT(iPart) ;
-    end
-   end
-  end
- end
+ % Assign matid from partid
+ mpid=feutil('mpid',mdl.Elt);
+ partid=[Part_Solid_IDPRT Part_Beam_IDPRT Part_Solid_IDPRT];
+ matid=[Part_Solid_IDMAT Part_Beam_IDMAT Part_Solid_IDMAT];
+ [i1,i2]=ismember(mpid(:,1),partid);
+ mpid(i1~=0,1)=matid(i2(i1~=0)); % Replace each partid by matid
+ mdl.Elt=feutil('mpid',mdl.Elt,mpid); % Apply back
 
  %% Element declaration
  %  [Element_type_declaration ;
@@ -525,120 +506,75 @@ if comstr(Cam,'read'); [CAM,Cam]=comstr(CAM,5);
  %  MatId material ID number in model.pl
  %  ProId element property (e.g. section area) ID number in model.il
 
- row_elt = 0 ;
-
- if nb_T4 > 0
-  mdl.Elt=[mdl.Elt; zeros(nb_T4+1,nbColElt)] ;
-  row_elt = row_elt + 1 ;
-  mdl.Elt(row_elt,1:7)=[Inf  abs('tetra4') ] ;
-  for iElt=1:nb_T4
-   mdl.Elt(row_elt+iElt,1:(4+3)) = ...
-    [ tet4(iElt,:), ...
-    tet4_mat(iElt), ...    % MatId <= IDMAT
-    tet4_part(iElt), ...   % ProId <= IDPRT
-    tet4_id(iElt) ];
-  end
-  row_elt = row_elt+nb_T4 ;
- end
-
- if nb_T10 > 1
-  mdl.Elt=[mdl.Elt; zeros(nb_T10+1,nbColElt)] ;
-  row_elt = row_elt + 1 ;
-  mdl.Elt(row_elt,1:8)=[Inf  abs('tetra10') ] ;
-  for iElt=1:nb_T10
-   mdl.Elt(row_elt+iElt,1:(10+3)) = ...
-    [ tet10(iElt,:), ...
-    tet10_mat(iElt), ...    % MatId <= IDMAT
-    tet10_part(iElt), ...   % ProId <= IDPRT
-    tet10_id(iElt)];
-  end
-  row_elt = row_elt+nb_T10 ;
- end
-
- if nb_beam > 0
-  mdl.Elt=[mdl.Elt; zeros(nb_beam+1,nbColElt)] ;
-  row_elt = row_elt + 1 ;
-  mdl.Elt(row_elt,1:6)=[Inf  abs('beam1') ] ;
-  for iElt=1:nb_beam
-   mdl.Elt(row_elt+iElt,1:(4+3)) = ...
-    [ beam(iElt,1:2), ...
-    beam_mat(iElt), ...    % MatId <= IDMAT
-    beam_part(iElt), ...   % ProId <= IDPRT
-    beam(iElt,3), ...      % node defining bending plane 1
-    0, 0 ];
-  end
-  %row_elt = row_elt+nb_beam ;
- end
- %disp(mdl.Elt)
-
-
- if nb_spring > 0
-  mdl.Elt(end+1,1:6)=[Inf abs('celas')];
-  for iElt=1:nb_spring
-   IDPRT = spring_IDPRT(iElt) ;
-   IDMAT_spring = -1 ;
-   for iPart=1:nb_Part_Spring
-    if Part_Spring_IDPRT(iPart) == IDPRT
-     IDMAT_spring = Part_Spring_IDMAT(iPart) ;
-     break
+ if 1==2 % To propagate at reading section when revising spring and mass
+  if nb_spring > 0
+   mdl.Elt(end+1,1:6)=[Inf abs('celas')];
+   for iElt=1:nb_spring
+    IDPRT = spring_IDPRT(iElt) ;
+    IDMAT_spring = -1 ;
+    for iPart=1:nb_Part_Spring
+     if Part_Spring_IDPRT(iPart) == IDPRT
+      IDMAT_spring = Part_Spring_IDMAT(iPart) ;
+      break
+     end
+    end
+    if IDMAT_spring == -1
+     disp('spring_IDPRT:')
+     disp(spring_IDPRT)
+     disp('Part_Spring_IDPRT:')
+     disp(Part_Spring_IDPRT)
+     error('SPRING: IDMAT not found')
+    end
+    iMat225_OK = -1 ;
+    for iMat225 = 1:nb_mat_225
+     if mat_225_id(iMat225) == IDMAT_spring
+      %disp(mat_225_stiff(iMat225,:))
+      if mat_225_stiff(iMat225,1) ~= 0
+       mdl.Elt(end+1,1:7)=[spring_IDNOD1(iElt) 0 -1 1 0 0 mat_225_stiff(iMat225,1)];
+      end
+      if mat_225_stiff(iMat225,2) ~= 0
+       mdl.Elt(end+1,1:7)=[spring_IDNOD1(iElt) 0 -2 2 0 0 mat_225_stiff(iMat225,1)];
+      end
+      if mat_225_stiff(iMat225,3) ~= 0
+       mdl.Elt(end+1,1:7)=[spring_IDNOD1(iElt) 0 -3 3 0 0 mat_225_stiff(iMat225,3)];
+      end
+      if mat_225_stiff(iMat225,4) ~= 0
+       mdl.Elt(end+1,1:7)=[spring_IDNOD1(iElt) 0 -4 4 0 0 mat_225_stiff(iMat225,4)];
+      end
+      if mat_225_stiff(iMat225,5) ~= 0
+       mdl.Elt(end+1,1:7)=[spring_IDNOD1(iElt) 0 -5 5 0 0 mat_225_stiff(iMat225,5)];
+      end
+      if mat_225_stiff(iMat225,6) ~= 0
+       mdl.Elt(end+1,1:7)=[spring_IDNOD1(iElt) 0 -6 6 0 0 mat_225_stiff(iMat225,6)];
+      end
+      iMat225_OK = iMat225 ;
+      break
+     end
+    end
+    if iMat225_OK == -1
+     disp('spring_IDPRT:')
+     disp(spring_IDPRT)
+     disp('Part_Spring_IDPRT:')
+     disp(Part_Spring_IDPRT)
+     disp('Part_Spring_IDMAT:')
+     disp(Part_Spring_IDMAT)
+     disp('mat_225_id:')
+     disp(mat_225_id)
+     error('SPRING: Mat 225 not found')
     end
    end
-   if IDMAT_spring == -1
-    disp('spring_IDPRT:')
-    disp(spring_IDPRT)
-    disp('Part_Spring_IDPRT:')
-    disp(Part_Spring_IDPRT)
-    error('SPRING: IDMAT not found')
-   end
-   iMat225_OK = -1 ;
-   for iMat225 = 1:nb_mat_225
-    if mat_225_id(iMat225) == IDMAT_spring
-     %disp(mat_225_stiff(iMat225,:))
-     if mat_225_stiff(iMat225,1) ~= 0
-      mdl.Elt(end+1,1:7)=[spring_IDNOD1(iElt) 0 -1 1 0 0 mat_225_stiff(iMat225,1)];
-     end
-     if mat_225_stiff(iMat225,2) ~= 0
-      mdl.Elt(end+1,1:7)=[spring_IDNOD1(iElt) 0 -2 2 0 0 mat_225_stiff(iMat225,1)];
-     end
-     if mat_225_stiff(iMat225,3) ~= 0
-      mdl.Elt(end+1,1:7)=[spring_IDNOD1(iElt) 0 -3 3 0 0 mat_225_stiff(iMat225,3)];
-     end
-     if mat_225_stiff(iMat225,4) ~= 0
-      mdl.Elt(end+1,1:7)=[spring_IDNOD1(iElt) 0 -4 4 0 0 mat_225_stiff(iMat225,4)];
-     end
-     if mat_225_stiff(iMat225,5) ~= 0
-      mdl.Elt(end+1,1:7)=[spring_IDNOD1(iElt) 0 -5 5 0 0 mat_225_stiff(iMat225,5)];
-     end
-     if mat_225_stiff(iMat225,6) ~= 0
-      mdl.Elt(end+1,1:7)=[spring_IDNOD1(iElt) 0 -6 6 0 0 mat_225_stiff(iMat225,6)];
-     end
-     iMat225_OK = iMat225 ;
-     break
-    end
-   end
-   if iMat225_OK == -1
-    disp('spring_IDPRT:')
-    disp(spring_IDPRT)
-    disp('Part_Spring_IDPRT:')
-    disp(Part_Spring_IDPRT)
-    disp('Part_Spring_IDMAT:')
-    disp(Part_Spring_IDMAT)
-    disp('mat_225_id:')
-    disp(mat_225_id)
-    error('SPRING: Mat 225 not found')
-   end
   end
- end
-
- if nb_mass > 0
-  mdl.Elt(end+1,1:6)=[Inf abs('mass1')];
-  for imass = 1:nb_mass
-   mdl.Elt(end+1,1:7) = [mass_IDNOD(imass), ...
-    mass_Mixy(imass,1), mass_Mixy(imass,2), mass_Mixy(imass,3), ...
-    mass_J(imass,1), mass_J(imass,2), mass_J(imass,3), ...
-    imass] ;
-   if (mass_J(imass,4) ~= 0) || (mass_J(imass,5) ~= 0) || (mass_J(imass,6) ~= 0)
-    error('MASS: rectangular inertia product not yet handled')
+ 
+  if nb_mass > 0
+   mdl.Elt(end+1,1:6)=[Inf abs('mass1')];
+   for imass = 1:nb_mass
+    mdl.Elt(end+1,1:7) = [mass_IDNOD(imass), ...
+     mass_Mixy(imass,1), mass_Mixy(imass,2), mass_Mixy(imass,3), ...
+     mass_J(imass,1), mass_J(imass,2), mass_J(imass,3), ...
+     imass] ;
+    if (mass_J(imass,4) ~= 0) || (mass_J(imass,5) ~= 0) || (mass_J(imass,6) ~= 0)
+     error('MASS: rectangular inertia product not yet handled')
+    end
    end
   end
  end
@@ -750,7 +686,7 @@ if comstr(Cam,'read'); [CAM,Cam]=comstr(CAM,5);
    else
     basis = reshape(frame_basis(bounc_IFRA(i_bounc),:,:),3,3) ;
    end
-   mdl=add_BOUNC(mdl, bounc_names(i_bounc), bounc_XYZUVW(i_bounc), ...
+   mdl=add_BOUNC(mdl, bounc_names{i_bounc}, bounc_XYZUVW(i_bounc), ...
     lst_nodes_F, basis);
   end
  end
@@ -761,12 +697,14 @@ if comstr(Cam,'read'); [CAM,Cam]=comstr(CAM,5);
   else
    basis = reshape(frame_basis(mtoco_IFRA1(i_mtoco),:,:),3,3) ;
   end
-  mdl=add_MTOCO(mdl, mtoco_names(i_mtoco), mtoco_IDNODi(i_mtoco), mtoco_XYZUVW(i_mtoco), ...
+  mdl=add_MTOCO(mdl, mtoco_names{i_mtoco}, mtoco_IDNODi(i_mtoco), mtoco_XYZUVW(i_mtoco), ...
    cell2mat(mtoco_lst_nodes(i_mtoco)), basis, ...
    usr2idx);
  end
 
  disp('> Model filling completed')
+ t_second = toc;
+ disp(['> Reading time: ',num2str(t_second),' s'])
 
  %% Plotting
  %disp('pc2sdt: SDt plot')
@@ -801,42 +739,29 @@ else; error('Unknown command %s',CAM);
 end %commands
 end % baseFunction
 %% #SubFunc --------------------------------------------------------------1
-function line=nextLine(fid, nb_line)
+function [st,jhead,head]=nextBlock(txt,jhead,headind,nb_line)
 %% #nextLine--------------------------------------------------------------2
-if nargin == 1
+if nargin == 3
  nb_line = 1 ;
 end
-for il=1:nb_line
- while 1
-  line = fgetl(fid);
-  if line(1) ~= '$', break, end
- end
+jhead=jhead+nb_line;
+st=txt(headind(jhead):headind(jhead+1)-1);
+i1=regexp(st,'\n','once'); 
+head=st(1:i1-1);
+st=st(i1+1:end);
+i2=regexp(st,'\n *$'); % Remove last line return and empty spaces
+if ~isempty(i2); st(i2:end)=''; end
 end
-end
-
-function lst_nodesID = read_nodesID(line, fid)
+function lst_nodesID = read_nodesID(lines)
 %% #read_nodesID----------------------------------------------------------2
 lst_nodesID = [];
-nbNodes = 0 ;
-while strcmp(line(1:11),'        NOD')
- first_split = strsplit(line(12:length(line)),' ');
- for i1 = 1:length(first_split)
-  split_elem = char(first_split(i1)) ;
-  if length(split_elem) > 0
-   sgnd_split=strsplit(split_elem,{':'});
-   if length(sgnd_split) == 1
-    nbNodes = nbNodes + 1 ;
-    lst_nodesID(nbNodes) = str2double(char(sgnd_split(1)));
-   else
-    for inod=str2double(char(sgnd_split(1))):str2double(char(sgnd_split(2)))
-     nbNodes = nbNodes + 1 ;
-     lst_nodesID(nbNodes) = inod ;
-    end
-   end
-
-  end
+j1=0;
+while j1<length(lines)
+ j1=j1+1; line=lines{j1};
+ if strcmp(line(1:11),'        NOD')
+  n1=str2num(line(12:end));
+  lst_nodesID=[lst_nodesID n1]; 
  end
- line=nextLine(fid) ;
 end
 end
 
@@ -953,7 +878,11 @@ for ii=1:6
 end
 % Merge data and store in Case (one case entry for all directions)
 data=struct('DOF',lst_dof,'c',vertcat(c{:}));
-mdl=fe_case(mdl,'mpc',[char(NAME),'_bc'],data);
+r1=fe_case('stack_get',mdl,[NAME,'_bc'],'g');
+if isempty(r1) % Add new case
+ mdl=fe_case(mdl,'mpc',[NAME,'_bc'],data);
+else; error('Merging several BOUNC not handled yet, contact Guillaume Martin');
+end
 
 %data=struct('DOF',[1.01;1.03],'c',[1 -1]);
 %mo2=fe_case(mo1,'mpc','z=x',data);
@@ -1020,12 +949,12 @@ for ii=1:6
 end
 % Merge data and store in Case (one case entry for all directions)
 data=struct('DOF',lst_dof,'c',vertcat(c{:}));
-mdl=fe_case(mdl,'mpc',[char(NAME),'_mpc'],data);
-% Add mass1 to master node if not already there (allows to keep mpc with feutilb submodel)
-i1=feutil('findnode inelt{eltname mass1};',mdl);
-if ~ismember(IDNODi,i1)
- mdl=feutil('AddElt',mdl,'mass1',IDNODi);
-end
+mdl=fe_case(mdl,'mpc',[NAME,'_mpc'],data);
+% % Add mass1 to master node if not already there (allows to keep mpc with feutilb submodel)
+% i1=feutil('findnode inelt{eltname mass1};',mdl);
+% if ~ismember(IDNODi,i1)
+%  mdl=feutil('AddElt',mdl,'mass1',IDNODi);
+% end
 %data=struct('DOF',[1.01;1.03],'c',[1 -1]);
 %mo2=fe_case(mo1,'mpc','z=x',data);
 
