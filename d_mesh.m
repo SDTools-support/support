@@ -1671,6 +1671,14 @@ if isempty(Cam)
      'iopt',int32([0 0 6 2]),'adofi',[-.96;-.97], ...
      'MexCb',{{nlutil('@dama_g'),[]}},'wy',1e3,'gamma',1,'snl',[],'StoreType',3);
   r2.pl=m_elastic('dbval 1 steel -unit TM');r2.unit='TM';
+ case 'DamB'
+  %% #MatDamB : test case for surface damage testing
+  r2=struct; r2.NLdata=struct('type','nl_inout','opt',zeros(1,3), ...
+     'iopt',int32([0 0 6 2]),'adofi',[-.96;-.97], ...
+     'MexCb',{{nlutil('@dama_g'),[]}},'wn',1e3,'gn',1,'wt',1e3,'gt',1,'snl',[],'StoreType',3);
+  % Stiff 3rd direction enforces sliding. 1 & 2 give sliding stiffness
+  r2.pl=[1 fe_mat('m_elastic','TM',4) 2e3 0 3e3 0 0 1e4 1e-10];r2.unit='TM';
+
  case 'PadA'
   %% #MatPadA R. Zhuravlev, table 2.3 PhD Thesis, ENSAM, 2017 https://pastel.archives-ouvertes.fr/tel-01744302
   r2=m_hyper('urn','PadA{2.5264,-0.9177,0.4711,1200,3,f .35,g .5688,rho1n,tyYeoh,unTM}');
