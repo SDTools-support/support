@@ -1654,7 +1654,7 @@ if isempty(Cam)
   RO.nu=RO.lambda/2/(RO.lambda+RO.mu); 
   r2.pl=[100,fe_mat('m_elastic','MM',1),RO.E,RO.nu, RO.rho, RO.E/2/(1+RO.nu)];
   model.info=RO;model.unit='MM';
-  model=fe_case(model,'pcond','UP','m_hyper(''pcond 1e3'')');
+  model=fe_case(model,'pcond','UP','m_hyper(''pcond 1e0'')');
   if isfield(r2,'NL')
    NLdata=struct('type','nl_inout','opt',[0,0,0], ...
      'MexCb',{{m_hyper('@hyper_g'),struct}},'adofi',-.99*ones(29,1));
