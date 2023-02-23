@@ -1955,6 +1955,12 @@ end
 
 if ~isfield(mo1,'name');mo1.name=RO.name;end
 if isfield(RO,'nmap'); mo1.nmap=RO.nmap; end % sdtw('xxxeb xxxgv need to clarify
+ind=strncmp(RO.CaseVal,'Cb',2);ind=ind(:)';
+for j1=find(ind) % Possibly use RO.RangeEvt
+  %'CbSetE','mo1.pl(mo1.pl(:,1)==4,3)=RO.RangeEvt.E'
+  eval(RO.nmap(RO.CaseVal{j1}));
+end
+
 if isfield(RO,'nmap')&&nargout==0
     RO.nmap('CurModel')=mo1; return
 end
