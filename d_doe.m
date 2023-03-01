@@ -94,7 +94,7 @@ elseif comstr(Cam,'nmap'); [CAM,Cam]=comstr(CAM,5);
  end
  if ~isKey(nmap,'AcqTime');nmap('AcqTime')=.3;end
 
-%% #SDT-contact_two_cube test cases -2
+%% #SDT-contact test cases -2
 
 %% #CtcCube.A : load pressure exponential contact -3
 li={'MeshCfg{"d_contact(cube)::n3e13{Kc1e12}"}',';', ...
@@ -227,8 +227,38 @@ nmap('TV.AR')=RT;
   li={'MeshCfg{d_contact(Hoffmann),TV,KmuV}';';'  % Mesh:Case:NL
    'SimuCfg{ModalNewmark{1m,400,uva111,rt-1e-4}SQ0{vq1Amp__5}}';';'
    'RunCfg{Time,PostB}'};
-  RT.nmap('CurExp')=li;
-nmap('TV.Hoff')=RT;
+  RT.nmap('TVK.MN')=li;  % time varying stiffness
+  li={'MeshCfg{d_contact(Hoffmann)::KmuV}';';'  % Mesh:Case:NL
+  'SimuCfg{ModalNewmark{10m,400,uva111,rt-1e-4}SQ0{vq1Amp__10}}';';'
+  'RunCfg{Time,PostInit,PostA,PostB}'};
+  RT.nmap('Kmuv.MN')=li; % non-linear damping (change viscous damping based on velocity)
+  li={'MeshCfg{d_contact(Hoffmann),Ctc,TExp}';';'  % Mesh:Case:NL
+  'SimuCfg{Implicit{10m,400,uva111,rt-1e-4}SQ0{vq1Amp__1}}';';'
+  ...'SimuCfg{ModalNewmark{10m,400,uva111,rt-1e-4}SQ0{vq1Amp__10}}';';'
+  'RunCfg{Time,PostInit,PostA,PostB}'};
+  RT.nmap('Texp.Imp')=li; % non-linear damping (change viscous damping based on velocity)
+
+  li={'MeshCfg{d_contact(Hoffmann),Ctc,TExpCh}';';'  % Mesh:Case:NL
+  'SimuCfg{ModalNewmark{10m,400,uva111,rt-1e-4}SQ0{vq1Amp__10}}';';'
+  'RunCfg{Time,PostInit,PostA,PostB}'};
+  RT.nmap('Texp.MN')=li; % non-linear damping (change viscous damping based on velocity)
+
+  li={'MeshCfg{d_contact(Hoffmann)::}';';'  % Mesh:Case:NL
+   ...'SimuCfg{Implicit{10m,400,uva111,rt-1e-4}SQ0{vq1Amp__5}}';';'
+   'SimuCfg{ModalNewmark{1m,100,uva111,rt-1e-4}SQ0{vq1Amp__5}}';';'
+   'RunCfg{Time,PostInit,PostA}'};
+  RT.nmap('base.MN')=li; % non-linear damping (change viscous damping based on velocity)
+
+
+if isKey(nmap,'n'); RT.nmap('CurExp')=RT.nmap(nmap('n')); end
+
+nmap('TV.Hoff')=RT; % d_doe('nmap','TV.Hoff{n,Texp.MN}')
+
+% d_doe('nmap','Ex.Hoff.KmuV.Imp')
+%  sdtm.toString(li(1:2:end)');RT.nmap('CurExp')=li;
+
+ %RT=struct('nmap',nmap);d_doe('nmap','TV.Hoff');RT.nmap('CurExp')=li;
+
 
 
 %% deal with outputs 
@@ -250,135 +280,17 @@ if comstr(Cam,'range')
 elseif nargin==1; out=nmap;
 elseif ~isempty(key)
   out=nmap(key);
-  if nargout==2&&iscell(out)&&numel(out)==2;out1=out{2};out=out{1};end
+  if strncmpi(key,'Ex.',3) % d_doe('nmap','Ex.Hoff.KmuV.Imp')
+   nmap.append(out);out=struct('nmap',nmap);
+  elseif nargout==2&&iscell(out)&&numel(out)==2;out1=out{2};out=out{1};
+  end 
 end
-
-elseif comstr(Cam,'range'); [CAM,Cam]=comstr(CAM,6);
-%% #Range range_set_params ---------------------------------
-  dbstack; keyboard;
-
-  Range=[];
-  if carg<=nargin;val=varargin{carg};carg=carg+1; else;val=[];end
-  if isfield(val,'param'); Range=val;
-    if carg<=nargin; val=varargin{carg};carg=carg+1;end
-  end
-  if isempty(Range)&&carg<=nargin&&isfield(varargin{carg},'param')
-    Range=varargin{carg};carg=carg+1;
-  end
-  if isempty(Cam)&&ischar(val);
-    [CAM,Cam]=comstr(val,1);val=varargin{carg};carg=carg+1;
-  end
-  
-  if isempty(Cam)&&isfield(val,'NeedInit')
-    %% #NeedInit : actually fill -2
-    [out,out1]=d_tdoe(val.type,Range,val.NeedInit);
-    % out1 should contain the selected values
-    return;
-        
-  elseif ~isempty(regexpi(Cam,'^m_','once'))
-    %% #RangeM_ : MeshCfg parameters
-    if iscell(val)
-      out=struct('val',[],'lab',{{CAM}}, ...
-        'param',struct(CAM,struct('type','pop','level',10)));
-      [out.param.(CAM),out.val]=feval(fe_range('@popMerge'),out,CAM,val);
-    else
-      out=struct('val',val(:),'lab',{{CAM}}, ...
-        'param',struct(CAM,struct('type','double','level',10)));
-    end
-  elseif ~isempty(regexpi(Cam,'^r_','once'))
-    %% #RangeR_ : RunCfg parameters
-    if iscell(val)
-      out=struct('val',[],'lab',{{CAM}}, ...
-        'param',struct(CAM,struct('type','pop','level',30)));
-      [out.param.(CAM),out.val]=feval(fe_range('@popMerge'),out,CAM,val);
-    else
-      out=struct('val',val(:),'lab',{{CAM}}, ...
-        'param',struct(CAM,struct('type','double','level',30)));
-    end
-    
-  elseif ~isempty(regexp(Cam,'cfg$','once'))
-    %% #RangeTypeCfg : support choices of
-    if ischar(val); val={val}; end
-    if iscell(val);
-      [speed,r2]=ismember(lower(val),lower(Range.param.(CAM).choices));
-      if ~all(speed); error('%s not found in %s',comstr(val(~speed),-30),CAM);end
-    else; r2=val(:);
-    end
-    out=struct('val',r2(:),'lab',{{CAM}});
-    
-    
-  elseif comstr(Cam,'check')||isempty(Cam)
-    %% #Range or #RangeCheck : verify that all things needed are there
-    if comstr(Cam,'check');[CAM,Cam]=comstr(CAM,6);end
-    
-    if carg<=nargin && isstruct(varargin{carg}); RO=varargin{carg};carg=carg+1;
-    else; RO=struct();
-    end
-    if ~isfield(RO,'UsedField');RO.UsedField={};end
-    st={'MeshCfg','SimuCfg','RunCfg'};
-    if isempty(Range);
-      Range=struct('param',[],'FileName',{{'ID'}},'val',[]);
-      Range.param.MainFcn={'d_tdoe','range'}; % Allow callback for param setting
-    end
-    for j1=1:length(st) % Verify base params
-      if isfield(Range.param,st{j1});
-      elseif strcmpi(st{j1},'meshcfg');% Use reference implementation
-        % d_mesh('MeshCfg',Range,'d_hbm(0D):DofSet:0dm1t');
-        Range=d_mesh(st{j1},Range,val.(st{j1}));
-      elseif strcmpi(st{j1},'simucfg');
-       % Use reference implementation d_fetime
-       % This updates the Range.param.MeshCfg.data{xxx} and Range.param.SimuCfg.data{1} 
-        evt=sdth.sfield('addselected',struct('urn',val.(st{j1})), ...
-            val,{'NperPer','iteStab','PerFrac','freq','tend','dt'});% xxxgetFieldList
-        if isempty(evt.urn);
-           fprintf('Skipping empty SimuCfg\n');
-           if ~isfield(Range.param,'UsedField');Range.param.UsedField={};end
-           Range.param.UsedField{end+1}='SimuCfg'; 
-           continue;
-        else
-         Range=d_fetime(st{j1},Range,evt);
-        end
-      elseif isfield(val,st{j1});Range=d_tdoe(st{j1},Range,val.(st{j1}));
-      else;Range=d_tdoe(st{j1},Range);
-      end
-      val.(st{j1})=Range.param.(st{j1}).choices;
-    end
-    if isstruct(val); % Allow automated fill from struct
-      val.param=Range.param; val.FileName=Range.FileName;
-      if isfield(Range.param,'UsedField')
-       val=feutil('rmfield',val,Range.param.UsedField);
-      end
-      if isempty(CAM);
-        Range=fe_range('BuildGrid -FileName',val,RO);
-      else;%Range=d_tdoe('RangeCheckBuildSimple -FileName',RB);
-        Range=fe_range(CAM,val,RO);
-      end
-    end
-    Range.param=sdth.sfield('rmfield',Range.param,'UsedField');
-    out=Range; return;
-    
-    
-  else; error('''%s'' not a known range',CAM);
-  end
-  
-  if ~isempty(Range) % Concatenate
-    Range=fe_range('grid -level -replace=1',Range,out);
-    if isfield(out,'lab')&&isfield(out,'val')&&~isempty(out.val)
-      st1=sprintf('@%s',out.lab{1});
-      if ~any(strcmpi(Range.FileName,st1));Range.FileName{end+1}=st1;end
-    end
-    out=Range;
-  end
-  if isfield(out,'FileName')
-    out.FileName(strcmpi('@wdtest',out.FileName))=[];
-    out.FileName(strcmpi('@wv',out.FileName))=[];
-  end
 
   
 elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
-%% #Solve : parametric study  ---------------------------------------
+%% Solve : parametric study  ---------------------------------------
 if carg>nargin;RO=struct('info',1);else;RO=varargin{carg};carg=carg+1;end
-
+sdtw('_ewt','should use sdtsys')
 if isempty(Cam)
  %  #Solve.Loop_
  % sdtweb d_mesh MeshCfg
@@ -392,13 +304,14 @@ else
  
 end
 elseif nargin==3&&strcmpi(varargin{3},'steprun')
-%% #stepRun  ---------------------------------------
-
+%% stepRun  ---------------------------------------
 error('Moved to sdtsys')
 
 
 elseif comstr(Cam,'runcfg'); [CAM,Cam]=comstr(CAM,7);
 %% #RunCfg : define runcfg  ---------------------------------------
+
+sdtw('_ewt','should use sdtsys')
 
 Range=varargin{carg};carg=carg+1;
 RO=varargin{carg};carg=carg+1;
