@@ -96,11 +96,14 @@ elseif comstr(Cam,'nmap'); [CAM,Cam]=comstr(CAM,5);
 
 %% #SDT-contact test cases -2
 
+RT=struct('nmap',vhandle.nmap);
+RT.nmap('SimBack')='SimuCfg{back{.2m,50,chandle1}}';
+
 %% #CtcCube.A : load pressure exponential contact -3
 li={'MeshCfg{"d_contact(cube)::n3e13{Kc1e12}"}',';', ...
      'SimuCfg{"Static{1e-8,chandle1}","Imp{100u,.1,chandle1,acall.}","EigOpt{5 5 0}"}', ...
      ';','RunCfg{nl_solve(Static),nlutil(HRbuild{q0m1}),run}'}';
-nmap('CtcCube.A')=li; 
+RT.nmap('CubeA')=li; % CtcCube.A
 
 
 %% #CtcCube.B : load pressure and corner, exponential contact  -3
@@ -108,10 +111,19 @@ nmap('CtcCube.A')=li;
 li={'MeshCfg{"d_contact(cube{loPC})::n3e13{Kc1e12,Lambda500}"}';
     ';';'SimuCfg{"Static{1e-8,chandle1}","Imp{50u,.1,chandle1,acall.}","EigOpt{5 5 0}"}';
     ';';'RunCfg{nl_solve(Static),nlutil(HRbuild{q0m1})}'};
-nmap('CtcCube.B')=li; 
+RT.nmap('CubeB')=li; % CtcCube.B
 
+  %RT.nmap('PostA')='nl_solve@doFreq{spec{BufTime 20 Overlap .90 Fmax 50 -window hanning},ci3}';
+%  RT.nmap('PostA')='d_squeal(ViewSpec{BufTime 50 Tmin 50 Overlap .90 Fmax 20 -window hanning},nameHoffKmuV)';
+%  RT.nmap('PostB')='d_contact@autoCycle{tclip50 20,dmBand1.2,ci3}';
+%  RT.nmap('PostInit')='d_squeal(LoadTime{ci[2 13]},$nmap)';
+
+li={'MeshCfg(d_contact(ScldCube))',';','SimBack',';','RunCfg{Time}'};
+RT.nmap('ScLdA')=li; % ScLdA
 % CtcCube.C : exponential contact; static followed by, hyperreduction
 % xxx add static load and point load 
+if isKey(nmap,'n')&&isKey(RT.nmap,nmap('n')); RT.nmap('CurExp')=RT.nmap(nmap('n')); end
+nmap('Ctc')=RT;
 
 %% #HE : hyperelastic testing -2
 %% #HE.1T : hyperelastic test with one element -3
@@ -217,7 +229,7 @@ li={'MeshCfg{"d_fetime(1DOF):ARTV{z.01}"}'; ';'
 RT.nmap('CurExp')=li;
 nmap('TV.AR')=RT;
 
-%% #Tv.Hoffman with time varying stiffness -3
+%% #Tv.Hoffman{n,Mmuv} with time varying stiffness -3
   RT=struct('nmap',vhandle.nmap);
   %RT.nmap('PostA')='nl_solve@doFreq{spec{BufTime 20 Overlap .90 Fmax 50 -window hanning},ci3}';
   RT.nmap('PostA')='d_squeal(ViewSpec{BufTime 50 Tmin 50 Overlap .90 Fmax 20 -window hanning},nameHoffKmuV)';
@@ -250,7 +262,7 @@ nmap('TV.AR')=RT;
   RT.nmap('base.MN')=li; % non-linear damping (change viscous damping based on velocity)
 
 
-if isKey(nmap,'n'); RT.nmap('CurExp')=RT.nmap(nmap('n')); end
+if isKey(nmap,'n')&&isKey(RT.nmap,nmap('n')); RT.nmap('CurExp')=RT.nmap(nmap('n')); end
 
 nmap('TV.Hoff')=RT; % d_doe('nmap','TV.Hoff{n,Texp.MN}')
 
