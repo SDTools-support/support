@@ -262,7 +262,12 @@ nmap('TV.AR')=RT;
   RT.nmap('base.MN')=li; % non-linear damping (change viscous damping based on velocity)
 
 
-if isKey(nmap,'n')&&isKey(RT.nmap,nmap('n')); RT.nmap('CurExp')=RT.nmap(nmap('n')); end
+if isKey(nmap,'n')&&isKey(RT.nmap,nmap('n')); 
+    RT.nmap('CurExp')=RT.nmap(nmap('n')); 
+    if isKey(nmap,'s')&&isequal(nmap('s'),'back') % d_doe('nmap','TV.Hoff{n,Texp.MN,s,back}')
+     RT.nmap('CurExp')=strrep(RT.nmap('CurExp'),'ModalNewmark','Back');
+    end
+end
 
 nmap('TV.Hoff')=RT; % d_doe('nmap','TV.Hoff{n,Texp.MN}')
 
@@ -297,7 +302,13 @@ elseif ~isempty(key)
   elseif nargout==2&&iscell(out)&&numel(out)==2;out1=out{2};out=out{1};
   end 
 end
-
+if nargout==0
+ %% clean listing 
+ if isa(out,'vhandle.nmap'); disp(out);
+ elseif isfield(out,'nmap'); fprintf('%s is struct with .nmap\n',key); disp(out.nmap);
+ end
+ clear out;
+end
   
 elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
 %% Solve : parametric study  ---------------------------------------
