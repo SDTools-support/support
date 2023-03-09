@@ -1962,7 +1962,10 @@ for j1=find(ind) % Possibly use RO.RangeEvt
 end
 
 if isfield(RO,'nmap')&&nargout==0
-    RO.nmap('CurModel')=mo1; return
+    if isfield(mo1,'Node')||isfield(mo1,'Elt')
+        RO.nmap('CurModel')=mo1; 
+    end
+    return
 end
 %sdth.PARAM('MeshRes',mo1); % high level storage
 if ~isfield(Range,'param');Range.param=struct;end
