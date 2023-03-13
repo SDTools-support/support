@@ -33,8 +33,8 @@ d_tdoe('Solve',RP)
 li={'MeshCfg{d_hbm(0D):DofSet:0dm1t}';';'
       'SimuCfg{RO{NperPer2e3,Nper1,iteStab20},"SteppedSine{5}:C0{0,15}:C1{2.5,10}"}';';'
       'RunCfg{Time,dfr_ident@va}'};
-RT=struct('nmap',vhandle.nmap);
-r2=sdtm.range(RT,li);%d2=mo2.nmap('CurTime');
+RT=struct('nmap',vhandle.nmap);RT.nmap('CurExp')=li;
+r2=sdtm.range(RT);%d2=mo2.nmap('CurTime');
 
 %RP.Mesh='d_hbm(Mesh0D):t_vibrac(0Dm1tsvli)';dfr_ident('Load',RP); % Stresss rate relax + Dahl: OK
 
@@ -79,19 +79,21 @@ li={'MeshCfg{d_hbm(Duffing2Dof),,CubFu}';';'
 
 else; error('Script%s',CAM);
 end
-elseif comstr(Cam,'nmap'); [CAM,Cam]=comstr(CAM,5);
+elseif comstr(Cam,'nmap');
 %% #nmap list of named experiments used for demos and non-regression tests ---
 
- key=''; if nargin>1; key=varargin{2};end
- if nargin>2;uo=varargin{3};carg=4; 
-   if isfield(uo,'nmap');nmap=uo.nmap;else; nmap=vhandle.nmap;uo.nmap=nmap;end
-   if isfield(uo,'Daq'); nmap('AcqTime')=uo.Daq.AcqTime;end
- else; nmap=vhandle.nmap;
- end
- if ~any(key=='{')
- elseif strncmp(key,'@',1);out=sdtm.urnCb(key);return; % @gui21{nmap,DaqShakerPres}
- else;[key,nmap]=sdtm.keyRep(nmap,key,'_ParSet');%sdtsys('nmap','VtDaq{dt,1e-6}')
- end
+[key,nmap,uo,carg]=sdtm.stdNmapArgs(varargin,CAM,carg);
+%  key=''; if nargin>1; key=varargin{2};end
+%  if nargin>2;uo=varargin{3};carg=4; 
+%    if isfield(uo,'nmap');nmap=uo.nmap;else; nmap=vhandle.nmap;uo.nmap=nmap;end
+%    if isfield(uo,'Daq'); nmap('AcqTime')=uo.Daq.AcqTime;end
+%  else; nmap=vhandle.nmap;
+%  end
+%  if ~any(key=='{')
+%  elseif strncmp(key,'@',1);out=sdtm.urnCb(key);return; % @gui21{nmap,DaqShakerPres}
+%  else;[key,nmap]=sdtm.keyRep(nmap,key,'_ParSet');%sdtsys('nmap','VtDaq{dt,1e-6}')
+%  end
+
  if ~isKey(nmap,'AcqTime');nmap('AcqTime')=.3;end
 
 %% #SDT-contact test cases -2
@@ -100,7 +102,7 @@ RT=struct('nmap',vhandle.nmap);
 RT.nmap('SimBack')='SimuCfg{back{.2m,50,chandle1}}';
 
 %% #CtcCube.A : load pressure exponential contact -3
-li={'MeshCfg{"d_contact(cube)::n3e13{Kc1e12}"}',';', ...
+li={'MeshCfg{d_contact(cube),,n3e13{Kc1e12}}',';', ...
      'SimuCfg{"Static{1e-8,chandle1}","Imp{100u,.1,chandle1,acall.}","EigOpt{5 5 0}"}', ...
      ';','RunCfg{nl_solve(Static),nlutil(HRbuild{q0m1}),run}'}';
 RT.nmap('CubeA')=li; % CtcCube.A
@@ -108,7 +110,7 @@ RT.nmap('CubeA')=li; % CtcCube.A
 
 %% #CtcCube.B : load pressure and corner, exponential contact  -3
 %    static followed by, hyperreduction
-li={'MeshCfg{"d_contact(cube{loPC})::n3e13{Kc1e12,Lambda500}"}';
+li={'MeshCfg{d_contact(cube{loPC}),,n3e13{Kc1e12,Lambda500}}';
     ';';'SimuCfg{"Static{1e-8,chandle1}","Imp{50u,.1,chandle1,acall.}","EigOpt{5 5 0}"}';
     ';';'RunCfg{nl_solve(Static),nlutil(HRbuild{q0m1})}'};
 RT.nmap('CubeB')=li; % CtcCube.B
@@ -129,7 +131,7 @@ nmap('Ctc')=RT;
 %% #HE.1T : hyperelastic test with one element -3
 %  RO=struct('mat','simoA','Mesh','OneTrac','Case','DofSet:Sine{10}:C0{0}','NperPer',1e5,'Nper',3);RO.do='{run,va,pow}';dfr_ident('Load',RO);
 
-li={'MeshCfg{"d_fetime(OneTrac{d2 2 2,MatSimoA}):Rivlin{-.2 -.2 -.4}"}';';' % RivlinCube experiment
+li={'MeshCfg{d_fetime(OneTrac{d2 2 2,MatSimoA}),Rivlin{-.2 -.2 -.4}}';';' % RivlinCube experiment
       'SimuCfg{Imp{1m,3,chandle1,rt-1e-3},Sig{Tri(.1,/2,5)}}';';'
       'RunCfg{Time}'};
 nmap('HE.1T')=li; 
@@ -183,7 +185,7 @@ RT.nmap('ShowSpectro')='fe_simul(''fe_timeCleanup'')';
 RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE)';
 RT.nmap('Transient')='nmap(''CurTime'')=fe_time(nmap(''CurModel''));';
 RT.nmap('SetCI')='ci=iiplot;cingui(''plotwd'',ci,''@OsDic(SDT Root)'',{''FnI'',''ImSw80'',''WrW49c''});;';
-li={'MeshCfg{"d_fetime(1DOF):MaxwellA{Z.01,Fds}:Duff"}',';', ...
+li={'MeshCfg{d_fetime(1DOF),MaxwellA{Z.01,Fds},Duff}',';', ...
       'SimuCfg{ModalNewmark{1m,$AcqTime$,sPostA},Sig{cnInput,Table(0 1n .1,1 0 0,istair)}}',';', ... % Sig=step
       'RunCfg{Reduce,Transient}'};
 li=sdtm.keyRep(nmap,li);
@@ -276,39 +278,10 @@ nmap('TV.Hoff')=RT; % d_doe('nmap','TV.Hoff{n,Texp.MN}')
 
  %RT=struct('nmap',nmap);d_doe('nmap','TV.Hoff');RT.nmap('CurExp')=li;
 
-
-
-%% deal with outputs 
-if comstr(Cam,'range')
-   if nargin==2&&isKey(nmap,varargin{2}) % r1= cbi21('nmapRange','SoKBenchB_static')
-    r1=nmap(varargin{2});li=r1.nmap('CurExp');
-    fprintf('Running %s\n %s',varargin{2},sdtm.toString(li));
-    out=sdtm.range(r1,li);
-    if nargout>1; out1=out.nmap('CurModel');end
-    if nargout>2; out2=out.nmap('CurTime');end
-    
-   else % mo2=daqsdt('nmaprange',{'SensA',';','RunVa'})
-    out=sdtm.range(struct('nmap',nmap,'silent',-1),varargin{2:end});
-   end
-
-  %st=horzcat(li{:});
-  %fprintf('Running experiment\n %s\n',st)
-  %out=sdtm.range(struct,st);
-elseif nargin==1; out=nmap;
-elseif ~isempty(key)
-  out=nmap(key);
-  if strncmpi(key,'Ex.',3) % d_doe('nmap','Ex.Hoff.KmuV.Imp')
-   nmap.append(out);out=struct('nmap',nmap);
-  elseif nargout==2&&iscell(out)&&numel(out)==2;out1=out{2};out=out{1};
-  end 
-end
-if nargout==0
- %% clean listing 
- if isa(out,'vhandle.nmap'); disp(out);
- elseif isfield(out,'nmap'); fprintf('%s is struct with .nmap\n',key); disp(out.nmap);
+ if nargout==1;out=sdtm.stdNmapOut(nmap,key,nargout);
+ else; sdtm.stdNmapOut(nmap,key,nargout);
  end
- clear out;
-end
+
   
 elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
 %% Solve : parametric study  ---------------------------------------
