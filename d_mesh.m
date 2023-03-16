@@ -1775,7 +1775,7 @@ assignin('caller','Res',model);
 
 elseif comstr(Cam,'mesh'); [CAM,Cam]=comstr(CAM,5);
  %% if not found edit MeshCmd to Cmd
-
+%% #Mesh 
 if comstr(Cam,'plate')
 %% #MeshPlate {div,o%s,i%s}
  [st,RO]=sdtm.urnPar(CAM,'{div%g}:{o%s,i%s}');
@@ -1961,7 +1961,7 @@ for j1=find(ind) % Possibly use RO.RangeEvt
   eval(RO.nmap(RO.CaseVal{j1}));
 end
 
-if isfield(RO,'nmap')&&nargout==0
+if isfield(RO,'nmap')&&nargout==0 % Possibly nmap('CurModel') set before
     if isfield(mo1,'Node')||isfield(mo1,'Elt')
         RO.nmap('CurModel')=mo1; 
     end
