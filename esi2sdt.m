@@ -151,6 +151,7 @@ if comstr(Cam,'read'); [CAM,Cam]=comstr(CAM,5);
  jhead=0;
  while jhead<length(headind)-1
   [st,jhead,head]=nextBlock(txt,jhead,headind);
+  if isempty(st); continue; end
   i1=regexp(st(1:7),'....../'); % Detect data type : NODE, TETR4, ...
   if i1; typ=st(1:6);
   else; typ='';
@@ -745,12 +746,14 @@ if nargin == 3
  nb_line = 1 ;
 end
 jhead=jhead+nb_line;
+if jhead>=length(headind); st=''; head=''; return; end % Header in last line, return empty 
 st=txt(headind(jhead):headind(jhead+1)-1);
 i1=regexp(st,'\n','once'); 
 head=st(1:i1-1);
 st=st(i1+1:end);
 i2=regexp(st,'\n *$'); % Remove last line return and empty spaces
 if ~isempty(i2); st(i2:end)=''; end
+
 end
 function lst_nodesID = read_nodesID(st)
 %% #read_nodesID----------------------------------------------------------2
@@ -948,14 +951,14 @@ for ii=1:6
  end
 end
 % Merge data and store in Case (one case entry for all directions)
-data=struct('DOF',lst_dof,'c',vertcat(c{:}));
+data=struct('DOF',lst_dof,'c',vertcat(c{:}));%,'slave',(1:6)');
 mdl=fe_case(mdl,'mpc',[NAME,'_mpc'],data);
 % % Add mass1 to master node (allows to keep mpc with feutilb submodel)
 % i1=feutil('findnode inelt{eltname mass1};',mdl);
 % if ~ismember(IDNODi,i1)
 %  mdl=feutil('AddElt',mdl,'mass1',IDNODi);
 % end
-mdl=feutil('AddElt',mdl,'mass1',IDNODi);
+%mdl=feutil('AddElt',mdl,'mass1',IDNODi);
 %data=struct('DOF',[1.01;1.03],'c',[1 -1]);
 %mo2=fe_case(mo1,'mpc','z=x',data);
 
