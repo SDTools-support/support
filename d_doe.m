@@ -278,8 +278,9 @@ nmap('TV.Hoff')=RT; % d_doe('nmap','TV.Hoff{n,Texp.MN}')
 
  %RT=struct('nmap',nmap);d_doe('nmap','TV.Hoff');RT.nmap('CurExp')=li;
 
- if nargout==1;out=sdtm.stdNmapOut(nmap,key,nargout);
- else; sdtm.stdNmapOut(nmap,key,nargout);
+ if nargout==1;out=sdtm.stdNmapOut(nmap,key,nargout,CAM);
+ elseif nargout>1;[out,out1,out2]=sdtm.stdNmapOut(nmap,key,nargout,CAM);
+ else; sdtm.stdNmapOut(nmap,key,nargout,CAM);
  end
 
   
