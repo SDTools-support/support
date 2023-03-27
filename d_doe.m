@@ -277,7 +277,7 @@ nmap('TV.Hoff')=RT; % d_doe('nmap','TV.Hoff{n,Texp.MN}')
 %  sdtm.toString(li(1:2:end)');RT.nmap('CurExp')=li;
 
  %RT=struct('nmap',nmap);d_doe('nmap','TV.Hoff');RT.nmap('CurExp')=li;
-
+ %% #nmap.stdNmapOut
  if nargout==1;out=sdtm.stdNmapOut(nmap,key,nargout,CAM);
  elseif nargout>1;[out,out1,out2]=sdtm.stdNmapOut(nmap,key,nargout,CAM);
  else; sdtm.stdNmapOut(nmap,key,nargout,CAM);
