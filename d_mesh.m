@@ -1615,9 +1615,9 @@ elseif comstr(Cam,'testblade'); [CAM,Cam]=comstr(CAM,10);
 
  
  
-%% #Mat : prototype material database handling
 elseif comstr(Cam,'mat');[CAM,Cam]=comstr(CAM,4);
-  
+%% #Mat erial database callback : mdl=d_mesh('mat',mdl,struct('mat','val','nmap',nmap));
+
 if isempty(Cam)
  if nargin==2; model=struct; if carg==2;RO=varargin{2};carg=3;end
  else; model=RO;RO=varargin{carg};carg=carg+1;
@@ -1634,7 +1634,7 @@ if isempty(Cam)
  else; st=st{1}{1};RO.pl=str2double(st);RO.mat=comstr(RO.mat(length(st)+1:end),1);
  end
 
- switch regexprep(RO.mat,'([^{,]*).*','$1')
+ switch regexprep(RO.mat,'([^{,]*).*','$1') % Command before {}
  case 'SimoA'
   % #MatSimoA : sample Mooney Rivlin in large def rewritten from sdtweb dfr_ident matsimo
   r1=m_hyper('urn','SimoA{1,1,0,30,3,f5 20,g .33 .33,rho2.33n}');
@@ -1642,7 +1642,11 @@ if isempty(Cam)
   model=feutil('setpro 1 isop100',model,'NLdata',r1.NLdata);
   out=model;return;
  case 'HyOpenFEM' % Hyperelastic used by OpenFEM RivlinCube
-  r2=m_hyper('urn','Ref{.3,.2,.3,.3,.1,rho1u,unSI}');r2.isop=100;
+  r2=m_hyper('urn','Ref{.3,.2,.3,.3,.1,rho1u,unSI,isop100}');
+ case 'HyOpenFEMd' % hyperelastic with damped cells
+  r2=m_hyper('urn','Ref{.3,.2,.3,.3,.1,rho1u,unSI,g .1 .1,f 2 20,isop100}');r2.isop=100;
+  % RT.nmap('MatCur')='m_hyper(urnRef{.3,.2,.3, 3k,1u,rho1u,unSI,g .1 .1,f 1 100,isop100})';
+
  case 'HyUP' 
   %% #MatHyUP Hyperelastic to test UP formulation
   [st,r2]=sdtm.urnPar(RO.mat,'{}{pro%s,mat%s,kappa%ug,NL%ug}');
@@ -1684,10 +1688,24 @@ if isempty(Cam)
   r2=m_hyper('urn','PadA{2.5264,-0.9177,0.4711,1200,3,f .35,g .5688,rho1n,tyYeoh,unTM}');
   r2.isop=100; 
  otherwise; 
-   error('Mat%s not implemented',RO.mat)
+   if isfield(RO,'nmap')&&isKey(RO.nmap,RO.mat)
+     r2=RO.nmap(RO.mat);
+     if ischar(r2); r2=sdtm.urnCb(r2);
+         r2=feval(r2{:});
+     end
+   else; r2=RO.mat;
+   end
+   if ischar(r2)
+    %% attempt to use URN such as m_hyper(urnSimoA{1,1,0,30 ...
+    r2=sdtm.urnCb(r2);r2=feval(r2{:}); % Attempt at using URN callback
+    %catch
+    % error('Mat%s not implemented',RO.mat)
+    %end
+   end
  end
  r2.pl(1)=RO.pl(1); 
  if isfield(model,'Elt')
+  %% standard affect to model 
   if isfield(r2,'pro')
    model.il=p_solid(model.il,['dbval ' r2.pro]);
   else
@@ -1697,11 +1715,12 @@ if isempty(Cam)
    else; st=sprintf('%s isop%i',st,r2.isop); % isop100 for large def
    end
   end
+  if ~isfield(model,'il')||isempty(model.il);model=p_solid('default;',model);end
   if isfield(r2,'NLdata');model=feutil(st,model,'NLdata',r2.NLdata);end
   if isfield(r2,'unit');model.unit=r2.unit;end
   model.pl=r2.pl; 
   out=model;
- else;out=r2; %r2=d_mesh('mat','PadA')
+ else;out=r2; %r2=d_mesh('mat','PadA') % simply return structure
  end 
 elseif comstr(Cam,'rve');[CAM,Cam]=comstr(CAM,4);
  % #MatRve -2
