@@ -1859,7 +1859,7 @@ if comstr(Cam,'pbc')||comstr(Cam,'simpleload')||comstr(Cam,'kubc')||comstr(Cam,'
  [z,RO,mo1,C1,Load,w,ft,carg]=safeInitDfrf([{CAM,model,RO},varargin(carg:end)],2);
 
  mo2=mo1;fe_case(mo2,'stack_rm','DofSet'); [Case,NNode,DOF]=fe_case(mo2,'gett');
- mo1.Case=C1;[R2,d2,mo1]=BuildUb(mo1,RO);c=R2.c;% Possibly deal with visco
+ mo1.Case=C1; [R2,d2,mo1]=BuildUb(mo1,RO);c=R2.c;% Possibly deal with visco
 
  % cg=feplot(10);cg.model=model;cg.def=d2;
  % Now enforced motion but use MPCs
@@ -1876,7 +1876,7 @@ if comstr(Cam,'pbc')||comstr(Cam,'simpleload')||comstr(Cam,'kubc')||comstr(Cam,'
  end
  % Now compute the forced response
  if strcmpi(RO.btype,'mubc') 
- elseif any(strcmpi(RO.btype,{'kubc','SimpleLoad'})) % Enforce motion on full edge
+ elseif any(strcmpi(RO.btype,{'kubc'})) % Enforce motion on full edge (not for piezo SimpleLoad)
   c=find(sum(abs(c),1));c=sparse(1:length(c),c,1,length(c),length(d2.DOF));
   %[C1.T,C1.TIn] = fe_coor(c,[4 1 2],(c*d2.def));
   T = fe_coor('lu',struct('c',c,'TIn',d2.def));C1.T=T.T;C1.TIn=T.TIn;
@@ -1889,16 +1889,19 @@ if comstr(Cam,'pbc')||comstr(Cam,'simpleload')||comstr(Cam,'kubc')||comstr(Cam,'
   else
    i2=fe_c(d2.DOF,Case.DOF,'ind');
    T = fe_coor('lu',struct('c',c(:,i2),'TIn',d2.def(i2,:)));
-   if normest(c(:,i2)*T.T)>1e-10
+   if normest(c(:,i2)*T.T)>1e-10 % Problem if DOF only in TIn
     %sdtw('_ewt','Report lu problem');
-    [T,TIn] = fe_coor(c(:,fe_c(d2.DOF,Case.DOF,'ind')),[4 1 2],(c*d2.def));
+    [T,TIn] = fe_coor(c(:,i2),[4 1 2],(c*d2.def));
    else;   TIn=T.TIn;T=T.T;   
    end
   end
   mo1.DOF=R2.DOF; C1.Stack=Case.Stack; 
   C1.T=Case.T*T;C1.TIn=Case.T*TIn;
-  C1.DOF=(1:size(T,2))'+.99;
-  mo1.Stack{strcmpi(mo1.Stack(:,1),'case')}=C1;
+  if size(C1.TIn,2)<size(d2.def,2);% Problem with TIn only DOF (piezo MFC) 
+      C1.TIn(:,end+1:size(d2.def,2))=d2.def(:,size(C1.TIn,2)+1:size(d2.def,2));
+  end
+  C1.DOF=(1:size(T,2))'+.99;mo1.Stack(strcmp(mo1.Stack(:,2),'model.Case'),:)=[];
+  mo1.Stack{strcmpi(mo1.Stack(:,1),'case'),3}=C1;
   d1=d2; d1.name='homog';d2.name='hete';% Save homogeneous cases
  end
  if isempty(fe_c(mo1.DOF,.21,'ind'))
