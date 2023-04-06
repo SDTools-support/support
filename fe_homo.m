@@ -653,7 +653,8 @@ for j1=1:size(RO.P2Sets,1)
  RC.EdgeDof=full(nind(RO.EdgeDof(ismember(RO.EdgeDof(:,1),i2),:)));
  %% Build a basis that uses all given DOF and span the learning subspace
  if ~isnumeric(T2)
- elseif isempty(RC.EdgeDof);warning('No EdgeDof');break;
+ elseif isempty(RC.EdgeDof);
+   warning('No EdgeDof : probably an Error');break;
  else;
   T2=fe_coor(RO.curCoor,T2,RC);% sdtweb fe_coor('lrisvd')
  end
