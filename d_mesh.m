@@ -1785,7 +1785,7 @@ end
 
 elseif comstr(Cam,'stepmesh'); [CAM,Cam]=comstr(CAM,8);
 %% #stepMesh : default meshing step  ---------------------------------------
-
+sdtw('_ewt','obsolete ? report eb')
 Range=varargin{2};carg=2;
 evt=varargin{carg};carg=carg+1;
 model=evt.data;
@@ -1895,114 +1895,8 @@ end
 
 elseif comstr(Cam,'cfg'); [CAM,Cam]=comstr(CAM,4);
 %% #MeshCfg : obtain/generate mesh  ---------------------------------------
-% Default MeshCfg callback for simulation experiments
-% see also sdtweb d_fetime SimuCfg
-% sdth.findobj('_sub:~','d_hbm(Mesh):(Case):(NL)');comstr(ans,-30)
-Range=RO;%varargin{carg};carg=carg+1;
-if isfield(Range,'subs')&&isfield(Range,'type')&&length(Range)==1
- %st=struct('type','.','subs',Range.subs);
- if iscell(Range.subs)&&length(Range.subs)>1; RO=struct;RO.urn=Range.subs;
- else;  RO=struct('urn',Range.subs);end
- if carg<=nargin; RO=sdth.sfield('addmissing',RO,varargin{carg});carg=carg+1;end
- if isfield(Range,'nmap');RO.nmap=Range.nmap;end
- Range=struct;
- % S=sdth.findobj('_sub,~','t_pmlulb(sensor:{x60,1,foam,1}),FullA','merge');disp(comstr(S,-30))
- % S=sdth.findobj('_sub,~',{'t_pmlulb(sensor:{x60,1,foam,1})','FullA'},'merge');disp(comstr(S,-30))
- S=sdth.findobj('_sub:~',RO.urn,'merge');js=1;
-else
- RO=varargin{carg};carg=carg+1;
- if ischar(RO);RO=struct('urn',RO);end
- S=sdth.findobj('_sub:~',RO.urn);js=1;
-end
-if ~isfield(RO,'nmap');RO.nmap=vhandle.nmap;end
-%% 1 : create/load base mesh
-if length(S)>1&&exist(S(1).subs,'file')% d_hbm(Mesh0D:cub)
- RO.name=S(js+1).subs;
- if RO.nmap.isKey(RO.name); S(js+1).subs=RO.nmap(RO.name);end % 'rail19(Ref21):21ref'
- mo1=feval(S(js).subs,['Mesh' S(js+1).subs],Range,RO);
- RO.MeshCb=S(js); js=js+2;
-else
- st1=S; error('obsolete')
- S=sdtroot('param.Project.MeshCb -safe');
- if isempty(S);
-  error('Project.MeshCb not set and ''%s'' not found',st1(1).subs);
- end
-end
-%% 2: deal with case building (possibly Mesh::NL for empty)
-if js<=length(S)&&strcmpi(S(js).type,'()');
- RO.MeshCb=S(js);js=js+1; % :CaseFun(Case)
-end
-if js>length(S); RO.Case='';else; RO.Case=S(js).subs; js=js+1; end
-if ~isempty(RO.Case)
- RO.name=sprintf('%s:%s',RO.name,RO.Case);
- if js<=length(S)&&strcmp(S(js).type,'{}') %% Mesh:V{data}:NL
-  RO.CaseVal=S(js).subs; js=js+1; RO.name=sprintf('%s%s',RO.name,sprintf('-%s',RO.CaseVal{:}));
- else; RO.CaseVal={};
- end
- mo1=feval(RO.MeshCb.subs,'Case',mo1,RO); RO.MeshCb=S(1);
-end
+error('Moved to sdtsys StepMesh')
 
-%% 3; now add the NLdata
-if js<=length(S)&&strcmpi(S(js).type,'()');
- RO.MeshCb=S(js);js=js+1; % :MatFun(Mat)
-end
-NLdata=[];
-if js<=length(S); %  'd_hbm(Mesh0D):d_hbm(NL0Dm1t)' % sdtweb d_hbm NL
- il=feutil('getil',mo1); if isempty(il); il=1; end
- if js+1<=length(S)&&strcmpi(S(js+1).type,'()');
-  RO.MeshCb=S(js);js=js+1;
- end
- RO.NL=S(js).subs;
- if ~iscell(RO.NL);RO.NL={il(1) RO.NL};end
- if js<length(S)&&strcmpi(S(js+1).type,'{}') % d_contact(cube)::n3e13{Kc1e12}
-  RO.NL{end}=sprintf('%s%s',RO.NL{end},strrep(comstr(S(js+1).subs,-30),'''',''));
- end
- 
- for j2=1:2:length(RO.NL)
-  if isempty(RO.NL{j2+1}); continue;end
-  RO.name=sprintf('%s:%s',RO.name,RO.NL{j2+1});% Mesh:Case:NL name convention
-  RN=RO;RN.NL=RO.NL{j2+1};NLdata=feval(RO.MeshCb.subs,'NL',mo1,RN);
-  % Possibly return model rather than NLdata
-  if isfield(NLdata,'Elt')&&isequal(NLdata.Elt,mo1.Elt); mo1=NLdata;continue;
-  elseif isempty(NLdata); error('Expecting non empty NLdata');
-  elseif ~isfield(NLdata,'type');error('missing .type,  ''nl_inout'' is usual');
-  end
-  i1=RO.NL{j2}; if ischar(i1);i1=str2double(i1);end
-  mo1=feutil(sprintf('setpro %i',i1),mo1,'NLdata',NLdata,'name',RN.NL);
- end
-end
-
-if ~isfield(mo1,'name');mo1.name=RO.name;end
-if isfield(RO,'nmap'); mo1.nmap=RO.nmap; end % sdtw('xxxeb xxxgv need to clarify
-ind=[]; if isfield(RO,'CaseVal');ind=strncmp(RO.CaseVal,'Cb',2);ind=ind(:)';end
-for j1=find(ind) % Possibly use RO.RangeEvt
-  %'CbSetE','mo1.pl(mo1.pl(:,1)==4,3)=RO.RangeEvt.E'
-  eval(RO.nmap(RO.CaseVal{j1}));
-end
-
-if isfield(RO,'nmap')&&nargout==0 % Possibly nmap('CurModel') set before
-    if isfield(mo1,'Node')||isfield(mo1,'Elt')
-        RO.nmap('CurModel')=mo1; 
-    end
-    return
-end
-%sdth.PARAM('MeshRes',mo1); % high level storage
-if ~isfield(Range,'param');Range.param=struct;end
-if ~isfield(Range,'val')%mo1=d_mesh('MeshCfg','cbi21(CoupStiff):StaticA:');
- out=mo1;
-else
- r1=struct('type','pop','value',1,'level',10,...
-  'choices',{{}},'data',{{}},'SetFcn',{{@d_mesh,'stepMesh'}},...
-  'ShortFmt',1, ...
-  'RepList', ... % 'TestEvtData',1,
-  {{'M_(.*)_([^_]+)', ... % start with M_ and end with non_ parameter name
-  struct('type',{'.','{}'},'subs',{'list',{'@token{1}',3}})
-  }});
- Range=sdtm.range('SafeParamInit-name',Range,'MeshCfg',r1);
- Range=sdtm.range('popMerge',Range,'MeshCfg',{mo1.name,mo1});
- if isfield(Range,'MeshCfg'); Range.MeshCfg=Range.param.MeshCfg.choices;end
- out=Range;
-end
 else; % Redirect to Cmd
         eval(iigui({'d_mesh(CAM,varargin{2:end})',nargout},'OutReDir'));
 end

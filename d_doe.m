@@ -236,27 +236,33 @@ nmap('TV.AR')=RT;
   %RT.nmap('PostA')='nl_solve@doFreq{spec{BufTime 20 Overlap .90 Fmax 50 -window hanning},ci3}';
   RT.nmap('PostA')='d_squeal(ViewSpec{BufTime 50 Tmin 50 Overlap .90 Fmax 20 -window hanning},nameHoffKmuV)';
   RT.nmap('PostB')='d_contact@autoCycle{tclip50 20,dmBand1.2,ci3}';
+  RT.nmap('PostC1')='d_squeal(ViewSpec{BufTime 2 Tmin 5 Overlap .90 Fmax 50 -window hanning},nameHoffman)';
+  RT.nmap('PostC2')='d_contact@autoCycle{tclip50 20,dmBand20,ci3}';
   RT.nmap('PostInit')='d_squeal(LoadTime{ci[2 13]},$nmap)';
 
   li={'MeshCfg{d_contact(Hoffmann),TV,KmuV}';';'  % Mesh:Case:NL
    'SimuCfg{ModalNewmark{1m,400,uva111,rt-1e-4}SQ0{vq1Amp__5}}';';'
    'RunCfg{Time,PostB}'};
   RT.nmap('TVK.MN')=li;  % time varying stiffness
+  %% 
   li={'MeshCfg{d_contact(Hoffmann)::KmuV}';';'  % Mesh:Case:NL
   'SimuCfg{ModalNewmark{10m,400,uva111,rt-1e-4}SQ0{vq1Amp__10}}';';'
   'RunCfg{Time,PostInit,PostA,PostB}'};
   RT.nmap('Kmuv.MN')=li; % non-linear damping (change viscous damping based on velocity)
+  %% 
   li={'MeshCfg{d_contact(Hoffmann),Ctc,TExp}';';'  % Mesh:Case:NL
   'SimuCfg{Implicit{10m,400,uva111,rt-1e-4}SQ0{vq1Amp__1}}';';'
   ...'SimuCfg{ModalNewmark{10m,400,uva111,rt-1e-4}SQ0{vq1Amp__10}}';';'
   'RunCfg{Time,PostInit,PostA,PostB}'};
   RT.nmap('Texp.Imp')=li; % non-linear damping (change viscous damping based on velocity)
 
-  li={'MeshCfg{d_contact(Hoffmann),Ctc,TExpCh}';';'  % Mesh:Case:NL
-  'SimuCfg{ModalNewmark{10m,400,uva111,rt-1e-4}SQ0{vq1Amp__10}}';';'
-  'RunCfg{Time,PostInit,PostA,PostB}'};
+  %% sdtweb d_contact meshhoff
+  li={'MeshCfg{d_contact(Hoffmann{cx.01,cz.01,kx100,kz110,ks32}),Ctc{},{1001,TExpCh{ke.2},1,KmuV}}';';'  % Mesh:Case:NL
+  'SimuCfg{ModalNewmark{.5m,40,uva111,rt-1e-4}SQ0{vq1Amp__10}}';';'
+  'RunCfg{Time,PostInit,PostC1,PostC2}'};
   RT.nmap('Texp.MN')=li; % non-linear damping (change viscous damping based on velocity)
 
+  %%
   li={'MeshCfg{d_contact(Hoffmann)::}';';'  % Mesh:Case:NL
    ...'SimuCfg{Implicit{10m,400,uva111,rt-1e-4}SQ0{vq1Amp__5}}';';'
    'SimuCfg{ModalNewmark{1m,100,uva111,rt-1e-4}SQ0{vq1Amp__5}}';';'
