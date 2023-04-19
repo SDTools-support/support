@@ -238,12 +238,19 @@ nmap('TV.AR')=RT;
   RT.nmap('PostB')='d_contact@autoCycle{tclip50 20,dmBand1.2,ci3}';
   RT.nmap('PostC1')='d_squeal(ViewSpec{BufTime 2 Tmin 5 Overlap .90 Fmax 50 -window hanning},nameHoffman)';
   RT.nmap('PostC2')='d_contact@autoCycle{tclip50 20,dmBand20,ci3}';
+  RT.nmap('PostD1')='d_squeal(ViewSpec{BufTime .4 fmin 2700 3000 Overlap .90 -window hanning},nameHoffman)';
+  RT.nmap('PostD2')='d_contact@autoCycle{tclip.01 .02,ifBand50,dmBand500,aeBand100,ci3}';
   RT.nmap('PostInit')='d_squeal(LoadTime{ci[2 13]},$nmap)';
 
   li={'MeshCfg{d_contact(Hoffmann),TV,KmuV}';';'  % Mesh:Case:NL
-   'SimuCfg{ModalNewmark{1m,400,uva111,rt-1e-4}SQ0{vq1Amp__5}}';';'
-   'RunCfg{Time,PostB}'};
+   'SimuCfg{ModalNewmark{1m,400,uva111,rt-1e-4}SQ0{vq1Amp__5}}';
+   ';';'RunCfg{Time,PostB}'};
   RT.nmap('TVK.MN')=li;  % time varying stiffness
+  % time and amplitude varying stiffness, MSSP case
+  li={'MeshCfg{d_contact(Hoffmann{kx3.55e+08,kz3.55e+08,ks4.4e+04,mu0.55,cx56.5,cz56.5}),TV{KA}}';
+   ';';'SimuCfg{ModalNewmark{40u,4,uva111,rt-1e-4}SQ0{vq1Amp__.0005}}';
+   ';';'RunCfg{Time,PostInit,PostD1,PostD2}'};
+  RT.nmap('TVKA.MN')=li;  
   %% 
   li={'MeshCfg{d_contact(Hoffmann)::KmuV}';';'  % Mesh:Case:NL
   'SimuCfg{ModalNewmark{10m,400,uva111,rt-1e-4}SQ0{vq1Amp__10}}';';'
