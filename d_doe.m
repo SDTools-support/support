@@ -2,9 +2,10 @@ function [out,out1,out2]=d_doe(varargin);
 
 % D_DOE sample files for design of numerical experiments
 %
+%   Use d_doe('nmap') to see list  
 
 %       Etienne Balmes, Guilherme Malacrida Alves
-%       Copyright (c) 1990-2022 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2023 by SDTools, All Rights Reserved.
 %       For revision information use d_tdoe('cvs')
 
 if nargin==0
@@ -232,6 +233,7 @@ RT.nmap('CurExp')=li;
 nmap('TV.AR')=RT;
 
 %% #Tv.Hoffman{n,Mmuv} with time varying stiffness -3
+% see also sdtweb d_contact('HoffMann')
   RT=struct('nmap',vhandle.nmap);
   %RT.nmap('PostA')='nl_solve@doFreq{spec{BufTime 20 Overlap .90 Fmax 50 -window hanning},ci3}';
   RT.nmap('PostA')='d_squeal(ViewSpec{BufTime 50 Tmin 50 Overlap .90 Fmax 20 -window hanning},nameHoffKmuV)';

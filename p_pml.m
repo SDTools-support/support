@@ -1688,7 +1688,7 @@ end
 clear load NR 
 model.Elt=feutil('AddElt',model.Elt,'cbush',elem_data);
 model=fe_case(model,'Remove','Surface load');
-out=model; 
+out=model; %% end_vdb
 
 end
 %% #stretch : evaluate stretch function -2
