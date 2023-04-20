@@ -240,9 +240,11 @@ end
   
   SE3.il=[];
   SE3=feutil('setpro',SE3,[integ(2) fe_mat('p_solid','SI',1) 0 -3 0 100]);% il(6) for gradient
-  cut=fe_caseg('StressCut-SelOut',struct('type','Gauss'),SE3);
-  cut=fe_caseg('stresscutToStrain',cut); obs=cut.StressObs;
-  
+  cut=fe_caseg('StressCut-SelOut',struct('type','Gauss','toStrain',1),SE3);
+  if ~isfield(cut.StressObs.Lambda{end},'toStrain')
+   cut=fe_caseg('stresscutToStrain',cut); 
+  end
+  obs=cut.StressObs;
    %st=feval(p_pml('@ConstitLab2'));st{13}
 
   obs.pow = constit(4);
