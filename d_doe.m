@@ -27,15 +27,15 @@ if comstr(Cam,'mount0d')
 
 sd _prafael;%sdtweb t_ident dec21_tdoe
 % sdtweb _bp d_hbm FirstStab
-RP=struct('MeshCfg','d_hbm(0D):DofSet:0dm1t','SimuCfg','SteppedSine{.5,1,10}:C0{0,15}:C1{2.5,10}', ...
-         'NperPer',2e3,'Nper',1,'iteStab',20,'RunCfg','{run,dfr_ident@va}','PerFrac',.2);
-d_tdoe('Solve',RP)
+%RP=struct('MeshCfg','d_hbm(0D):DofSet:0dm1t','SimuCfg','SteppedSine{.5,1,10}:C0{0,15}:C1{2.5,10}', ...
+%         'NperPer',2e3,'Nper',1,'iteStab',20,'RunCfg','{run,dfr_ident@va}','PerFrac',.2);
+%d_tdoe('Solve',RP)
 
 li={'MeshCfg{d_hbm(0D):DofSet:0dm1t}';';'
       'SimuCfg{RO{NperPer2e3,Nper1,iteStab20},"SteppedSine{5}:C0{0,15}:C1{2.5,10}"}';';'
       'RunCfg{Time,dfr_ident@va}'};
 RT=struct('nmap',vhandle.nmap);RT.nmap('CurExp')=li;
-r2=sdtm.range(RT);%d2=mo2.nmap('CurTime');
+r2=sdtm.range(RT);mo1b=r2.nmap('CurModel');%d2=mo2.nmap('CurTime');
 
 %RP.Mesh='d_hbm(Mesh0D):t_vibrac(0Dm1tsvli)';dfr_ident('Load',RP); % Stresss rate relax + Dahl: OK
 
