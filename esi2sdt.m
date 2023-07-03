@@ -685,7 +685,9 @@ if comstr(Cam,'read'); [CAM,Cam]=comstr(CAM,5);
    if bounc_IFRA(i_bounc) == 0
     basis = eye(3) ;
    else
-    basis = reshape(frame_basis(bounc_IFRA(i_bounc),:,:),3,3) ;
+    % Need to use frame_id !
+    ind=find(frame_id==bounc_IFRA(i_bounc)); % correction by GM 04/07/2023
+    basis = reshape(frame_basis(ind,:,:),3,3) ;
    end
    mdl=add_BOUNC(mdl, bounc_names{i_bounc}, bounc_XYZUVW(i_bounc), ...
     lst_nodes_F, basis);
@@ -696,7 +698,9 @@ if comstr(Cam,'read'); [CAM,Cam]=comstr(CAM,5);
   if mtoco_IFRA1(i_mtoco) == 0
    basis = eye(3) ;
   else
-   basis = reshape(frame_basis(mtoco_IFRA1(i_mtoco),:,:),3,3) ;
+   % Need to use frame_id !
+   ind=find(frame_id==mtoco_IFRA1(i_mtoco)); % correction by GM 04/07/2023
+   basis = reshape(frame_basis(ind,:,:),3,3) ;
   end
   mdl=add_MTOCO(mdl, mtoco_names{i_mtoco}, mtoco_IDNODi(i_mtoco), mtoco_XYZUVW(i_mtoco), ...
    cell2mat(mtoco_lst_nodes(i_mtoco)), basis, ...
