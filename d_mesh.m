@@ -1638,8 +1638,8 @@ if isempty(Cam)
  case 'SimoA'
   % #MatSimoA : sample Mooney Rivlin in large def rewritten from sdtweb dfr_ident matsimo
   r1=m_hyper('urn','SimoA{1,1,0,30,3,f5 20,g .33 .33,rho2.33n}');
-  model.pl=r1.pl; 
-  model=feutil('setpro 1 isop100',model,'NLdata',r1.NLdata);
+  r1.il='set pro 1 isop100';
+  model=sdtm.setMatPro(model,r1);
   out=model;return;
  case 'HyOpenFEM' % Hyperelastic used by OpenFEM RivlinCube
   r2=m_hyper('urn','Ref{.3,.2,.3,.3,.1,rho1u,unSI,isop100}');
@@ -1706,6 +1706,7 @@ if isempty(Cam)
  r2.pl(1)=RO.pl(1); 
  if isfield(model,'Elt')
   %% standard affect to model 
+  sdtw('_ewt','Move to sdtm.setMatPro')
   if isfield(r2,'pro')
    model.il=p_solid(model.il,['dbval ' r2.pro]);
   else
