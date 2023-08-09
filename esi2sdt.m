@@ -83,7 +83,7 @@ if comstr(Cam,'read'); [CAM,Cam]=comstr(CAM,5);
  nb_BOUNC = 0 ;
  nb_MTOCO = 0 ;
 
- mdl = struct('Node',[],'Elt',[],'pl',[],'il',[],'name',' ','unit','SI') ;
+ mdl = struct('Node',[],'Elt',[],'pl',[],'il',[],'name',' ','unit','') ;
 
  %% First reading
 % Init empty lists
@@ -147,6 +147,8 @@ if comstr(Cam,'read'); [CAM,Cam]=comstr(CAM,5);
 
  % Get header indiced in char array
  headind=strfind(txt,'$#');headind(end+1)=length(txt)+1;
+ % First header
+ mdl=pc_header(mdl,txt,headind);
  % Loop on headers
  jhead=0;
  while jhead<length(headind)-1
@@ -744,6 +746,21 @@ else; error('Unknown command %s',CAM);
 end %commands
 end % baseFunction
 %% #SubFunc --------------------------------------------------------------1
+function mdl=pc_header(mdl,txt,headind)
+%% #pc_header : store header in model, interprete unit--------------------2
+ st=txt(1:headind(1)-1);
+ st2=regexp(st,'UNIT\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)\s*\n','tokens');
+ if isempty(st2); sdtw('_nb','Model unit interpretation failed');
+ else;
+  st2=st2{1};
+  if strcmpi(st2{1},'MM')&&strcmpi(st2{2},'KG')
+   mdl.unit='MM';
+  else; warning('Deal with unit system (%s,%s)',st2{1},st2{2});
+  end
+ end
+ mdl=stack_set(mdl,'info','header',st);
+end
+
 function [st,jhead,head]=nextBlock(txt,jhead,headind,nb_line)
 %% #nextBlock-------------------------------------------------------------2
 if nargin == 3
