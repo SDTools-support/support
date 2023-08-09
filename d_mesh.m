@@ -980,9 +980,41 @@ elseif comstr(Cam,'load'); [CAM,Cam]=comstr(CAM,5);
   model=fe_case(model,'DofLoad','Load',i1+.03);
  else; error('unknown Load command');
  end
+
+
 else; error('Command d_mesh BeamGen%s unknown',CAM);
 end
 out=model;
+elseif comstr(Cam,'track'); [CAM,Cam]=comstr(CAM,5);
+ %% #BeamTrack : standard track model -----------------3
+ 
+ [~,RO]=sdtm.urnPar(CAM,['ms(130#%g#"sleeper mass")' ...
+   'kb(70e3#%g#"ballast stiffness")' ...
+   'ncell(15#%g#"number of sleepers")' ...
+   'unit(SI#%s#"unit system")' ...
+   'lc(.15#%g#"refine length")' ...
+   'pk(75e3#%g#"pad stiffness")']);
+ if length(RO.ncell)<2;RO.ncell(2)=0;end
+ if ~isfield(RO,'xsens'); RO.xsens=[];end
+
+ model=struct('Node',[1  0 0 0   -.3 0 0; % first rail node
+                     2  0 0 0     0 0 0;  % center rail node
+                     %3  0 0 0    .3 0 0; % end rail node (not used)
+                     4  0 0 0     0 0 -.07;
+                     5  0 0 0     0 0 -.07-.22], ...
+    'Elt',[%Inf abs('beam1');1 2 100 100 0 0;2 3 100 100 0 0;% Rail
+           Inf abs('celas') 0;2 4 -3 0 200 0 0;4 5 -3 0 300 0 0;
+           Inf abs('mass1') 0; 4 RO.ms*[1 1 1]  0 0 0]);
+model=feutil(sprintf('RepeatSel %i .6 0 0',RO.ncell(1)),model);
+
+% Now add rail
+x=[model.Node(:,5); RO.xsens(:)]; if isfield(RO,'addMass');x=[x;vertcat(RO.addMass{:,1})];end
+x=sort(unique(round(x*1000)))/1000;
+x=feutil(sprintf('refineline%.15g',RO.lc),[x(1)-.3;x;x(end)+.3]);
+[model.Node,i1]=feutil('addnode',model.Node,x*[1 0 0]);i1=model.Node(i1,1);
+model=feutil('addelt',model,'beam1',[i1(1:end-1) i1(2:end) ones(length(i1)-1,2)*100]);
+out=model;
+
 %% #BeamEnd
 else;error('Beam%s unknown',CAM);
 end
@@ -1638,8 +1670,8 @@ if isempty(Cam)
  case 'SimoA'
   % #MatSimoA : sample Mooney Rivlin in large def rewritten from sdtweb dfr_ident matsimo
   r1=m_hyper('urn','SimoA{1,1,0,30,3,f5 20,g .33 .33,rho2.33n}');
-  model.pl=r1.pl; 
-  model=feutil('setpro 1 isop100',model,'NLdata',r1.NLdata);
+  r1.il='set pro 1 isop100';
+  model=sdtm.setMatPro(model,r1);
   out=model;return;
  case 'HyOpenFEM' % Hyperelastic used by OpenFEM RivlinCube
   r2=m_hyper('urn','Ref{.3,.2,.3,.3,.1,rho1u,unSI,isop100}');
@@ -1706,6 +1738,7 @@ if isempty(Cam)
  r2.pl(1)=RO.pl(1); 
  if isfield(model,'Elt')
   %% standard affect to model 
+  sdtw('_ewt','Move to sdtm.setMatPro')
   if isfield(r2,'pro')
    model.il=p_solid(model.il,['dbval ' r2.pro]);
   else

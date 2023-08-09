@@ -278,6 +278,19 @@ nmap('TV.AR')=RT;
    'RunCfg{Time,PostInit,PostA}'};
   RT.nmap('base.MN')=li; % non-linear damping (change viscous damping based on velocity)
 
+%% 
+li={'Steel',[1 fe_mat('m_elastic','SI',1)  210e9 .3 7800]};
+r2=vhandle.nmap(li,'Map:MatDb');
+NL=struct('type','nl_inout','lab','uMaxw','MatTyp',{{1}},'keepLin',1, ...
+   'StoreType',3, ... % Just along z
+  'adofi',[],'MexCb',{{nlutil('@uMaxw')}}, ...
+  'Fu',struct('Einf',1,'cells',[4 .3 1 0;4 .4 5 0],'X',{{[-1;1],{'Coef';'dCoef'}}}, ...
+  'Xlab',{{'Strain','Comp'}},'Y',[1+1e-5 0;2 0]));
+r2('HyperLVol')=struct('NLdata',NL,'il','setpro 111 in-3');
+
+nmap('MatDb')=r2;
+
+
 
 if isKey(nmap,'n')&&isKey(RT.nmap,nmap('n')); 
     RT.nmap('CurExp')=RT.nmap(nmap('n')); 
