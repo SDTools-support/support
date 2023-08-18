@@ -652,9 +652,14 @@ for j1=1:size(RO.P2Sets,1)
  nind=sparse(i2,1,1:length(i2));
  RC.EdgeDof=full(nind(RO.EdgeDof(ismember(RO.EdgeDof(:,1),i2),:)));
  %% Build a basis that uses all given DOF and span the learning subspace
+ if isfield(RC,'NoAdof')&&ischar(RC.NoAdof); 
+    RC.NoAdof=fe_c(RC.DOF,feutil(['findnode' RC.NoAdof],SE),'ind');
+ end
  if ~isnumeric(T2)
- elseif isempty(RC.EdgeDof);
+ elseif isempty(RC.EdgeDof)&&~isfield(RC,'noEdge');
    warning('No EdgeDof : probably an Error');break;
+  % else; T2=struct('Tl',[],'Tr',[],'Ti',T2);
+  % end
  else;
   T2=fe_coor(RO.curCoor,T2,RC);% sdtweb fe_coor('lrisvd')
  end
