@@ -31,8 +31,8 @@ sd _prafael;%sdtweb t_ident dec21_tdoe
 %         'NperPer',2e3,'Nper',1,'iteStab',20,'RunCfg','{run,dfr_ident@va}','PerFrac',.2);
 %d_tdoe('Solve',RP)
 
-li={'MeshCfg{d_hbm(0D):DofSet:0dm1t}';';'
-      'SimuCfg{RO{NperPer2e3,Nper1,iteStab20},"SteppedSine{5}:C0{0,15}:C1{2.5,10}"}';';'
+li={'MeshCfg{d_hbm(0D):DofSet:0dm1t}';
+      'SimuCfg{RO{NperPer2e3,Nper1,iteStab20},"SteppedSine{5}:C0{0,15}:C1{2.5,10}"}';
       'RunCfg{Time,dfr_ident@va}'};
 RT=struct('nmap',vhandle.nmap);RT.nmap('CurExp')=li;
 r2=sdtm.range(RT);mo1b=r2.nmap('CurModel');%d2=mo2.nmap('CurTime');
@@ -51,16 +51,16 @@ r2=sdtm.range(RT);mo1b=r2.nmap('CurModel');%d2=mo2.nmap('CurTime');
 elseif comstr(Cam,'duff2')
 %% #ScriptDuff2DOF : stepped sine on a duffing
 
- li={'MeshCfg{d_hbm(Duffing2Dof),,CubFu}';';' 
-     'SimuCfg{RO{NperPer2e3,Nper1},"SteppedSine{1}:C1(*.001=N){2.5,10}"}';';'
+ li={'MeshCfg{d_hbm(Duffing2Dof),,CubFu}';
+     'SimuCfg{RO{NperPer2e3,Nper1},"SteppedSine{1}:C1(*.001=N){2.5,10}"}';
      'RunCfg{run,gui21@postproto}'};
  RT=struct('nmap',vhandle.nmap);
  RT.nmap('FirstStab')=struct('FinalCleanup','d_hbm@FirstStab','ite',10,'cond','d_hbm@CountIte');
  r2=sdtm.range(RT,li);%d2=mo2.nmap('CurTime');
 
  % xxx not yet functional see first example in cbi20b xxx 
-li={'MeshCfg{d_hbm(Duffing2Dof),,CubFu}';';' 
-     'SimuCfg{RO{NperPer2e3,Nper1,Methodnl_solve ModalNewmark},"SteppedSine{@ll(1,10,10)}:C1(*.001=N){2.5,10}"}';';'
+li={'MeshCfg{d_hbm(Duffing2Dof),,CubFu}';
+     'SimuCfg{RO{NperPer2e3,Nper1,Methodnl_solve ModalNewmark},"SteppedSine{@ll(1,10,10)}:C1(*.001=N){2.5,10}"}';
      'RunCfg{Reduce,run,gui21@postproto}'};
  RT=struct('nmap',vhandle.nmap);
  RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE)';
@@ -103,17 +103,17 @@ RT=struct('nmap',vhandle.nmap);
 RT.nmap('SimBack')='SimuCfg{back{.2m,50,chandle1}}';
 
 %% #CtcCube.A : load pressure exponential contact -3
-li={'MeshCfg{d_contact(cube),,n3e13{Kc1e12}}',';', ...
+li={'MeshCfg{d_contact(cube),,n3e13{Kc1e12}}', ...
      'SimuCfg{"Static{1e-8,chandle1}","Imp{100u,.1,chandle1,acall.}","EigOpt{5 5 0}"}', ...
-     ';','RunCfg{nl_solve(Static),nlutil(HRbuild{q0m1}),run}'}';
+     'RunCfg{nl_solve(Static),nlutil(HRbuild{q0m1}),run}'}';
 RT.nmap('CubeA')=li; % CtcCube.A
 
 
 %% #CtcCube.B : load pressure and corner, exponential contact  -3
 %    static followed by, hyperreduction
 li={'MeshCfg{d_contact(cube{loPC}),,n3e13{Kc1e12,Lambda500}}';
-    ';';'SimuCfg{"Static{1e-8,chandle1}","Imp{50u,.1,chandle1,acall.}","EigOpt{5 5 0}"}';
-    ';';'RunCfg{nl_solve(Static),nlutil(HRbuild{q0m1})}'};
+    'SimuCfg{"Static{1e-8,chandle1}","Imp{50u,.1,chandle1,acall.}","EigOpt{5 5 0}"}';
+    'RunCfg{nl_solve(Static),nlutil(HRbuild{q0m1})}'};
 RT.nmap('CubeB')=li; % CtcCube.B
 
   %RT.nmap('PostA')='nl_solve@doFreq{spec{BufTime 20 Overlap .90 Fmax 50 -window hanning},ci3}';
@@ -121,7 +121,7 @@ RT.nmap('CubeB')=li; % CtcCube.B
 %  RT.nmap('PostB')='d_contact@autoCycle{tclip50 20,dmBand1.2,ci3}';
 %  RT.nmap('PostInit')='d_squeal(LoadTime{ci[2 13]},$nmap)';
 
-li={'MeshCfg(d_contact(ScldCube))',';','SimBack',';','RunCfg{Time}'};
+li={'MeshCfg(d_contact(ScldCube))','SimBack','RunCfg{Time}'};
 RT.nmap('ScLdA')=li; % ScLdA
 % CtcCube.C : exponential contact; static followed by, hyperreduction
 % xxx add static load and point load 
@@ -132,12 +132,12 @@ nmap('Ctc')=RT;
 %% #HE.1T : hyperelastic test with one element -3
 %  RO=struct('mat','simoA','Mesh','OneTrac','Case','DofSet:Sine{10}:C0{0}','NperPer',1e5,'Nper',3);RO.do='{run,va,pow}';dfr_ident('Load',RO);
 
-li={'MeshCfg{d_fetime(OneTrac{d2 2 2,MatSimoA}),Rivlin{-.2 -.2 -.4}}';';' % RivlinCube experiment
-      'SimuCfg{Imp{1m,3,chandle1,rt-1e-3},Sig{Tri(.1,/2,5)}}';';'
+li={'MeshCfg{d_fetime(OneTrac{d2 2 2,MatSimoA}),Rivlin{-.2 -.2 -.4}}'; % RivlinCube experiment
+      'SimuCfg{Imp{1m,3,chandle1,rt-1e-3},Sig{Tri(.1,/2,5)}}'
       'RunCfg{Time}'};
 nmap('HE.1T')=li; 
-li={'MeshCfg{"d_fetime(OneTrac):TopZa:SimoA"}';';' % RivlinCube experiment
-      'SimuCfg{Exp{.2m,.2,chandle1},"SteppedSine{5}:C1(*100=%){60}"}';';'
+li={'MeshCfg{"d_fetime(OneTrac):TopZa:SimoA"}' % RivlinCube experiment
+      'SimuCfg{Exp{.2m,.2,chandle1},"SteppedSine{5}:C1(*100=%){60}"}'
       'RunCfg{Time}'};
 nmap('HE.1Ta')=li; 
 
@@ -152,7 +152,6 @@ nmap('Hbm.DoRange')={'nl_solve@DoTimeRangeb','ok';
 nmap('Hbm.ExpList')={ ...
     ['SimuCfg{RO{NperPer200,Nper3,Methodnl_solve ModalNewmark},' ...
       '"SteppedSine{@ll(10,120,50)}:C1(*.001=N){1}"}'];
-    ';'
     'RunCfg{Time,d_hbm@viewHarm,SetCI}'}; % Time{Profile}
 
 %% #Hbm.OneDof nmap and list for reduced one DOF [RT,li]=d_doe('nmap','Hbm.OneDofRed'); -3
@@ -160,8 +159,8 @@ RT=struct('nmap',vhandle.nmap);
 if ~isKey(nmap,'zeta'); nmap('zeta')=1e-2;end
 RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE)';
 RT.nmap('SetCI')='ci=iiplot;cingui(''plotwd'',ci,''@OsDic(SDT Root)'',{''FnI'',''ImSw80'',''WrW49c''});;';
-li={'MeshCfg{d_fetime(1DOF):MaxwellA{F2}}';';'
-     'SimuCfg{ModalNewmark{1m,.1,fc,chandle1}}';';'
+li={'MeshCfg{d_fetime(1DOF):MaxwellA{F2}}';
+     'SimuCfg{ModalNewmark{1m,.1,fc,chandle1}}';
      'RunCfg{Reduce}'};
 RT.nmap('CurExp')=li;nmap('Hbm.OneDofRed')=RT;
 
@@ -171,11 +170,12 @@ if ~isKey(nmap,'NM'); nmap('NM')=10;end
 if ~isKey(nmap,'dt'); nmap('dt')=1e-3;end
 RT.nmap('NM')=nmap('NM'); RT.nmap('dt')=nmap('dt'); 
 RT.nmap('Reduce')='nl_solve(ReducFree 2 $NM$ 1e3 -Float2 -SetDiag -SE)';
-li={'MeshCfg{d_fetime(Gart):VtGart}';';' % Model Gart (2 DofLoad) sdtweb d_fetime MeshGart 
+li={'MeshCfg{d_fetime(Gart):VtGart}'; % Model Gart (2 DofLoad) sdtweb d_fetime MeshGart 
      % Case VtGart (defines Act:In1 and Act:In2 : 2 DofLoad combinaisons = 2 impacts) sdtweb d_fetime VtGart 
-     'SimuCfg{ModalNewmark{$dt$,10,fc,chandle1}}';';'
+     'SimuCfg{ModalNewmark{$dt$,10,fc,chandle1}}';
      'RunCfg{Reduce}'};
-RT.nmap('CurExp')=li;nmap('Hbm.Gart')=RT;
+RT.nmap('CurExp')=li;li{3}='RunCfg{Reduce,Time}';RT.nmap('ExpRun')=li;
+nmap('Hbm.Gart')=RT;
 %% #Hbm.Duff : tabular with cubic non-linearity ready for VirtualTest -3
 RT=struct('nmap',vhandle.nmap);
 RB=struct('spec','BufTime 20 Overlap .75 fmin0 fmax60 -window hanning','ci',3);
@@ -186,11 +186,11 @@ RT.nmap('ShowSpectro')='fe_simul(''fe_timeCleanup'')';
 RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE)';
 RT.nmap('Transient')='nmap(''CurTime'')=fe_time(nmap(''CurModel''));';
 RT.nmap('SetCI')='ci=iiplot;cingui(''plotwd'',ci,''@OsDic(SDT Root)'',{''FnI'',''ImSw80'',''WrW49c''});;';
-li={'MeshCfg{d_fetime(1DOF),MaxwellA{Z.01,Fds},Duff}',';', ...
-      'SimuCfg{ModalNewmark{1m,$AcqTime$,sPostA},Sig{cnInput,Table(0 1n .1,1 0 0,istair)}}',';', ... % Sig=step
+li={'MeshCfg{d_fetime(1DOF),MaxwellA{Z.01,Fds},Duff}', ...
+      'SimuCfg{ModalNewmark{1m,$AcqTime$,sPostA},Sig{cnInput,Table(0 1n .1,1 0 0,istair)}}', ... % Sig=step
       'RunCfg{Reduce,Transient}'};
 li=sdtm.keyRep(nmap,li);
-RT.nmap('CurExp')=li;RT.tooltip='Single mass with cubic spring'; 
+RT.nmap('CurExp')=li;RT.ToolTip='Single mass with cubic spring'; 
 nmap('Hbm.Duff')=RT;
 
 
@@ -203,11 +203,11 @@ RT.nmap('ShowSpectro')='fe_simul(''fe_timeCleanup'')';
 RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE)';
 RT.nmap('Transient')='nmap(''CurTime'')=fe_time(nmap(''CurModel''));';
 RT.nmap('SetCI')='ci=iiplot;cingui(''plotwd'',ci,''@OsDic(SDT Root)'',{''FnI'',''ImSw80'',''WrW49c''});;';
-li={'MeshCfg{"d_fetime(1DOF):MaxwellA{Z0}:FuA"}',';', ...
-      'SimuCfg{ModalNewmark{1m,100,sPostA,fcShowSpectro}}',';', ...
+li={'MeshCfg{"d_fetime(1DOF):MaxwellA{Z0}:FuA"}'
+      'SimuCfg{ModalNewmark{1m,100,sPostA,fcShowSpectro}}'
       'RunCfg{Reduce,Transient,SetCI}'};
 RT.nmap('CurExp')=li;
-RT.tooltip='Single mass with gap contact'; 
+RT.ToolTip='Single mass with gap contact'; 
 nmap('Hbm.Fu')=RT;
 
 %% #Hbm.SqBase : button groups for SqSig tab -3
@@ -226,10 +226,10 @@ RT.nmap('PostA')='nl_solve@doFreq{spec{BufTime 2 Overlap .90 Fmax 500 -window ha
 %RT.nmap('PostA')={'FinalCleanupFcn','Tip', ...
 %      struct('Cb',{{'nl_solve','PostCdof',struct('DOF',2.03,'DoFreq',RB,'name','AR')}})
 %      };
-li={'MeshCfg{"d_fetime(1DOF):ARTV{z.01}"}'; ';'
-     'SimuCfg{ModalNewmark{.2m,50}}';';';'RunCfg{run,PostA}'};
-%     'SimuCfg{ModalNewmark{.2m,50,sPostA}}';';';'RunCfg{run}'};
-RT.nmap('CurExp')=li;
+li={'MeshCfg{d_fetime(1DOF),ARTV{z.01}}';
+     'SimuCfg{ModalNewmark{.2m,50}}';'RunCfg{run,PostA}'};
+%     'SimuCfg{ModalNewmark{.2m,50,sPostA}}';;'RunCfg{run}'};
+RT.nmap('CurExp')=li;RT.ToolTip='Auto-resonance+time variation example'; 
 nmap('TV.AR')=RT;
 
 %% #Tv.Hoffman{n,Mmuv} with time varying stiffness -3
@@ -244,37 +244,37 @@ nmap('TV.AR')=RT;
   RT.nmap('PostD2')='d_contact@autoCycle{tclip.01 .02,ifBand50,dmBand500,aeBand100,ci3}';
   RT.nmap('PostInit')='d_squeal(LoadTime{ci[2 13]},$nmap)';
 
-  li={'MeshCfg{d_contact(Hoffmann),TV,KmuV}';';'  % Mesh:Case:NL
+  li={'MeshCfg{d_contact(Hoffmann),TV,KmuV}';  % Mesh:Case:NL
    'SimuCfg{ModalNewmark{1m,400,uva111,rt-1e-4}SQ0{vq1Amp__5}}';
-   ';';'RunCfg{Time,PostB}'};
+   'RunCfg{Time,PostB}'};
   RT.nmap('TVK.MN')=li;  % time varying stiffness
   % time and amplitude varying stiffness, MSSP case
   li={'MeshCfg{d_contact(Hoffmann{kx3.55e+08,kz3.55e+08,ks4.4e+04,mu0.55,cx56.5,cz56.5}),TV{KA}}';
-   ';';'SimuCfg{ModalNewmark{40u,4,uva111,rt-1e-4}SQ0{vq1Amp__.0005}}';
-   ';';'RunCfg{Time,PostInit,PostD1,PostD2}'};
+   'SimuCfg{ModalNewmark{40u,4,uva111,rt-1e-4}SQ0{vq1Amp__.0005}}';
+   'RunCfg{Time,PostInit,PostD1,PostD2}'};
   RT.nmap('TVKA.MN')=li;  
   %% 
-  li={'MeshCfg{d_contact(Hoffmann)::KmuV}';';'  % Mesh:Case:NL
-  'SimuCfg{ModalNewmark{10m,400,uva111,rt-1e-4}SQ0{vq1Amp__10}}';';'
+  li={'MeshCfg{d_contact(Hoffmann)::KmuV}';  % Mesh:Case:NL
+  'SimuCfg{ModalNewmark{10m,400,uva111,rt-1e-4}SQ0{vq1Amp__10}}';
   'RunCfg{Time,PostInit,PostA,PostB}'};
   RT.nmap('Kmuv.MN')=li; % non-linear damping (change viscous damping based on velocity)
   %% 
-  li={'MeshCfg{d_contact(Hoffmann),Ctc,TExp}';';'  % Mesh:Case:NL
-  'SimuCfg{Implicit{10m,400,uva111,rt-1e-4}SQ0{vq1Amp__1}}';';'
-  ...'SimuCfg{ModalNewmark{10m,400,uva111,rt-1e-4}SQ0{vq1Amp__10}}';';'
+  li={'MeshCfg{d_contact(Hoffmann),Ctc,TExp}'; % Mesh:Case:NL
+  'SimuCfg{Implicit{10m,400,uva111,rt-1e-4}SQ0{vq1Amp__1}}';
+  ...'SimuCfg{ModalNewmark{10m,400,uva111,rt-1e-4}SQ0{vq1Amp__10}}';
   'RunCfg{Time,PostInit,PostA,PostB}'};
   RT.nmap('Texp.Imp')=li; % non-linear damping (change viscous damping based on velocity)
 
   %% sdtweb d_contact meshhoff
-  li={'MeshCfg{d_contact(Hoffmann{cx.01,cz.01,kx100,kz110,ks32}),Ctc{},{1001,TExpCh{ke.2},1,KmuV}}';';'  % Mesh:Case:NL
-  'SimuCfg{ModalNewmark{.5m,40,uva111,rt-1e-4}SQ0{vq1Amp__10}}';';'
+  li={'MeshCfg{d_contact(Hoffmann{cx.01,cz.01,kx100,kz110,ks32}),Ctc{},{1001,TExpCh{ke.2},1,KmuV}}';  % Mesh:Case:NL
+  'SimuCfg{ModalNewmark{.5m,40,uva111,rt-1e-4}SQ0{vq1Amp__10}}';
   'RunCfg{Time,PostInit,PostC1,PostC2}'};
   RT.nmap('Texp.MN')=li; % non-linear damping (change viscous damping based on velocity)
 
   %%
-  li={'MeshCfg{d_contact(Hoffmann)::}';';'  % Mesh:Case:NL
-   ...'SimuCfg{Implicit{10m,400,uva111,rt-1e-4}SQ0{vq1Amp__5}}';';'
-   'SimuCfg{ModalNewmark{1m,100,uva111,rt-1e-4}SQ0{vq1Amp__5}}';';'
+  li={'MeshCfg{d_contact(Hoffmann)::}';  % Mesh:Case:NL
+   ...'SimuCfg{Implicit{10m,400,uva111,rt-1e-4}SQ0{vq1Amp__5}}';
+   'SimuCfg{ModalNewmark{1m,100,uva111,rt-1e-4}SQ0{vq1Amp__5}}';
    'RunCfg{Time,PostInit,PostA}'};
   RT.nmap('base.MN')=li; % non-linear damping (change viscous damping based on velocity)
 
@@ -305,12 +305,11 @@ nmap('TV.Hoff')=RT; % d_doe('nmap','TV.Hoff{n,Texp.MN}')
 %  sdtm.toString(li(1:2:end)');RT.nmap('CurExp')=li;
 
  %RT=struct('nmap',nmap);d_doe('nmap','TV.Hoff');RT.nmap('CurExp')=li;
- %% #nmap.stdNmapOut
+ % sdtm.stdNmapOut('call')
  if nargout==1;out=sdtm.stdNmapOut(nmap,key,nargout,CAM);
  elseif nargout>1;[out,out1,out2]=sdtm.stdNmapOut(nmap,key,nargout,CAM);
  else; sdtm.stdNmapOut(nmap,key,nargout,CAM);
  end
-
   
 elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
 %% Solve : parametric study  ---------------------------------------
