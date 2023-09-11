@@ -1738,21 +1738,7 @@ if isempty(Cam)
  r2.pl(1)=RO.pl(1); 
  if isfield(model,'Elt')
   %% standard affect to model 
-  sdtw('_ewt','Move to sdtm.setMatPro')
-  if isfield(r2,'pro')
-   model.il=p_solid(model.il,['dbval ' r2.pro]);
-  else
-   i1=RO.mpid; i1(i1(:,1)~=RO.pl,:)=[];
-   st=sprintf('setpro %i',i1(1,2));
-   if ~isfield(r2,'isop');elseif ischar(r2.isop);st=sprintf('%s %s',st,r2.isop); 
-   else; st=sprintf('%s isop%i',st,r2.isop); % isop100 for large def
-   end
-  end
-  if ~isfield(model,'il')||isempty(model.il);model=p_solid('default;',model);end
-  if isfield(r2,'NLdata');model=feutil(st,model,'NLdata',r2.NLdata);end
-  if isfield(r2,'unit');model.unit=r2.unit;end
-  model.pl=r2.pl; 
-  out=model;
+  r2.mpid=RO.mpid; out=sdtm.setMatPro(model,r2);
  else;out=r2; %r2=d_mesh('mat','PadA') % simply return structure
  end 
 elseif comstr(Cam,'rve');[CAM,Cam]=comstr(CAM,4);
