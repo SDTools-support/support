@@ -103,7 +103,7 @@ RT=struct('nmap',vhandle.nmap);
 RT.nmap('SimBack')='SimuCfg{back{.2m,50,chandle1}}';
 
 %% #CtcCube.A : load pressure exponential contact -3
-li={'MeshCfg{d_contact(cube),,n3e13{Kc1e12}}', ...
+li={'MeshCfg{d_contact(cube),,n3s13{Kc1e12}}', ...
      'SimuCfg{"Static{1e-8,chandle1}","Imp{100u,.1,chandle1,acall.}","EigOpt{5 5 0}"}', ...
      'RunCfg{nl_solve(Static),nlutil(HRbuild{q0m1}),run}'}';
 RT.nmap('CubeA')=li; % CtcCube.A
@@ -111,7 +111,7 @@ RT.nmap('CubeA')=li; % CtcCube.A
 
 %% #CtcCube.B : load pressure and corner, exponential contact  -3
 %    static followed by, hyperreduction
-li={'MeshCfg{d_contact(cube{loPC}),,n3e13{Kc1e12,Lambda500}}';
+li={'MeshCfg{d_contact(cube{loPC}),,n3s13{Kc1e12,Lambda500}}';
     'SimuCfg{"Static{1e-8,chandle1}","Imp{50u,.1,chandle1,acall.}","EigOpt{5 5 0}"}';
     'RunCfg{nl_solve(Static),nlutil(HRbuild{q0m1})}'};
 RT.nmap('CubeB')=li; % CtcCube.B
