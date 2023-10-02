@@ -1453,6 +1453,47 @@ if RO.Quad;model=feutil('lin2quad',model);end
 out=model;  % Send output to out variable
 if nargout>1; out1=RO; end % Send MeshInfo back
 
+elseif comstr(Cam,'pic181disk');[CAM,Cam]=comstr(CAM,6);
+% -----------------------------------------------------------------------
+% -----------------------------------------------------------------------
+% -----------------------------------------------------------------------
+%% #MeshPIC181disk : mesh a disk made of PIC181 bulk piezo
+
+% Parameter handling
+[RO,st,CAM]=cingui('paramedit -DoClean',[ ...
+    ' th(2e-3#%g#"disk thickness")'...
+    ' r(8e-3#%g#"disk radius")'...
+    ' ner(10#%g#"nb elts along radius")'...
+    ' nez(4#%g#"nb elts along thickness")'...
+    ' nrev(16#%g#"nb elts along circunf")'...
+   ],{RO,CAM});
+
+
+%% Mesh
+%% Make mesh
+nd=[0 0 0; RO.r 0 0; RO.r 0 RO.th; 0 0 RO.th];
+model=feutil('object quad 1 1',nd,RO.ner,RO.nez); % Piezo
+model=feutil(['Rev ' num2str(RO.nrev) ' o 0 0 0 360 0 0 1'],model);
+model.unit='SI'; model.name='PIC 181 disk';
+
+%% Define material properties
+pl=m_piezo('dbval 1 -elas 2 PIC_181');
+
+%Damping
+pl(2,7)=0.02; % 1% damping in piezo
+model.pl=pl; model=p_solid('default;',model);
+
+%% Define electrodes, actuator and sensor
+  % -input "In" says it will be used as a voltage actuator
+model=p_piezo('ElectrodeMPC Top Actuator -input "Vin"',model,['z==' num2str(RO.th)]);
+  % -ground generates a v=0 FixDof case entry
+model=p_piezo('ElectrodeMPC Bottom Actuator -ground',model,'z==0');
+  % add a charge sensor on the top electrode
+model=p_piezo(['ElectrodeSensQ '  ...
+    num2str(floor(p_piezo('electrodedof Top Actuator',model))) ' Q'],model);
+
+out=model;  % Send output to out variable
+if nargout>1; out1=RO; end % Send MeshInfo back
 % -----------------------------------------------------------------------
 % -----------------------------------------------------------------------
 % -----------------------------------------------------------------------
