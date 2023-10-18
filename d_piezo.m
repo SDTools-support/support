@@ -2606,6 +2606,188 @@ model.Node(:,5:7)=model.Node(:,5:7)/1000; model.unit='SI'; % go to m
 %% #MeshEnd
 else;error('Mesh%s unknown',CAM);
 end
+
+%% #Mat -------------------------------------------------------------------
+elseif comstr(Cam,'mat');[CAM,Cam]=comstr(CAM,4);
+
+if comstr(Cam,'pic255a')
+%% #MatPIC255a : compute full material properties from datasheet (2013) for PIC255
+% PIC 255 data 2013
+in.eps0=8.854e-12;
+in.d33=400e-12; in.d31=-180e-12; in.d15=550e-12;
+in.g31=-11.3e-3; in.g33=25e-3;
+in.e33t=1750*in.eps0; in.e11t=1650*in.eps0;
+in.s11E=16.1e-12; in.s33E=20.7e-12; in.c33D=11e10;
+in.k33=0.69; in.k15=0.66; in.k31=0.35; in.kp=0.62; in.kt=0.47;
+in.rho=7800;
+
+%Data computed from datasheet info
+ou.Ep=1/in.s11E; ou.Ez=1/in.s33E;
+tp.s12E=-in.s11E + 2*in.d31^2/(in.kp^2*in.e33t);
+ou.vp=-ou.Ep*tp.s12E;
+ou.Gp=ou.Ep/(2*(1+ou.vp));
+tp.s55E=in.d15^2/(in.e11t*in.k15^2); ou.Gzp=1/tp.s55E;
+
+ou.vzp=0.3; % (hopothesis)
+ou.vpz=ou.Ep/ou.Ez*ou.vzp;
+
+% %Checking
+% k31b=sqrt(d31^2/(e33t*s11E));
+% k33b=sqrt(d33^2/(e33t*s33E));
+% g31b=d31/e33t;
+% g33b=d33/e33t;
+
+% in = input values, out=output values, tp=temp values
+out.in=in; out.out=ou; out.tp=tp;
+
+elseif comstr(Cam,'pic181a')
+%% #MatPIC181a : compute full material properties from datasheet (2013) for PIC181
+% PIC 181 data 2013
+in.eps0=8.854e-12;
+in.d33=265e-12; in.d31=-120e-12; in.d15=475e-12;
+in.g31=-11.2e-3; in.g33=25e-3;
+in.e33t=1250*in.eps0; in.e11t=1100*in.eps0; %Datasheet value is 1500 but should be lower than e33, so corrected (how ?)
+in.s11E=11.8e-12; in.s33E=14.2e-12; in.c33D=16.6e10;
+in.k33=0.66; in.k15=0.63; in.k31=0.32; in.kp=0.56; in.kt=0.46;
+in.rho=7800;
+
+%Data computed from datasheet info
+ou.Ep=1/in.s11E; ou.Ez=1/in.s33E;
+tp.s12E=-in.s11E + 2*in.d31^2/(in.kp^2*in.e33t);
+ou.vp=-ou.Ep*tp.s12E;
+ou.Gp=ou.Ep/(2*(1+ou.vp));
+tp.s55E=in.d15^2/(in.e11t*in.k15^2); ou.Gzp=1/tp.s55E;
+
+ou.vzp=0.3; % (hopothesis)
+ou.vpz=ou.Ep/ou.Ez*ou.vzp;
+
+% %Checking
+% k31b=sqrt(d31^2/(e33t*s11E));
+% k33b=sqrt(d33^2/(e33t*s33E));
+% g31b=d31/e33t;
+% g33b=d33/e33t;
+
+% in = input values, out=output values, tp=temp values
+out.in=in; out.out=ou; out.tp=tp;
+
+elseif comstr(Cam,'pic181b')
+%% #MatPIC181b : compute full material properties from datasheet (2013) for PIC181
+% PIC 181 data 2023
+in.eps0=8.854e-12;
+in.d33=265e-12; in.d31=-120e-12; in.d15=475e-12;
+in.g31=-10.6e-3; in.g33=23e-3;
+in.e33t=1250*in.eps0; in.e11t=1200*in.eps0; %Datasheet value is 1500 but should be lower than e33, so corrected (how ?)
+in.s11E=11.8e-12; in.s33E=13.3e-12; in.c33D=17e10;
+in.k33=0.66; in.k15=0.63; in.k31=0.32; in.kp=0.56; in.kt=0.46;
+in.rho=7850;
+
+%Data computed from datasheet info
+ou.Ep=1/in.s11E; ou.Ez=1/in.s33E;
+tp.s12E=-in.s11E + 2*in.d31^2/(in.kp^2*in.e33t);
+ou.vp=-ou.Ep*tp.s12E;
+ou.Gp=ou.Ep/(2*(1+ou.vp));
+tp.s55E=in.d15^2/(in.e11t*in.k15^2); ou.Gzp=1/tp.s55E;
+
+ou.vzp=0.3; % (hopothesis)
+ou.vpz=ou.Ep/ou.Ez*ou.vzp;
+
+% %Checking
+% k31b=sqrt(d31^2/(e33t*s11E));
+% k33b=sqrt(d33^2/(e33t*s33E));
+% g31b=d31/e33t;
+% g33b=d33/e33t;
+
+% in = input values, out=output values, tp=temp values
+out.in=in; out.out=ou; out.tp=tp;
+
+elseif comstr(Cam,'pic255b')
+%% #MatPIC255b : compute full material properties from datasheet (2023) for PIC255
+% PIC 255 data 2023
+in.eps0=8.854e-12;
+in.d33=400e-12; in.d31=-180e-12; in.d15=550e-12;
+in.g31=-11.8e-3; in.g33=25e-3;
+in.e33t=1800*in.eps0; in.e11t=1750*in.eps0;
+in.s11E=16e-12; in.s33E=19e-12; in.c33D=15.4e10;
+in.k33=0.69; in.k15=0.65; in.k31=0.35; in.kp=0.62; in.kt=0.47;
+in.rho=7800;
+
+%Data computed from datasheet info
+ou.Ep=1/in.s11E; ou.Ez=1/in.s33E;
+tp.s12E=-in.s11E + 2*in.d31^2/(in.kp^2*in.e33t);
+ou.vp=-ou.Ep*tp.s12E;
+ou.Gp=ou.Ep/(2*(1+ou.vp));
+tp.s55E=in.d15^2/(in.e11t*in.k15^2); ou.Gzp=1/tp.s55E;
+
+ou.vzp=0.3; % (hopothesis)
+ou.vpz=ou.Ep/ou.Ez*ou.vzp;
+
+% %Checking
+% k31b=sqrt(d31^2/(e33t*s11E));
+% k33b=sqrt(d33^2/(e33t*s33E));
+% g31b=d31/e33t;
+% g33b=d33/e33t;
+
+% in = input values, out=output values, tp=temp values
+out.in=in; out.out=ou; out.tp=tp;
+
+elseif comstr(Cam,'ferroperm')
+%% #MatFerroperm : compute full material properties from xls sheet
+% file='Ferroperm MatData.xls', 2018
+% file='Ferroperm_materials_data_sep2023.xlsx', 2023
+file=varargin{2}; [a,b,c]=xlsread(file);
+ind=3:size(c,2)-2;
+names=c(3,ind);
+ind=ind-2;
+
+s11E=a(36,ind);
+nu12=a(34,ind);
+nu13=a(35,ind);
+s13E=a(38,ind);
+s33E=a(39,ind);
+s44E=a(40,ind);
+s55E=s44E;
+rho0=a(33,ind);
+eps1t=a(1,ind);
+eps3t=a(2,ind);
+d310=a(12,ind);
+d330=a(13,ind);
+d150=a(14,ind);
+
+for ij=1:length(names)
+
+% Mechanical properties
+Ep=1/s11E(ij); % Corresponds to Y11E
+Ez=1/s33E(ij); % Corresponds to Y33E - Ep is usually larger than Ez, this is not coherent ... OK seems to depend on the material ...
+nup=nu12(ij); % corresponds to nu12
+nuzp=nu13(ij); % It seems that nu13 in datasheet is in fact nu31 (from the values of s11E s33E and s13E)
+nupz=nuzp*Ep/Ez;
+Gp=Ep/(2*(1+nup));
+Gzp=1/s44E(ij);
+Gpz=1/s55E(ij);
+rho=rho0(ij);
+% Permittivity
+e1t=eps1t(ij);
+e3t=eps3t(ij);
+% Piezoelectric properties
+d31=d310(ij);
+d33=d330(ij);
+d15=d150(ij);
+
+d=zeros(1,18); d([11 13])=d15; d([3 6])=d31; d(9)=d33;
+  eps=zeros(1,9); eps([1 5])= 8.854e-12*e1t; eps(9)=8.854e-12*e3t;
+out(ij).pl=[1 fe_mat('m_piezo','SI',2) 2 d  eps;
+    2  fe_mat('m_elastic','SI',6) Ep Ep Ez nupz nuzp nup Gpz Gzp Gp rho zeros(1,18)]; 
+out(ij).name=names{ij};
+out(ij).type='m_piezo';
+out(ij).unit='SI';
+
+end
+
+
+%% #MatEnd
+else;error('Mat%s unknown',CAM);
+end
+
 %% #Solve -------------------------------------------------------------------
 elseif comstr(Cam,'solve');[CAM,Cam]=comstr(CAM,6);
 
