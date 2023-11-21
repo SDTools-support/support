@@ -24,7 +24,7 @@ if comstr(Cam,'init');[CAM,Cam]=comstr(CAM,5);
   '-fig(10#%g#"Figure number to display time acquisitions")' ...
   ],{struct,CAM}); Cam=lower(CAM);
  [ci,cf]=iicom('dockid');
- UI=sdtroot('paramui',ci); PA=sdtroot('paramvh',ci);
+ [UI,PA]=sdtroot('paramui',ci); 
  d=PA.Stack{'info','daqsdt'};
  figure(RO.fig);
  cingui('objset',RO.fig,{'@Dock',{'Name','Id','tile',ci}});figure(RO.fig);
@@ -75,7 +75,7 @@ elseif comstr(Cam,'set');[CAM,Cam]=comstr(CAM,4);
  else; RO=struct; % uo remain empty, CAM is specify outside
  end
  
- UI=sdtroot('paramui',obj);PA=sdtroot('paramvh',obj);
+ [UI,PA]=sdtroot('paramui',obj);
  d=PA.Stack{'info','daqsdt'};
  %% set_Commands   
  if comstr(Cam,'impact')
