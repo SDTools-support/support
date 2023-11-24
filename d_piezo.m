@@ -182,6 +182,60 @@ disp([{'CT';'CS'} num2cell([CT;CS])])
 
 %% EndSource EndTuto
 
+elseif comstr(Cam,'tutodiskimpedance')
+%% #TutoDiskImpedance : Piezoelectric Disk impedance -2
+% see sdtweb eq_dyn#pz_disk_impedance
+
+%% BeginSource sdtweb('_example','pz_theory.tex#pz_disk_impedance')
+
+% Init working directory for figure generation
+t_avc('SetPlotWd')
+% See full example as Matlab code in d_piezo('ScriptTutoPZ_disk_impedance')
+t_avc('Definestyles');
+
+%% Step 1 Build and represent mesh and electrodes
+model=d_piezo('MeshPIC181disk th=2e-3 r=8e-3 ner=10 nez=4 nrev=16');
+feplot(model); cf=fecom; cf.mdl.name='PIC 181 piezo disk mesh'; iimouse('resetview')
+t_avc('setstyle',cf)
+% Visualize electrodes
+fecom('curtabCase',{'Top Actuator';'Bottom Actuator'}) % That seems to be correct
+fecom(';showline;proviewon;triax') % xxxEB why did the mesh disappear ?
+cf.mdl.name='PIC 181 piezo disk electrodes'
+t_avc('setstyle',cf)
+%% Step 2 : Define range of frequencies and compute dynamic response
+frq=linspace(20e3,200e3,256);
+def=fe_simul('dfrf',stack_set(model,'info','Freq',frq)); 
+
+
+% visualize potential
+feplot(model,def); cf=fecom; 
+fecom(';showpatch;colordata21;'); cf.mdl.name='PIC 181 piezo disk voltage'
+t_avc('setstyle',cf) ; 
+cf.osd_('cbtr{string,Voltage(V)}')
+fecom('colorscaleone') %To have the correct scale
+
+% View electric field
+fecom(';showline;scd 1e-4')
+p_piezo('viewElec EltSel "matid1" DefLen 1e-4',cf); cf.mdl.name='PIC 181 piezo disk E-field'
+% To have a single color change clim (must be done with axProp to bypass normal)
+st=cf.ua.axProp; st(3:4)={'@axes',{'clim',[480 510]}};cf.ua.axProp=st;
+t_avc('setstyle',cf)
+cf.osd_('cbtr{string,E(V/m)}')
+%% Step 3: Compute q/V as a function of the frequency
+sens=fe_case(model,'sens');
+C1=fe_case('SensObserve −DimPos 2 3 1',sens,def);
+C1=sdsetprop(C1,'PlotInfo','sub','magpha','scale','xlin;ylog');
+ci=iiplot; 
+iicom(ci,'curveInit',C1.name,C1); iicom('submagpha');
+t_avc('setstyle',ci);
+%% Step 4: Compute and plot electric impedance
+% extract impedance
+C2=C1; C2.Y=1./(2*pi*1i*C2.X{1}.*C2.Y); C2.X{2}={'Imp(Ohm)'};
+iicom(ci,'curveInit',C2.name,C2); iicom('submagpha');
+t_avc('setstyle',ci);
+
+%% EndSource EndTuto
+
 elseif comstr(Cam,'tutoidepatch');
 
 %% #TutoIDEPatch : 3D piezoelectric patch with IDE - Statics -2
