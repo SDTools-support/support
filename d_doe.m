@@ -157,7 +157,7 @@ nmap('Hbm.ExpList')={ ...
 %% #Hbm.OneDof nmap and list for reduced one DOF [RT,li]=d_doe('nmap','Hbm.OneDofRed'); -3
 RT=struct('nmap',vhandle.nmap);
 if ~isKey(nmap,'zeta'); nmap('zeta')=1e-2;end
-RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE)';
+RT.nmap('Reduce')={'nl_solve','$RO',[],'ReducFree 2 10 0 -float2 -SE'};
 RT.nmap('SetCI')='ci=iiplot;cingui(''plotwd'',ci,''@OsDic(SDT Root)'',{''FnI'',''ImSw80'',''WrW49c''});;';
 li={'MeshCfg{d_fetime(1DOF),MaxwellA{F2}}';
      'SimuCfg{ModalNewmark{1m,.1,fc,chandle1}}';
@@ -169,7 +169,8 @@ RT=struct('nmap',vhandle.nmap);
 if ~isKey(nmap,'NM'); nmap('NM')=10;end
 if ~isKey(nmap,'dt'); nmap('dt')=1e-3;end
 RT.nmap('NM')=nmap('NM'); RT.nmap('dt')=nmap('dt'); 
-RT.nmap('Reduce')='nl_solve(ReducFree 2 $NM$ 1e3 -Float2 -SetDiag -SE)';
+RT.nmap('Reduce')={'nl_solve','$RO',[],'ReducFree 2 $NM$ 1e3 -Float2 -SetDiag -SE'};
+%RT.nmap('Reduce')='nl_solve(ReducFree 2 $NM$ 1e3 -Float2 -SetDiag -SE)';
 li={'MeshCfg{d_fetime(Gart),VtGart}'; % Model Gart (2 DofLoad) sdtweb d_fetime MeshGart 
      % Case VtGart (defines Act:In1 and Act:In2 : 2 DofLoad combinaisons = 2 impacts) sdtweb d_fetime VtGart 
      'SimuCfg{ModalNewmark{$dt$,10,fc,chandle1}}';
