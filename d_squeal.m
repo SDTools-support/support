@@ -2126,7 +2126,10 @@ elseif comstr(Cam,'load');[CAM,Cam]=comstr(CAM,5);
  %% #LoadTime : load a long time -2
  if comstr(CAM,'(')
    % d_squeal('loadTime(cbi20b,TimeScan_3100Hz_laser_1.mat,ci2)')
-   [st,RO]=sdtm.urnPar(CAM,'{LoadFcn%s,fname%s}:{ci%g}');  
+   if carg<=nargin;RO=varargin{carg};carg=carg+1;
+   else
+    [st,RO]=sdtm.urnPar(CAM,'{LoadFcn%s,fname%s}:{ci%g}');  
+   end
  elseif comstr(Cam,'{')
    [st,RO]=sdtm.urnPar(CAM,'{}:{ci%g}');  
    nmap=varargin{carg}; carg=carg+1;
@@ -2177,11 +2180,13 @@ elseif comstr(Cam,'load');[CAM,Cam]=comstr(CAM,5);
      wire=polytec('ReadMesh',f2);
      save(strrep(FileName,'.svd','.mat'),'Time','wire');
  end
+ if isfield(RO,'cf');cf=comgui('guifeplot',RO.cf);cf.mdl=wire; end
  if isfield(RO,'ci') % Initialize ci
   RO.Time=Time;d_squeal('ViewCi',RO);
  end
  if nargout==0;  eval(iigui(RO.out,'SetInBaseC'))
- else;   out=Time;out1=wire;
+ elseif nargout==1;out=struct('Time',Time,'wire',wire);
+ else; out=Time;out1=wire;
  end
  else; error('Load %s unknown.',CAM);
  end
