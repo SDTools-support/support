@@ -1479,15 +1479,26 @@ elseif comstr(Cam,'specevt')
  setappdata(RO.gf,'curve',C3)
  cingui('objset',RO.gf,{'@OsDic',{'ImGrid'}})
 
-elseif comstr(Cam,'spec')
+elseif comstr(Cam,'spec');[CAM,Cam]=comstr(CAM,5);
 %% #ViewSpec _tro : standardized viewing of base spectrogram 
+c2=sdth.urn('Dock.Id.ci');Time=stack_get(c2,'curve','Time','g');
+if isempty(Cam)
+  m1=c2.Stack{'curData'};projM=c2.data.nmap.nmap;
+  st=m1.views;st=st{sdtm.regContains(st,'ViewSpec')};
+  if strncmp(st,'d_',2);Cb=sdtm.urnCb(st,projM);
+  else;Cb=sdtm.urnCb(['$' st],projM); % replace from projM entry
+  end
+  fprintf('Calling %s\n',comstr(Cb,-30))
+  feval(Cb{:});
+  return
+else
   [st,RO]=sdtm.urnPar(CAM,'{Spec%s}:{ci%g,jframe%g,ChSel%s,name%s,jPar%g}');  
+end
   if ~isfield(RO,'Failed');RO.Failed={};end
   i1=~cellfun(@isempty,regexpi(RO.Failed,'[ft](min|max)'));
   if any(i1)
     RO.Spec=horzcat(RO.Spec,RO.Failed{i1});RO.Failed(i1)=[];
   end
-  c2=sdth.urn('Dock.Id.ci');Time=stack_get(c2,'curve','Time','g');
   if isfield(RO,'jPar')&&RO.jPar
     r2=stack_get(c2,'curve','Split','g');
     if ~isempty(r2);Time=r2(:,:,RO.jPar);end
@@ -1639,7 +1650,7 @@ if any(sdtm.Contains(lower(RO.Failed),'a(f)'))
     %r1(:,3)=(RP.lp*abs(r1(:,3)));
     r1(:,3)=10.^(RP.lp*log10(abs(r1(:,3))));
   end
-  gf=104; 
+  gf=sdth.urn('figure(104).os{@Dock,{name,SqSig},name,104 a(f),NumberTitle,off}');
   figure(gf);clf;ga=get(gf,'CurrentAxes'); if isempty(ga);ga=axes('parent',gf);end
    st1={[r1(:,2);NaN],[abs(r1(:,3));NaN],[r1(:,1);NaN],[r1(:,1);NaN],'edgecolor','interp','tag','iFreq', ...
        'linewidth',2};
@@ -1783,7 +1794,9 @@ end
 if carg>nargin||comstr(Cam,'instfreq{') 
  c2=sdth.urn('Dock.Id.ci'); 
  Time=c2.Stack{'Time'};% (SqLastSpec).Time is preemptive 
- projM=c2.data.nmap.nmap;RO=projM('SqLastSpec');
+ projM=c2.data.nmap.nmap; 
+ if ~isKey(projM,'SqLastSpec');warning('Missing SqLastSpec entry');return;end
+ RO=projM('SqLastSpec');
  [~,r2]=sdtm.urnPar(CAM,['{}{dmBand%g,aeBand%g,harm%g,do%s,tclip%g,' ...
      'clipBand%g,f%g,chRef%s,ifBand%g,ifSat%g,jPar%g,iu%g,hf%g,ci%i}']);
  RO=sdth.sfield('addmissing',r2,RO);
@@ -2425,7 +2438,8 @@ function out=specMax
   st=c13.ua.YFcn; 
   if sdtm.Contains(st,'log10(abs(r3))');r2=10.^r2;end
   gf=sdth.urn('figure(101).os{@Dock,{name,SqSig},name,101 SpecMax,NumberTitle,off}');
-  figure(gf);plot(ob.YData,r2);xlabel('Frequency [Hz]');ylabel('Max_t(spectro)')
+  figure(double(gf));
+  plot(ob.YData,r2);xlabel('Frequency [Hz]');ylabel('Max_t(spectro)')
   if nargout>0; out=r2;end
 end
 function  [r1,st]=getAmp(r1,Time,st);
