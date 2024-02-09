@@ -1483,7 +1483,8 @@ elseif comstr(Cam,'spec');[CAM,Cam]=comstr(CAM,5);
 %% #ViewSpec _tro : standardized viewing of base spectrogram 
 c2=sdth.urn('Dock.Id.ci');Time=stack_get(c2,'curve','Time','g');
 if isempty(Cam)
-  m1=c2.Stack{'curData'};projM=c2.data.nmap.nmap;
+  projM=c2.data.nmap.nmap;
+  m1=c2.Stack{'curData'};if isempty(m1);m1=c2.Stack{'Time'}.meta;end
   st=m1.views;st=st{sdtm.regContains(st,'ViewSpec')};
   if strncmp(st,'d_',2);Cb=sdtm.urnCb(st,projM);
   else;Cb=sdtm.urnCb(['$' st],projM); % replace from projM entry
@@ -1559,7 +1560,7 @@ end
 
 iicom(c2,'initSqSig{Hbm.SqBase}'); 
 if ~isfield(RO,'ci');RO.ci=13;end
-new=ishandle(RO.ci);
+new=~ishandle(RO.ci);
 c13=sdth.urn(sprintf('Dock.Id.ci.Clone{%i}',RO.ci));
 if RO.ci==13; setappdata(13,'SdtName','Spec');end
 if new % Place in same tile as iiplot 
@@ -2148,9 +2149,12 @@ elseif comstr(Cam,'load');[CAM,Cam]=comstr(CAM,5);
    nmap=varargin{carg}; carg=carg+1;
    RO.Time=fe_def('def2curve',nmap('CurTime'));
  else;RO=varargin{carg};carg=carg+1; 
+     if ischar(RO);RO=struct('fname',RO,'LoadFcn','ufread');end
  end
+ sdtw('_ewt','move to sdtm.nodeLoadTime femlink read{}')
+ if ~isfield(RO,'LoadFcn');RO.LoadFcn='ufread';end
  if isfield(RO,'Time'); Time=RO.Time;wire=[];i1=-1;
- elseif ~isempty(RO.LoadFcn)&&~strcmp(RO.LoadFcn,'ufread')
+ elseif isfield(RO,'LoadFcn')&&~isempty(RO.LoadFcn)&&~strcmp(RO.LoadFcn,'ufread')
   [FileName,i1]=feval(RO.LoadFcn,'pwd',RO.fname);[~,~,RO.ext]=fileparts(FileName);
  elseif exist(RO.fname,'file');FileName=RO.fname;i1=1; [~,~,RO.ext]=fileparts(FileName);
  else; error('File not found');
@@ -2159,20 +2163,18 @@ elseif comstr(Cam,'load');[CAM,Cam]=comstr(CAM,5);
  if i1==-1 % Given in field
  elseif i1&&~strcmpi(RO.ext,'.svd') % File exist
      if isequal(RO.LoadFcn,'ufread');r1=ufread(FileName);
-     elseif strcmpi(RO.ext,'.wav')
-       [r2,fs]=audioread(FileName); t=1/fs:1/fs:1/fs*length(r2);
-       r1=struct;r1.Time=struct('X',{{t(:),{'mic'}}},'Xlab',{{'Time','Sens'}},'Y',r2(:));
      elseif isfield(RO,'Failed') % xxx third arg to load a given variable only
       r1=load(FileName,RO.Failed{1}); 
      else;r1=load(FileName);
      end
      if isfield(r1,'Time');Time=r1.Time;
      elseif isfield(r1,'XF'); Time=r1.XF;if isfield(r1,'TEST');wire=r1.TEST; end
+     elseif isfield(r1,'Xlab'); Time=r1;
      else; st=fieldnames(r1);Time=r1.(st{1});
      end
      if isfield(r1,'wire');wire=r1.wire;else;wire=[];end
  else
-     %% revise fasttime storage. 
+     %% revise fasttime storage. cbi20b('proj23ParSqueal');r2=gui21('load',nmap('TimeScan2000Hz'));
      f2=strrep(RO.fname,'.mat','.svd');
      if exist(f2,'file'); 
      elseif ~isempty(RO.LoadFcn)
