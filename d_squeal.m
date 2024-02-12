@@ -1482,8 +1482,8 @@ elseif comstr(Cam,'specevt')
 elseif comstr(Cam,'spec');[CAM,Cam]=comstr(CAM,5);
 %% #ViewSpec _tro : standardized viewing of base spectrogram 
 c2=sdth.urn('Dock.Id.ci');Time=stack_get(c2,'curve','Time','g');
+projM=c2.data.nmap.nmap;
 if isempty(Cam)
-  projM=c2.data.nmap.nmap;
   m1=c2.Stack{'curData'};if isempty(m1);m1=c2.Stack{'Time'}.meta;end
   st=m1.views;st=st{sdtm.regContains(st,'ViewSpec')};
   if strncmp(st,'d_',2);Cb=sdtm.urnCb(st,projM);
@@ -1500,17 +1500,15 @@ end
   if any(i1)
     RO.Spec=horzcat(RO.Spec,RO.Failed{i1});RO.Failed(i1)=[];
   end
-  if isfield(RO,'jPar')&&RO.jPar
+  if isfield(RO,'jPar')&&RO.jPar  % Analyze a evt split
     r2=stack_get(c2,'curve','Split','g');
     if ~isempty(r2);Time=r2(:,:,RO.jPar);end
   end
-  if ~isfield(RO,'nmap')
-   try;RO.nmap=c2.data.nmap.nmap;catch;RO.nmap=vhandle.nmap;c2.data.nmap.nmap=RO.nmap;end
-  end
+  if ~isfield(RO,'nmap'); RO.nmap=projM;  end
   if carg<=nargin&&isfield(varargin{carg},'Y')
       Time=varargin{carg};carg=carg+1;
       if ~isfield(Time,'evt');iicom(c2,'curveinit','Time',Time);end%Not click
-  elseif isempty(Time)
+  elseif isempty(Time);warning('Not safe use of Time in base')
    Time=evalin('base','Time');iicom(c2,'curveinit','Time',Time);
   end
 %spec=ii_signal('spectro BufTime 1 Overlap .8 fmax 10e3 fmin 800 -window hanning',Time);C2=spec.GetData; 
@@ -1522,6 +1520,7 @@ if isa(Time,'curvemodel');
      Time=Time(:,:,RO.jPar);
     end
 end
+
 Time.X{1}=Time.X{1}-Time.X{1}(1);
 spec=ii_signal(['spectro',RO.Spec],Time,struct,RO);
 %C2=spec.GetData; 
@@ -1796,29 +1795,17 @@ if carg>nargin||comstr(Cam,'instfreq{')
  c2=sdth.urn('Dock.Id.ci'); 
  Time=c2.Stack{'Time'};% (SqLastSpec).Time is preemptive 
  projM=c2.data.nmap.nmap; 
- if ~isKey(projM,'SqLastSpec');warning('Missing SqLastSpec entry');return;end
- RO=projM('SqLastSpec');
- [~,r2]=sdtm.urnPar(CAM,['{}{dmBand%g,aeBand%g,harm%g,do%s,tclip%g,' ...
-     'clipBand%g,f%g,chRef%s,ifBand%g,ifSat%g,jPar%g,iu%g,hf%g,ci%i}']);
- RO=sdth.sfield('addmissing',r2,RO);
- if carg<=nargin; r2=varargin{carg};carg=carg+1;
-     RO=sdth.sfield('addmissing',r2,RO);
- end
+ RO=useOrDefault(projM,'InstFreq');
+ if isempty(RO);RO=sdtm.pcin('gr.IFreq','uo');end
+
 else
  Time=varargin{carg};carg=carg+1;projM=[];
  RO=varargin{carg};carg=carg+1;
 end
 hfs=ii_signal('@sqSig');
-if ~isfield(RO,'Time'); RO.Time=Time;else; Time=RO.Time; end
-if ~isfield(RO,'jPar')||RO.jPar==0; 
-else 
-    RO.Time=Time(:,:,RO.jPar);RO.Time.X{1}=RO.Time.X{1}-RO.Time.X{1}(1);
-end
-if ~isfield(RO,'harm');RO.harm=(0:5);end
-
-if ~isfield(RO,'do');RO.do='';end
+ROc=hfs('depend',RO,Time,projM,CAM);
 %try
-    [out,RB]=hfs('obsPha',RO); % sdtweb ii_signal obspha
+    [out,RB]=hfs('obsPha',ROc); % sdtweb ii_signal obspha
 %catch err
 %    sdtm.toString(err)
 %    out=[];return
@@ -1827,7 +1814,11 @@ RO=RB; if nargout>1; out1=RO;end
 
 if isfield(RO,'ci')&&~isempty(RO.ci)
     %'xxx need to adjust how to display freq if not spectro'
-    ci=iiplot(RO.ci,';');r2=struct('X',{{out.X{1}(:,1),{'Freq'}}},'Y',out.X{1}(:,2));
+    ci=iiplot(RO.ci,';');
+    if isequal(out.X{2},{'Freq'});r2=out;
+    else; r2=vhandle.cdm.urnVec(out,'{x,iFreq}');
+        r2=struct('X',{{out.X{1}(:,1),r2(2)}},'Y',r2{1});
+    end
     ci.Stack{'spec'}.ID=struct('po',r2,'marker','xy'); 
     %if length(RO.f)==1;ci.ua.axProp={'ylim',RO.f*[.98 1.02]};
     %else; ci.ua.axProp={'ylim',[min(RO.f)*.98 max(RO.f)*1.02]};
@@ -2151,13 +2142,16 @@ elseif comstr(Cam,'load');[CAM,Cam]=comstr(CAM,5);
  else;RO=varargin{carg};carg=carg+1; 
      if ischar(RO);RO=struct('fname',RO,'LoadFcn','ufread');end
  end
- sdtw('_ewt','move to sdtm.nodeLoadTime femlink read{}')
+ Time=[];
  if ~isfield(RO,'LoadFcn');RO.LoadFcn='ufread';end
  if isfield(RO,'Time'); Time=RO.Time;wire=[];i1=-1;
  elseif isfield(RO,'LoadFcn')&&~isempty(RO.LoadFcn)&&~strcmp(RO.LoadFcn,'ufread')
   [FileName,i1]=feval(RO.LoadFcn,'pwd',RO.fname);[~,~,RO.ext]=fileparts(FileName);
  elseif exist(RO.fname,'file');FileName=RO.fname;i1=1; [~,~,RO.ext]=fileparts(FileName);
  else; error('File not found');
+ end
+ if isempty(Time)
+  sdtw('_ewt','move to sdtm.nodeLoadTime femlink read{}')
  end
  RO.out={'Time','wire'};
  if i1==-1 % Given in field
@@ -2182,18 +2176,7 @@ elseif comstr(Cam,'load');[CAM,Cam]=comstr(CAM,5);
      end
      if ~exist(f2,'file'); error('''%s'' Not found',f2);
      end
-     r1=polytec('ReadList',f2);
-     r2=struct('iSignal',1,'pointdomain','Time','FastScan',1);
-     r2.iChannel=unique(vertcat(r1{2:end,2}));
-     Time=polytec('ReadSignal',f2,r2);
-     % Ref 3,4,5 are a triax with default and Ref 6 has a amplitude issue
-     % xxx cleanup
-     % -> only keep Ref 1 and 2
-     %r1.X{2}(6:end,:)=[];r1.Y(:,6:end)=[];r1.Range.lab(6:9)=[];r1.Range.val(:,6:9)=[];
-     r1=Time.Source;
-     Time.Source=r1;    
-     wire=polytec('ReadMesh',f2);
-     save(strrep(FileName,'.svd','.mat'),'Time','wire');
+     [Time,wire]=sdtm.nodeLoadTime(f2);
  end
  if isfield(RO,'cf');cf=comgui('guifeplot',RO.cf);cf.mdl=wire; end
  if isfield(RO,'ci') % Initialize ci
