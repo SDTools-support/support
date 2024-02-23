@@ -1884,9 +1884,7 @@ if ~isempty(st); d_squeal(['viewpar' st]);end
   ii_plp(c2.Stack{'Time'}.ID)
  end
  elseif comstr(Cam,'wpasid')
- %% #viewWpAsId
-
-
+ %% #viewWpAsId : add wheel position marker as ID line 
 
 %        &&all(sdtm.regContains(out{1,end}.X{2}(:,1),RO.AsPo))
 %       ID=struct('po',out{end}.Y*[1 0],'name',out{1,end}.X{2}{1});out(end)=[];
@@ -1913,6 +1911,53 @@ if ~isempty(st); d_squeal(['viewpar' st]);end
  elseif comstr(Cam,'occ')
  %% #viewOcc : occurence tracking 
  c2=sdth.urn('Dock.Id.ci');projM=c2.data.nmap.nmap;
+
+[~,RC]=sdtm.urnPar(CAM,'{}{}');if ~isfield(RC,'Failed');RC.Failed={};end
+
+i1=sdtm.Contains(RC.Failed,'detect');
+if any(i1);
+ %% #ViewOccDetect : see from spectro
+  spec=c2.Stack{'spec'}; if isa(spec,'curvemodel');spec=spec.GetData;end
+  Time=c2.Stack{'Time'};
+  [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
+   'minampratio(0.1#%g#"Amplitude ratio below which time freq is not displayed")' ...
+   ],{RC,RC.Failed{i1}}); 
+
+  spec.Y=mean(abs(spec.Y),3);
+  spec.X{3}={'Mean Ref'};
+  cj=iiplot(11);
+  iicom(cj,'curveinit-reset',spec); %iicom(cj,'curveinit-reset',hist2);
+  iicom(cj,';sub 1 1;ShowTimeFreq');
+
+  i3=[2 1 3]; spec.Y=permute(spec.Y,i3);spec.X=spec.X(i3);spec.Xlab=spec.Xlab(i3);
+  [r1,i2]=max(spec.Y(:,:,1));
+  r1(r1<max(r1)*RO.minampratio)=NaN;r1=r1/max(r1);
+  r1=[spec.X{2} r1' spec.X{1}(i2') ];
+  st1={[r1(:,1);NaN],[r1(:,3);NaN],[r1(:,2);NaN],[r1(:,2);NaN],'edgecolor','interp','tag','iFreq', ...
+   'linewidth',2};
+
+  r3=vhandle.cdm.urnVec(Time,'{x,#Pres}');
+  r2=interp1(Time.X{1}(:,1),r3{1},spec.X{2});
+  if ishandle(52); close(52); end
+  gf=figure(52);yyaxis('right');cb=colorbar(gca,'Location','northoutside');
+  xlabel('Time [s]');
+  set(gca,'YColor',[.5 .5 .5]); ylabel('Pressure [bar]');
+  go=line(spec.X{2},r2,'Color',[.5 .5 .5],'LineWidth',.1);
+  yyaxis('left');
+  ylabel('Frequency [Hz]');
+  r1=patch(st1{:}); 
+  %set(r1,'FaceVertexAlphaData',r1.CData);set(r1,'EdgeAlpha','interp');
+  colormap turbo
+  grid on;
+  
+  cb.Label.String='Mean Amplitude (normalized to max)';
+  axis tight;
+  cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImSw80','WrW49c'});
+
+
+end
+if sdtm.Contains(RC.Failed,'old')
+ %% #ViewOccOld
  C2=projM('SqInstFreq');RO=projM('SqLastSpec');
 %r2=C2.Y;r2=r2./r2(:,1);r2=z*r2;r2=r2.*sum(abs(r2).^2,2).^(-.5);
 [~,RO]=sdtm.urnPar(CAM,'{tref%ug}:{xlim%ug}');
@@ -1952,6 +1997,7 @@ for j1=1:size(r3,2)
  %,ones(size(r1,1),1)*max(ga.YLim)
 end
 cingui('objset',13,{'@OsDic','ImSw80{@line,""}'})
+end
 
 %ylim([0 1]);xlim([25 280]);grid on
 
