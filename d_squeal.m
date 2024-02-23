@@ -37,7 +37,8 @@ end
 
 if ~ischar(varargin{1})||isempty(varargin{1})
   obj=varargin{1};evt=varargin{2};[CAM,Cam]=comstr(varargin{3},1);carg=4;
-else; [CAM,Cam]=comstr(varargin{1},1);carg=2;obj=[]; evt=[];
+  if isfield(obj,'nmap');projM=obj.nmap;else;projM=[]; end
+else; [CAM,Cam]=comstr(varargin{1},1);carg=2;obj=[]; projM=[]; evt=[];
 end
 
 if comstr(Cam,'script'); [CAM,Cam]=comstr(CAM,7);
@@ -389,7 +390,8 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
   
   % recover a model
   model=varargin{carg}; carg=carg+1;
-  [ob,u1,model]=sdth.GetData(model,'-mdl'); if isempty(obj); obj=ob; end
+  [ob,u1,model]=sdth.GetData(model,'-mdl'); 
+  if isfield(ob,'nmap')&&isfield(ob,'S');projM=ob.nmap;end % robust? 
   % recover modal resolution options
   if carg<=nargin; eigopt=varargin{carg}; carg=carg+1;
   else; eigopt=fe_def('defeigopt',model);
@@ -499,7 +501,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    out=d_squeal('ModeLab',out); % add specific LabFcn
   end
 
-  if isa(obj,'nmap');sdtm.store(obj);end % mapped output options uses NextStore key
+  if ~isempty(projM);sdtm.store(projM);end % mapped output options uses NextStore key
   
  elseif comstr(Cam,'time'); [CAM,Cam]=comstr(CAM,5);
   %% #SolveTime: procedures for transient simualtions
@@ -533,8 +535,16 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    ],{RO,CAM}); Cam=lower(CAM);
 
   if RO.minrio
-   % reduction basis generation as post
+   %% #doMinRIO reduction basis generation as post -3
    [u1,i1]=min(def.data(:,2));
+   if 1==2 % #ToDo24/02_timesqueal -3  
+     NL=model.NL{1,3}
+     % Z=
+     % Z\psi = 0 ? 
+     % CEA computation that should be consistent 
+     % sdtweb nl_solve SaveEig.Jacobian % GV Export state to allow verification 
+     % vhandle.uo.viewModel('txt',NL)
+   end
 
    if isfield(def,'TR') % expressed in real basis, orth and restit
     TR=orth([real(def.def(:,i1)) imag(def.def(:,i1))]);
@@ -1873,6 +1883,33 @@ if ~isempty(st); d_squeal(['viewpar' st]);end
  if isfield(RO,'ID')&&~isequal(RO.ID,0)
   ii_plp(c2.Stack{'Time'}.ID)
  end
+ elseif comstr(Cam,'wpasid')
+ %% #viewWpAsId
+
+
+
+%        &&all(sdtm.regContains(out{1,end}.X{2}(:,1),RO.AsPo))
+%       ID=struct('po',out{end}.Y*[1 0],'name',out{1,end}.X{2}{1});out(end)=[];
+%       out{1,end}.ID=ID;
+ if isfield(obj,'Y')
+  Time=obj;c2=[]; 
+ else
+  c2=sdth.urn('Dock.Id.ci');projM=c2.data.nmap.nmap;
+  Time=c2.Stack{'Time'};
+ end
+ r1=vhandle.cdm.urnVec(Time,'{x,Time}{x,RPM}');
+
+ dt=diff(r1{1}([1 end]))/(size(r1{1},1)-1);
+ phi=cumsum(r1{2,1})*dt*60;
+ ID=struct('po',interp1(phi,r1{1},0:2*pi:phi(end))'*[1 0], ...
+     'marker','base','LineProp',{{'linestyle',':','marker','none'}});
+ Time.ID={ID};
+ if ~isempty(c2)
+  c2.Stack{'Time'}.ID={ID};iiplot;
+ else; out=Time; 
+ end
+ 
+
  elseif comstr(Cam,'occ')
  %% #viewOcc : occurence tracking 
  c2=sdth.urn('Dock.Id.ci');projM=c2.data.nmap.nmap;

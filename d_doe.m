@@ -108,12 +108,22 @@ li={'MeshCfg{d_contact(cube),,n3s13{Kc1e12}}', ...
      'RunCfg{SetM{q0/out,CurModel/out1},nl_solve(Static),SetM{CurModel/out},nlutil(HRbuild{q0m1}),run}'}';
 RT.nmap('CubeA')=li; % CtcCube.A
 
+%% #CtcCubeJ24 : developments for jacobian building tests -3
+li={'MeshCfg{d_contact(cube),None{Traj{selSetNametop1,curveDownForward,o 1 0 0,storeprojM{q0/d2}}},n3s13{Kc1e12}}', ...
+     'SimuCfg{"Imp{100u,.1,chandle1,acall.}","EigOpt{5 5 0}"}', ...
+     'RunCfg{SetM{CurModel/model},nl_solve(fe_timeBack),SetM{CurModel/out},nlutil(HRbuild{q0m1}),run}'}';
+t=(1:10)';
+RT.nmap('DownForward')=struct('X',{{t,{'x';'z'}}},'Y',t*[1 -.1], ...
+    'LabFcn','sprintf(''x%.4f z%.4f'',def.data(ch,1:2))');
+
+RT.nmap('CubeJ24')=li; % CtcCube.J24
+% xxx Forced Motion 
 
 %% #CtcCube.B : load pressure and corner, exponential contact  -3
 %    static followed by, hyperreduction
 li={'MeshCfg{d_contact(cube{loPC}),,n3s13{Kc1e12,Lambda500}}';
     'SimuCfg{"Static{1e-8,chandle1}","Imp{50u,.1,chandle1,acall.}","EigOpt{5 5 0}"}';
-    'RunCfg{SetM{q0/out,CurModel/out1}nl_solve(Static),SetM{CurModel/out},nlutil(HRbuild{q0m1})}'};
+    'RunCfg{SetM{q0/out,CurModel/out1},nl_solve(Static),SetM{CurModel/out},nlutil(HRbuild{q0m1})}'};
 RT.nmap('CubeB')=li; % CtcCube.B
 
   %RT.nmap('PostA')='nl_solve@doFreq{spec{BufTime 20 Overlap .90 Fmax 50 -window hanning},ci3}';
@@ -121,7 +131,9 @@ RT.nmap('CubeB')=li; % CtcCube.B
 %  RT.nmap('PostB')='d_contact@autoCycle{tclip50 20,dmBand1.2,ci3}';
 %  RT.nmap('PostInit')='d_squeal(LoadTime{ci[2 13]},$nmap)';
 
-li={'MeshCfg(d_contact(ScldCube))','SimBack','RunCfg{Time}'};
+li={'MeshCfg{d_contact(ScldCube),None{TrajScld}}','SimBack','RunCfg{Time}'};
+RT.nmap('TrajScld')=[ ...
+    'Traj{selSetNameWheel,curveDownForward,o 1 0 0,storemodel{DownForward/d2}}'];
 RT.nmap('ScLdA')=li; % ScLdA
 % CtcCube.C : exponential contact; static followed by, hyperreduction
 % xxx add static load and point load 
