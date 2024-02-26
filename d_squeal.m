@@ -538,7 +538,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    %% #doMinRIO reduction basis generation as post -3
    [u1,i1]=min(def.data(:,2));
    if 1==2 % #ToDo24/02_timesqueal -3  
-     NL=model.NL{1,3}
+     NL=model.NL{1,3}; li=model.NL{1,4} % list of implicit jacobian
      % Z=
      % Z\psi = 0 ? 
      % CEA computation that should be consistent 
