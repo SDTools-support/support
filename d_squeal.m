@@ -1898,7 +1898,7 @@ if ~isempty(st); d_squeal(['viewpar' st]);end
  r1=vhandle.cdm.urnVec(Time,'{x,Time}{x,RPM}');
 
  dt=diff(r1{1}([1 end]))/(size(r1{1},1)-1);
- phi=cumsum(r1{2,1})*dt*60;
+ phi=cumsum(r1{2,1})*dt/60*2*pi;
  ID=struct('po',interp1(phi,r1{1},0:2*pi:phi(end))'*[1 0], ...
      'marker','base','LineProp',{{'linestyle',':','marker','none'}});
  Time.ID={ID};
@@ -1912,43 +1912,59 @@ if ~isempty(st); d_squeal(['viewpar' st]);end
  %% #viewOcc : occurence tracking 
  c2=sdth.urn('Dock.Id.ci');projM=c2.data.nmap.nmap;
 
-[~,RC]=sdtm.urnPar(CAM,'{}{}');if ~isfield(RC,'Failed');RC.Failed={};end
+[~,RC]=sdtm.urnPar(CAM,'{}{yy%s}');if ~isfield(RC,'Failed');RC.Failed={};end
 
 i1=sdtm.Contains(RC.Failed,'detect');
 if any(i1);
  %% #ViewOccDetect : see from spectro
-  spec=c2.Stack{'spec'}; if isa(spec,'curvemodel');spec=spec.GetData;end
+
+  cj=iiplot(11,';'); 
+  if strcmpi(cj.ua.sList,'MeanCh');
+    spec=cj.Stack{'MeanCh'};
+  else;
+   spec=c2.Stack{'spec'}; if isa(spec,'curvemodel');spec=spec.GetData;end
+   spec.Y=mean(abs(spec.Y),3);
+   spec.X{3}={'Mean Ref'};spec.name='MeanCh';
+   iicom(cj,'curveinit',spec); %iicom(cj,'curveinit-reset',hist2);
+   iicom(cj,';sub 1 1;ShowTimeFreq');
+  end
+
   Time=c2.Stack{'Time'};
   [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
    'minampratio(0.1#%g#"Amplitude ratio below which time freq is not displayed")' ...
+   sdtm.pcin('fmin') ...
    ],{RC,RC.Failed{i1}}); 
-
-  spec.Y=mean(abs(spec.Y),3);
-  spec.X{3}={'Mean Ref'};
-  cj=iiplot(11);
-  iicom(cj,'curveinit-reset',spec); %iicom(cj,'curveinit-reset',hist2);
-  iicom(cj,';sub 1 1;ShowTimeFreq');
-
-  i3=[2 1 3]; spec.Y=permute(spec.Y,i3);spec.X=spec.X(i3);spec.Xlab=spec.Xlab(i3);
+  if ~strcmpi(spec.Xlab{1}{1},'Freq')
+   i3=[2 1 3]; spec.Y=permute(spec.Y,i3);spec.X=spec.X(i3);spec.Xlab=spec.Xlab(i3);
+  end
+  if isfield(RO,'fmin') % xxx sdtm.pfmin 
+    set(cj.ga,'ylim',RO.fmin);
+    i1=spec.X{1}(:,1)<RO.fmin(1)|spec.X{1}(:,1)>RO.fmin(2);
+    spec.Y(i1,:)=[];spec.X{1}(i1)=[];
+  end
   [r1,i2]=max(spec.Y(:,:,1));
   r1(r1<max(r1)*RO.minampratio)=NaN;r1=r1/max(r1);
   r1=[spec.X{2} r1' spec.X{1}(i2') ];
   st1={[r1(:,1);NaN],[r1(:,3);NaN],[r1(:,2);NaN],[r1(:,2);NaN],'edgecolor','interp','tag','iFreq', ...
    'linewidth',2};
 
-  r3=vhandle.cdm.urnVec(Time,'{x,#Pres}');
-  r2=interp1(Time.X{1}(:,1),r3{1},spec.X{2});
-  if ishandle(52); close(52); end
-  gf=figure(52);yyaxis('right');cb=colorbar(gca,'Location','northoutside');
-  xlabel('Time [s]');
-  set(gca,'YColor',[.5 .5 .5]); ylabel('Pressure [bar]');
-  go=line(spec.X{2},r2,'Color',[.5 .5 .5],'LineWidth',.1);
-  yyaxis('left');
-  ylabel('Frequency [Hz]');
-  r1=patch(st1{:}); 
-  %set(r1,'FaceVertexAlphaData',r1.CData);set(r1,'EdgeAlpha','interp');
-  colormap turbo
-  grid on;
+  gf=52;
+  figure(gf);clf;
+  if isfield(RC,'yy')
+   r3=vhandle.cdm.urnVec(Time,sprintf('{x,#%s}',RC.yy));
+   r2=interp1(Time.X{1}(:,1),r3{1},spec.X{2});
+   yyaxis('right');
+   xlabel('Time [s]');
+   set(gca,'YColor',[.5 .5 .5]); ylabel('Pressure [bar]');
+   go=line(spec.X{2},r2,'Color',[.5 .5 .5],'LineWidth',.1);
+   yyaxis('left');
+  end
+  % now instant freq lines
+  r1=patch(st1{:}); ylabel('Frequency [Hz]');
+   %set(r1,'FaceVertexAlphaData',r1.CData);set(r1,'EdgeAlpha','interp');
+   colormap turbo
+   cb=colorbar(gca,'Location','northoutside');
+   grid on;
   
   cb.Label.String='Mean Amplitude (normalized to max)';
   axis tight;
