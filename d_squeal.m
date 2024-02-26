@@ -1606,10 +1606,13 @@ if nargout==0; clear out;end
 elseif comstr(Cam,'par')
 %% #ViewPar{fs2,f(p),xxx,cuName}
 c2=sdth.urn('Dock.Id.ci'); nmap=c2.data.nmap.nmap;
-[~,RO]=sdtm.urnPar(CAM,'{}{fs%ug,u%s,cu%s,ci%i,it%g}');
+[~,RO]=sdtm.urnPar(CAM,'{}{fs%ug,u%s,cu%s,ciStoreName%s,ci%i,it%g}');
 if ~isfield(RO,'Failed');RO.Failed={};end
 if ~isfield(RO,'cu');RO.cu='Time';end
 if isKey(nmap,RO.cu);Time=nmap(RO.cu); else; Time=c2.Stack{RO.cu};end;
+if isfield(RO,'ciStoreName')
+  RO.ciStoreName=strrep(RO.ciStoreName,'$name',Time.name);
+end
 RO.back=0;
 if isfield(RO,'it')% d_squeal('viewpar{a(f,p),cuSqInstFreq,it4 7}')
    Time=fe_def('subdef',Time,@(x)x(:,1)>RO.it(1)&x(:,1)<RO.it(2));
@@ -1625,6 +1628,24 @@ if any(sdtm.Contains(lower(RO.Failed),'f(p)'))
   RO.back=1;
 
 end
+
+
+if any(sdtm.Contains(lower(RO.Failed),'pr(temp)'))
+   r2=stack_get(c2,'','#^p');
+   gf=sdth.urn(sprintf('figure(%i).os{@Dock,{name,SqSig},name,%i P(T),NumberTitle,off}',300*[1 1]));
+   figure(gf);clf; hold on;
+   for j2=1:size(r2,1)
+    C2=r2{j2,3};
+    h(j2)=vhandle.cdm.urnVec(C2,'{y,#TempPad}{y,#Pressure}{gf300}');
+    set(h(j2),'DisplayName',r2{j2,2});
+   end
+   vhandle.cdm.changeUnit(300,'y',struct('coef',1e-5,'From','Pa','To','bar'))
+   hold off;axis tight; title('');legend('location','best');grid on
+   cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImToFigN','ImSw80','WrW49c'});
+   
+   RO.back=1; 
+end
+
 if any(sdtm.Contains(lower(RO.Failed),'f(t)'))
   %% #ViewPar.f(t) Display instant freq as function of time attempt to show wheel pos -3
   [r1,i2,st]=omethod('xvec',Time,1,{'Time','Freq'});
@@ -1782,7 +1803,8 @@ if isfield(Time,'ID');C1.ID=Time.ID;end
 c12=sdth.urn('Dock.Id.ci.Clone{12}');setappdata(12,'SdtName','Par(t)');
 c12.os_('p.','FnIy','ImToFigN','ImSw50','WrW49c');%
 if ~isempty(C1.Y)
- iicom(c12,'curveinit','Parameters',C1);
+ if ~isfield(RO,'ciStoreName');RO.ciStoreName='Parameters';end
+ iicom(c12,'curveinit',RO.ciStoreName,C1);
  r1=[.13 .2 .8 .75];c12.ax(1,6:9)=r1;set(c12.ga,'position',r1);iiplot(c12);
 end
 if any(strcmpi(RO.Failed,'polar'))
@@ -1898,8 +1920,9 @@ if ~isempty(st); d_squeal(['viewpar' st]);end
  r1=vhandle.cdm.urnVec(Time,'{x,Time}{x,RPM}');
 
  dt=diff(r1{1}([1 end]))/(size(r1{1},1)-1);
- phi=cumsum(r1{2,1})*dt/60*2*pi;
- ID=struct('po',interp1(phi,r1{1},0:2*pi:phi(end))'*[1 0], ...
+ r2=r1{2,1};r2(r2<=0)=1e-15;
+ phi=cumsum(r2)*dt/60*2*pi;[r3,i3]=unique(phi);
+ ID=struct('po',interp1(r3,r1{1}(i3),0:2*pi:phi(end))'*[1 0], ...
      'marker','base','LineProp',{{'linestyle',':','marker','none'}});
  Time.ID={ID};
  if ~isempty(c2)
@@ -1932,7 +1955,7 @@ if any(i1);
   Time=c2.Stack{'Time'};
   [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
    'minampratio(0.1#%g#"Amplitude ratio below which time freq is not displayed")' ...
-   sdtm.pcin('fmin') ...
+   sdtm.pcin('fmin') sdtm.pcin('gf')  ...
    ],{RC,RC.Failed{i1}}); 
   if ~strcmpi(spec.Xlab{1}{1},'Freq')
    i3=[2 1 3]; spec.Y=permute(spec.Y,i3);spec.X=spec.X(i3);spec.Xlab=spec.Xlab(i3);
@@ -1948,8 +1971,9 @@ if any(i1);
   st1={[r1(:,1);NaN],[r1(:,3);NaN],[r1(:,2);NaN],[r1(:,2);NaN],'edgecolor','interp','tag','iFreq', ...
    'linewidth',2};
 
-  gf=52;
-  figure(gf);clf;
+  if isempty(RO.gf);RO.gf=52; end
+  gf=sdth.urn(sprintf('figure(%i).os{@Dock,{name,SqSig},name,%i f(t),NumberTitle,off}',RO.gf*[1 1]));
+  clf;
   if isfield(RC,'yy')
    r3=vhandle.cdm.urnVec(Time,sprintf('{x,#%s}',RC.yy));
    r2=interp1(Time.X{1}(:,1),r3{1},spec.X{2});
@@ -1968,7 +1992,8 @@ if any(i1);
   
   cb.Label.String='Mean Amplitude (normalized to max)';
   axis tight;
-  cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImSw80','WrW49c'});
+
+  cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImToFigN','ImSw80','WrW49c'});
 
 
 end
@@ -2514,16 +2539,21 @@ function [uo,st]=ParTick(obj,evt)
 
 end
 function out=specMax
-  %% #specMax
+  %% #specMax indicators of max spectrum  
+  % feval(d_squeal('@specMax'))
   c13=get(13,'userdata');  ob=handle(c13.ua.ob(1));
   if isprop(ob,'ZData');r2=ob.ZData; else;r2=ob.CData;end
   if ob.YData(1)==0;r2(1:2,:)=NaN;end
-  r2=max(r2,[],2); 
+  r2=[max(r2,[],2) mean(r2,2)]; r3=mean(r2);r2(:,2)=r2(:,2)*r3(1)/r3(2);
   st=c13.ua.YFcn; 
   if sdtm.Contains(st,'log10(abs(r3))');r2=10.^r2;end
   gf=sdth.urn('figure(101).os{@Dock,{name,SqSig},name,101 SpecMax,NumberTitle,off}');
+  cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImToFigN','ImSw80','WrW49c'});
   figure(double(gf));
-  plot(ob.YData,r2);xlabel('Frequency [Hz]');ylabel('Max_t(spectro)')
+  h=plot(ob.YData,r2);xlabel('Frequency [Hz]');ylabel('F(spectro)')
+  set(gca,'yscale','log');legend(h,'Max','SMean');
+  axis tight; 
+
   if nargout>0; out=r2;end
 end
 function  [r1,st]=getAmp(r1,Time,st);
