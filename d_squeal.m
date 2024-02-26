@@ -1922,11 +1922,13 @@ if ~isempty(st); d_squeal(['viewpar' st]);end
  dt=diff(r1{1}([1 end]))/(size(r1{1},1)-1);
  r2=r1{2,1};r2(r2<=0)=1e-15;
  phi=cumsum(r2)*dt/60*2*pi;[r3,i3]=unique(phi);
+ i1=find(strcmpi(Time.Xlab{1}(:,1),'WAng')); if isempty(i1);i1=size(Time.Xlab{1},1)+1;end
+ Time.X{1}(:,i1)=phi;Time.Xlab{1}(i1,1:3)={'WAng','rad',[]};
  ID=struct('po',interp1(r3,r1{1}(i3),0:2*pi:phi(end))'*[1 0], ...
      'marker','base','LineProp',{{'linestyle',':','marker','none'}});
  Time.ID={ID};
  if ~isempty(c2)
-  c2.Stack{'Time'}.ID={ID};iiplot;
+  c2.Stack{'Time'}=Time;iiplot;
  else; out=Time; 
  end
  
@@ -2544,15 +2546,23 @@ function out=specMax
   c13=get(13,'userdata');  ob=handle(c13.ua.ob(1));
   if isprop(ob,'ZData');r2=ob.ZData; else;r2=ob.CData;end
   if ob.YData(1)==0;r2(1:2,:)=NaN;end
+  [r3,i3]=max(r2,[],1);
+  r3=struct('X',{{ob.XData,{'freq';'amp'}}},'Xlab',{{'Time','com'}},'Y',[ob.YData(i3) r3(:)]);
+  C3=sdtpy('lowpass{8,.1,pa 5 .8,dososfilt}')*r3;%  r3=sdtpy.decimate(r3,10);
+  %figure(13);h=line(r3.X{1},r3.Y(:,1),'color','r');
+
   r2=[max(r2,[],2) mean(r2,2)]; r3=mean(r2);r2(:,2)=r2(:,2)*r3(1)/r3(2);
   st=c13.ua.YFcn; 
   if sdtm.Contains(st,'log10(abs(r3))');r2=10.^r2;end
   gf=sdth.urn('figure(101).os{@Dock,{name,SqSig},name,101 SpecMax,NumberTitle,off}');
   cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImToFigN','ImSw80','WrW49c'});
-  figure(double(gf));
-  h=plot(ob.YData,r2);xlabel('Frequency [Hz]');ylabel('F(spectro)')
+  figure(double(gf));clf;
+  h=plot(ob.YData,r2);set(h,'linewidth',2);xlabel('Frequency [Hz]');ylabel('F(spectro)')
   set(gca,'yscale','log');legend(h,'Max','SMean');
   axis tight; 
+  r2=axis;
+  C3.Y(C3.Y(:,1)<r2(1)|C3.Y(:,1)>r2(2),1)=NaN;
+  vhandle.cdm.pline(C3.Y(:,1),10.^C3.Y(:,2),C3.X{1},'linewidth',1,'linestyle',':')
 
   if nargout>0; out=r2;end
 end
@@ -2571,7 +2581,8 @@ end
 function wheelPosLines(c2)
   r2=c2.Stack{'Time'};
   if isfield(r2,'ID')&&(~isfield(r2.ID,'marker')||~strcmp(r2.ID.marker,'band'));
-   ii_plp(r2.ID);% Add wheel position lines
+   if iscell(r2.ID); ID=r2.ID{1};end
+   ii_plp(ID);% Add wheel position lines
    go=findobj(103,'type','line','tag','now');
    if length(go.XData)>50;set(go,'visible','off');end
   end 
