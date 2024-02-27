@@ -1606,7 +1606,7 @@ if nargout==0; clear out;end
 elseif comstr(Cam,'par')
 %% #ViewPar{fs2,f(p),xxx,cuName}
 c2=sdth.urn('Dock.Id.ci'); nmap=c2.data.nmap.nmap;
-[~,RO]=sdtm.urnPar(CAM,'{}{fs%ug,u%s,cu%s,ciStoreName%s,ci%i,it%g}');
+[~,RO]=sdtm.urnPar(CAM,'{}{fs%ug,u%s,cu%s,ciStoreName%s,ci%i,it%g,MinAmpRatio%ug}');
 if ~isfield(RO,'Failed');RO.Failed={};end
 if ~isfield(RO,'cu');RO.cu='Time';end
 if isKey(nmap,RO.cu);Time=nmap(RO.cu); else; Time=c2.Stack{RO.cu};end;
@@ -1623,9 +1623,7 @@ if any(sdtm.Contains(lower(RO.Failed),'f(p)'))
   [r1,i2,st]=omethod('xvec',Time,1,{'Pres','Freq'});
   gf=102;
   figure(gf); plot(r1(:,1),r1(:,2))
-  xlabel(st(1));ylabel(st(2));
-  cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImSw80','WrW49c'});
-  RO.back=1;
+  xlabel(st(1));ylabel(st(2)); cleanFig(gf,Time,c2);  RO.back=1;
 
 end
 
@@ -1641,18 +1639,17 @@ if any(sdtm.Contains(lower(RO.Failed),'pr(temp)'))
    end
    vhandle.cdm.changeUnit(300,'y',struct('coef',1e-5,'From','Pa','To','bar'))
    hold off;axis tight; title('');legend('location','best');grid on
-   cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImToFigN','ImSw80','WrW49c'});
-   
-   RO.back=1; 
+   cleanFig(gf,Time,c2);  RO.back=1;
 end
 
-if any(sdtm.Contains(lower(RO.Failed),'f(t)'))
+if any(sdtm.regContains(lower(RO.Failed),'f(t[,)]'))
   %% #ViewPar.f(t) Display instant freq as function of time attempt to show wheel pos -3
   [r1,i2,st]=omethod('xvec',Time,1,{'Time','Freq'});
+  try;[r1,st]=getAmp(r1,Time,st,RO);r1(:,4:end)=[];end
   gf=sdth.urn('figure(103).os{@Dock,{name,SqSig},name,103 f(t),NumberTitle,off}');
   if length(Time.Xlab)==3&&isequal(Time.Xlab{3},'hdof')
    figure(gf);clf;ga=get(gf,'CurrentAxes'); if isempty(ga);ga=axes('parent',gf);end
-   y=[sum(abs(Time.Y(:,:,1)).^2,2);NaN];
+   y=[r1(:,3);0];
    st1={[r1(:,1);NaN],[r1(:,2);NaN],y,y,'edgecolor','interp','tag','iFreq', ...
        'facevertexalphadata',y/max(y),'edgealpha','interp','linewidth',2};
    patch(st1{:},'parent',ga);
@@ -1662,16 +1659,14 @@ if any(sdtm.Contains(lower(RO.Failed),'f(t)'))
    figure(gf);plot(r1(:,1),r1(:,2))
   end
 
-  xlabel(st(1));ylabel(st(2));
-  axis tight; wheelPosLines(c2);
-  cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImSw80','WrW49c'});
-  RO.back=1;
+  xlabel(st(1));ylabel(st(2));  axis tight; 
+  cleanFig(gf,Time,c2);  RO.back=1;
 
 end
 if any(sdtm.Contains(lower(RO.Failed),'a(f)'))
-  %% #ViewPar.a(f) xxx -3
+  %% #ViewPar.a(f) amplitude as function of frequency -3
   [r1,i2,st]=omethod('xvec',Time,1,{'Time','iFreq'});
-  [r1,st]=getAmp(r1,Time,st);r1(:,4:end)=[];
+  [r1,st]=getAmp(r1,Time,st,RO);r1(:,4:end)=[];
   if strncmp(RO.Failed{2},'{',1)
     [~,RP]=sdtm.urnPar(RO.Failed{2},'{}{lp%g}');
     if ~isfield(RP,'dt');RP.dt=diff(r1(1:2),1);end
@@ -1683,7 +1678,9 @@ if any(sdtm.Contains(lower(RO.Failed),'a(f)'))
   end
   gf=sdth.urn('figure(104).os{@Dock,{name,SqSig},name,104 a(f),NumberTitle,off}');
   figure(gf);clf;ga=get(gf,'CurrentAxes'); if isempty(ga);ga=axes('parent',gf);end
-   st1={[r1(:,2);NaN],[abs(r1(:,3));NaN],[r1(:,1);NaN],[r1(:,1);NaN],'edgecolor','interp','tag','iFreq', ...
+   st1={[r1(:,2);NaN], ... % iFreq
+       [abs(r1(:,3));NaN], ... % amp
+       [r1(:,1);NaN],[r1(:,1);NaN],'edgecolor','interp','tag','iFreq', ...
        'linewidth',2};
    st2=st{3,1};if iscell(st2);st2=st2{1};end
    h(1)=patch(st1{:},'parent',ga,'DisplayName',st2);
@@ -1698,26 +1695,29 @@ if any(sdtm.Contains(lower(RO.Failed),'a(f)'))
   xlabel(st{2,1});ylabel(st{3,1});h(3)=colorbar;
   h(3).Label.String=st{1};ii_plp('colormapband',parula(7));
   axis tight; 
-  cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImSw80','WrW49c'});
-  RO.back=1;
+  cleanFig(gf,Time,c2);  RO.back=1;
 end
-if any(sdtm.Contains(lower(RO.Failed),'a(f,p)'))
+i1=find(sdtm.regContains(RO.Failed,'(a.f,p.|a.wp.f.)','i'));
+if ~isempty(i1)
   %% #ViewPar.a(f,p) Display instant freq as function of time attempt to show wheel pos -3
-  [r1,i2,st]=omethod('xvec',Time,1,{'Pres','iFreq'});
-  [r1,st]=getAmp(r1,Time,st);
+  st={'Pres','iFreq'}; i3=1:3;RO.aProp={'alim',[-.05 1]};
+  if sdtm.regContains(RO.Failed{i1},'wp','i')
+      st1={'WAng','iFreq'};i3=[2 1 3]; RO.aProp={'alim',[-.05 1],'yscale','log'};
+  end
+  [r1,i2,st]=omethod('xvec',Time,1,st1);
+  [r1,st]=getAmp(r1,Time,st,RO);r1=r1(:,i3);st=st(i3,:);
 
-  gf=104; 
+  gf=sdth.urn(sprintf('figure(104).os{@Dock,{name,SqSig},name,104 %s,NumberTitle,off}',RO.Failed{i1}));
   figure(gf);clf;ga=get(gf,'CurrentAxes'); if isempty(ga);ga=axes('parent',gf);end
    st1={[r1(:,2);NaN],[r1(:,3);NaN],[r1(:,1);NaN],[r1(:,1);NaN],'edgecolor','interp','tag','iFreq', ...
        'linewidth',2};
    patch(st1{:},'parent',ga);
-   set(ga,'alim',[-.05 1]);
+   set(ga,RO.aProp{:});
    iimouse('on');
   xlabel(st{2,1});ylabel(st{3,1});h=colorbar;
   h.Label.String=st{1};ii_plp('colormapband',parula(7));
   axis tight; wheelPosLines(c2);
-  cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImSw80','WrW49c'});
-  RO.back=1;
+  cleanFig(gf,Time,c2);  RO.back=1;
 end
 if any(sdtm.Contains(lower(RO.Failed),'a(t)'))
   %% #ViewPar.a_t Display amplitude as function of time and instant freq -3
@@ -1742,8 +1742,7 @@ if any(sdtm.Contains(lower(RO.Failed),'a(t)'))
    set(ga,'ylim',max(get(ga,'ylim'))*[.01 1])
    xlabel(st{2,1});ylabel(strrep(st{3,1},'q1','qj'));
    legend('q_{2R}','q_{3R}','location','best')
-   cingui('objset',gf,{'@OsDic',{'ImSw80{@line,""}'},'@PlotWd',{'@OsDic','WrW49c'}})
-   wheelPosLines(c2);
+   cleanFig(gf,Time,c2);  RO.back=1;
 
   end
   RO.back=1;
@@ -1941,7 +1940,7 @@ if ~isempty(st); d_squeal(['viewpar' st]);end
 
 i1=sdtm.Contains(RC.Failed,'detect');
 if any(i1);
- %% #ViewOccDetect : see from spectro
+ %% #ViewOccDetect : see from spectro -3
 
   cj=iiplot(11,';'); 
   if strcmpi(cj.ua.sList,'MeanCh');
@@ -1956,7 +1955,7 @@ if any(i1);
 
   Time=c2.Stack{'Time'};
   [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
-   'minampratio(0.1#%g#"Amplitude ratio below which time freq is not displayed")' ...
+   'MinAmpRatio(0.1#%g#"Amplitude ratio below which time freq is not displayed")' ...
    sdtm.pcin('fmin') sdtm.pcin('gf')  ...
    ],{RC,RC.Failed{i1}}); 
   if ~strcmpi(spec.Xlab{1}{1},'Freq')
@@ -1968,7 +1967,7 @@ if any(i1);
     spec.Y(i1,:)=[];spec.X{1}(i1)=[];
   end
   [r1,i2]=max(spec.Y(:,:,1));
-  r1(r1<max(r1)*RO.minampratio)=NaN;r1=r1/max(r1);
+  r1(r1<max(r1)*RO.MinAmpRatio)=NaN;r1=r1/max(r1);
   r1=[spec.X{2} r1' spec.X{1}(i2') ];
   st1={[r1(:,1);NaN],[r1(:,3);NaN],[r1(:,2);NaN],[r1(:,2);NaN],'edgecolor','interp','tag','iFreq', ...
    'linewidth',2};
@@ -2000,7 +1999,7 @@ if any(i1);
 
 end
 if sdtm.Contains(RC.Failed,'old')
- %% #ViewOccOld
+ %% #ViewOccOld -3
  C2=projM('SqInstFreq');RO=projM('SqLastSpec');
 %r2=C2.Y;r2=r2./r2(:,1);r2=z*r2;r2=r2.*sum(abs(r2).^2,2).^(-.5);
 [~,RO]=sdtm.urnPar(CAM,'{tref%ug}:{xlim%ug}');
@@ -2559,6 +2558,10 @@ function out=specMax
   figure(double(gf));clf;
   h=plot(ob.YData,r2);set(h,'linewidth',2);xlabel('Frequency [Hz]');ylabel('F(spectro)')
   set(gca,'yscale','log');legend(h,'Max','SMean');
+
+  ii_plp('legend',gca,{'set','-corner .01 .99', ...
+      'string',{c13.Stack{c13.ua.sList{1}}.name},'fontsize',12});
+
   axis tight; 
   r2=axis;
   C3.Y(C3.Y(:,1)<r2(1)|C3.Y(:,1)>r2(2),1)=NaN;
@@ -2566,7 +2569,7 @@ function out=specMax
 
   if nargout>0; out=r2;end
 end
-function  [r1,st]=getAmp(r1,Time,st);
+function  [r1,st]=getAmp(r1,Time,st,RO);
   % #getAmp
   if length(Time.Xlab)~=3||~isequal(Time.Xlab{3},'hdof')
    error('Not a valid case');
@@ -2574,16 +2577,39 @@ function  [r1,st]=getAmp(r1,Time,st);
    r2=squeeze((Time.Y(:,:,1)));st{3,1}=sprintf('%s [%s]',Time.X{2}{1,1:2});
    r1(:,2+(1:size(r2,2)))=r2;
   else
-   r1(:,3)=sum(abs(Time.Y(:,:,1)).^2,2);st{3,1}={'Amplitude'};
+   r1(:,3)=sum(abs(Time.Y(:,:,1)).^2,2);st{3,1}='Amplitude';
+  end
+  if nargin==3;RO=struct;end
+  if isfield(RO,'MinAmpRatio'); 
+      r1(r1(:,3)/norm(r1(:,3),'inf')<RO.MinAmpRatio,3)=NaN;
+  end
+  if strncmpi(st{1},'wang',4) %Wang to WP
+    r1(:,1)=rem(r1(:,1)/2/pi,1)*4;st{1}='WP[0-4]';
+    i1=(diff(r1(:,1))<-3);r1(i1,1)=NaN;
   end
 end
 
 function wheelPosLines(c2)
+  ga=gca;
+  if ~contains(lower(ga.XLabel.String),'time');return;end
   r2=c2.Stack{'Time'};
   if isfield(r2,'ID')&&(~isfield(r2.ID,'marker')||~strcmp(r2.ID.marker,'band'));
    if iscell(r2.ID); ID=r2.ID{1};end
-   ii_plp(ID);% Add wheel position lines
-   go=findobj(103,'type','line','tag','now');
-   if length(go.XData)>50;set(go,'visible','off');end
+   ii_plp(ID,ga);% Add wheel position lines
   end 
+end
+
+
+function  cleanFig(gf,Time,c2)
+%%
+ if isfield(Time,'name');
+   ii_plp('legend',gca,{'set','-corner .01 .99','string',{Time.name},'fontsize',12});
+ end
+if nargin==3
+  wheelPosLines(c2);
+end
+%cingui('objset',gf,{'@OsDic',{'ImSw80{@line,""}'},'@PlotWd',{'@OsDic','WrW49c'}})
+cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImToFigN','ImSw80{@line,""}','WrW49c'});
+wheelPosLines(c2);
+ 
 end
