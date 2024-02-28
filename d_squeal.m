@@ -1575,7 +1575,7 @@ if RO.ci==13; setappdata(13,'SdtName','Spec');end
 if new % Place in same tile as iiplot 
  cingui('objset',c13,{'@Dock',{'Name','Id','tile',c2.opt(1)}})
 end
-iicom(c13,'curveinit','spec',spec)
+iicom(c13,'curveinit','spec',spec);set(c13.ga,'yscale','linear');
 if strcmpi(RO.type,'fft') % #guess_cycle_freq -3
  r2=sum(abs(C2.Y),2);if C2.X{1}(1)==0; r2(1:2)=0;end
  [~,i2]=max(r2);RO.f=C2.X{1}(i2); out=RO; 
@@ -1926,11 +1926,24 @@ if ~isempty(st); d_squeal(['viewpar' st]);end
  ID=struct('po',interp1(r3,r1{1}(i3),0:2*pi:phi(end))'*[1 0], ...
      'marker','base','LineProp',{{'linestyle',':','marker','none'}});
  Time.ID={ID};
+ if contains(Cam,'mic')
+   i1=strncmpi(Time.Xlab{1}(:,1),'mic',3);
+   if ~isempty(i1);
+       Time.Y=[Time.X{1}(:,i1) Time.Y];Time.X{1}(:,i1)=[];
+       Time.X{2}=[Time.Xlab{1}(i1,:);Time.X{2}];
+       Time.Xlab{1}(i1,:)=[];
+   end
+ end
+ if ~isfield(Time.meta,'Name')
+   Time.meta=sdth.sfield('addmissing',evt.meta,Time.meta);
+ end
+ if isfield(Time.meta,'Squeal');
+       Time.meta.fOcc=sscanf(Time.meta.Squeal,'%g')'*1e3;
+ end
  if ~isempty(c2)
   c2.Stack{'Time'}=Time;iiplot;
  else; out=Time; 
  end
- 
 
  elseif comstr(Cam,'occ')
  %% #viewOcc : occurence tracking 
@@ -1947,6 +1960,7 @@ if any(i1);
     spec=cj.Stack{'MeanCh'};
   else;
    spec=c2.Stack{'spec'}; if isa(spec,'curvemodel');spec=spec.GetData;end
+   if isempty(spec); fprintf('No spec skipping %s\n',varargin{1});return;end
    spec.Y=mean(abs(spec.Y),3);
    spec.X{3}={'Mean Ref'};spec.name='MeanCh';
    iicom(cj,'curveinit',spec); %iicom(cj,'curveinit-reset',hist2);
@@ -1961,7 +1975,7 @@ if any(i1);
   if ~strcmpi(spec.Xlab{1}{1},'Freq')
    i3=[2 1 3]; spec.Y=permute(spec.Y,i3);spec.X=spec.X(i3);spec.Xlab=spec.Xlab(i3);
   end
-  if isfield(RO,'fmin') % xxx sdtm.pfmin 
+  if isfield(RO,'fmin')&&length(RO.fmin)==2 % xxx sdtm.pfmin 
     set(cj.ga,'ylim',RO.fmin);
     i1=spec.X{1}(:,1)<RO.fmin(1)|spec.X{1}(:,1)>RO.fmin(2);
     spec.Y(i1,:)=[];spec.X{1}(i1)=[];
@@ -2539,33 +2553,120 @@ function [uo,st]=ParTick(obj,evt)
  uo=evt;
 
 end
-function out=specMax
+function out=specMax(RO)
   %% #specMax indicators of max spectrum  
   % feval(d_squeal('@specMax'))
+  % feval(d_squeal('@specMax'),struct('do',{'demA'},'gMin',1))
+
+  if nargin==0;RO=struct('do',{''});end
+  
   c13=get(13,'userdata');  ob=handle(c13.ua.ob(1));
-  if isprop(ob,'ZData');r2=ob.ZData; else;r2=ob.CData;end
-  if ob.YData(1)==0;r2(1:2,:)=NaN;end
-  [r3,i3]=max(r2,[],1);
-  r3=struct('X',{{ob.XData,{'freq';'amp'}}},'Xlab',{{'Time','com'}},'Y',[ob.YData(i3) r3(:)]);
-  C3=sdtpy('lowpass{8,.1,pa 5 .8,dososfilt}')*r3;%  r3=sdtpy.decimate(r3,10);
-  %figure(13);h=line(r3.X{1},r3.Y(:,1),'color','r');
+  if isprop(ob,'ZData');Z=ob.ZData; else;Z=ob.CData;end
+  if ob.YData(1)==0;Z(1:2,:)=NaN;end
+  st=c13.ua.YFcn;   if sdtm.Contains(st,'log10(abs(r3))');Z=10.^Z;end
+  try; 
+      spec=c13.Stack{'spec'}; RO.fCoef=1;
+      if isa(spec,'curvemodel')
+       RO.fCoef=spec.Source.Xlab{2}{3}.coef;
+      else
+         RO.fCoef=spec.Xlab{2}{3}.coef;
+      end
+  end
+  f=ob.YData;t=ob.XData;
 
-  r2=[max(r2,[],2) mean(r2,2)]; r3=mean(r2);r2(:,2)=r2(:,2)*r3(1)/r3(2);
-  st=c13.ua.YFcn; 
-  if sdtm.Contains(st,'log10(abs(r3))');r2=10.^r2;end
+  r2=[max(Z,[],2) mean(abs(Z),2)]; 
+  r3=mean(r2);r2(:,2)=r2(:,2)*r3(1)/r3(2);
+  %% remove 50 Hz 
+  i5=find(rem(f,50*RO.fCoef)==0);i5=[i5 i5-1 i5+1];i5(i5==0)=1;i5(i5>length(f))=length(f);
+  r2(i5(:,1),2)=(r2(i5(:,2),2)+r2(i5(:,3),2))/2; 
+
+
   gf=sdth.urn('figure(101).os{@Dock,{name,SqSig},name,101 SpecMax,NumberTitle,off}');
-  cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImToFigN','ImSw80','WrW49c'});
   figure(double(gf));clf;
-  h=plot(ob.YData,r2);set(h,'linewidth',2);xlabel('Frequency [Hz]');ylabel('F(spectro)')
-  set(gca,'yscale','log');legend(h,'Max','SMean');
+  h=plot(ob.YData,r2);set(h,'linewidth',1,'marker','.');xlabel('Frequency [Hz]');ylabel('F(spectro)')
+  ga=get(h(1),'parent');set(ga,'yscale','log');legend(h,'Max','SMean');
 
-  ii_plp('legend',gca,{'set','-corner .01 .99', ...
+  ii_plp('legend',ga,{'set','-corner .01 .99', ...
       'string',{c13.Stack{c13.ua.sList{1}}.name},'fontsize',12});
+  cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImToFigN','ImSw80','WrW49c'});
+  axis tight;  r4=axis;
+  % Variability for occurences
 
-  axis tight; 
-  r2=axis;
-  C3.Y(C3.Y(:,1)<r2(1)|C3.Y(:,1)>r2(2),1)=NaN;
-  vhandle.cdm.pline(C3.Y(:,1),10.^C3.Y(:,2),C3.X{1},'linewidth',1,'linestyle',':')
+  if isfield(RO,'fOcc')
+   RO.fCoef=1; 
+   fprintf('Using occurences %s\n',sdtm.toString(RO.fOcc(:)'/RO.fCoef))
+  else
+   [r3,i3]=max(Z,[],1);
+   [N,X]=hist(i3,round(length(i3)/10));
+   RO.iOcc=round(X(sdtpy.find_peaks(N,'height',max(N)/30,'prominence',1)));RO.fOcc=f(RO.iOcc);
+   %figure(13);h=line(r3.X{1},r3.Y(:,1),'color','r');
+   % RO.iOcc=sdtpy.find_peaks(log10(r2(:,2)),'prominence',.5);RO.fOcc=f(RO.iOcc);
+   fprintf('Found occurences %s\n',sdtm.toString(RO.fOcc(:)'/RO.fCoef))
+  end
+
+if 1==2
+  lp=sdtpy('lowpass{8,.1,pa 5 .8,dososfilt}');
+  r3=[f(1) RO.fOcc(:)' f(end)];
+  for j1=1:length(RO.fOcc) 
+   ind=find(f>=r3(j1+[0 1])*[.1;.9]&f<=r3(j1+[1 2])*[.9;.1]);
+   [C3,i3]=max(Z(ind,:),[],1);i3=ind(i3);
+   C3=struct('X',{{ob.XData,{'freq';'amp'}}},'Xlab',{{'Time','com'}},'Y',[f(i3) C3(:)]);
+   C3=lp*C3;%  r3=sdtpy.decimate(r3,10);
+   C3.Y(C3.Y(:,1)<r4(1)|C3.Y(:,1)>r4(2),1)=NaN;
+   vhandle.cdm.pline(C3.Y(:,1),10.^C3.Y(:,2),C3.X{1},'linewidth',1,'linestyle',':')
+  end
+  % figure(1);imagesc(t,f(ind),Z(ind,:));set(gca,'climmode','auto')
+end
+if sdtm.regContains(RO.do,'demA','i')
+
+  Time=c13.Stack{'Time'};C3=[];
+  % only keep accelerations
+  Yt=Time.Y(:,strcmpi(Time.X{2}(:,2),'g'));
+  for j1=1:length(RO.fOcc)
+   RB=struct('demodFilt',[],'f',RO.fOcc(j1)/RO.fCoef,'dt',diff(Time.X{1}(1:2)));
+   RF=struct('order',8,'band',RO.fOcc(j1)*RB.dt/10/RO.fCoef,'prop',{{'output','sos'}}, ...
+      'filtProp',{{'padtype','constant','padlen',int32(min(1000,size(Yt,1)-10))}});
+   RB.demodFilt=sdtpy('LowPass',RF);
+   [r1,r2]=feval(ii_signal('@demod'),RB,Yt);
+   C1=vhandle.matrix.rsvd(r2,struct('relTrunc',.1,'Out','qr')); 
+   C1.X{2}=sqrt(C1.X{2})*[0 0 1]; C1.X{2}(:,1)=RB.f;C1.X{2}(:,2)=max(abs(C1.Y))';
+   C1.Xlab{2}={'demodF','Hz',[];'maxAmp','g',[];'meanAmp','g',[]};
+   i3=(C1.X{2}(:,2)<RO.gMin); 
+   if all(i3)
+    fprintf('peak %i @ %.1f Hz, %.2f<%.1f g skipped \n',  ...
+        j1,RO.fOcc(j1)/RO.fCoef,C1.X{2}(1,2),RO.gMin);
+    continue;
+   else
+    C1.Y(:,i3)=[];C1.X{2}(i3,:)=[];
+    st2=sprintf('%.1f ',C1.X{2}(:,2));
+    fprintf('peak %i @ %.1f Hz : max %s g\n',j1,RO.fOcc(j1)/RO.fCoef,st2)
+   end
+
+   if isempty(C3); C1.X{1}=Time.X{1};C1.Xlab{1}=Time.Xlab{1};
+   else; C1.X{1}=Time.X{1}(:,1);C1.Xlab{1}=Time.Xlab{1}(1,:);
+   end
+   C2=sdtpy.decimate(C1,round(1/(1000*RB.dt)));
+   if isempty(C3);C3=C2; C3.T={C2.T}; 
+   else; C3.T{j1}=C2.T; C3.X{2}=[C3.X{2};C2.X{2}];C3.Y=[C3.Y C2.Y];
+   end
+  end
+
+  C3.name=[Time.name 'Dem0'];
+  C3.Xlab{2}={'qr','g',[],'#st3{j2}=sprintf(''@%.1f Hz, %.2f g'',r2(1:2));'};
+  c20=iiplot(20);iicom(c20,'curveinit',C3);
+  sdtm.save([C3.name '.mat'],'C3')
+
+  % Spectro associated with principal shape 
+
+end
+if 1==2
+  Tobs=pinv(horzcat(C3.T{:}));
+  Yt=Time.Y(:,strcmpi(Time.X{2}(:,2),'g'))*Tobs';
+  C2=Time; C2.Y=Yt; C2.X{2}=C3.X{2};C3.Xlab{2}=C2.Xlab{2};
+d_squeal('ViewSpec{BlockSize10240 Overlap.9 fmin.5k 13k tmin 0 300,zlog}',C2);
+
+
+end
 
   if nargout>0; out=r2;end
 end
@@ -2573,6 +2674,8 @@ function  [r1,st]=getAmp(r1,Time,st,RO);
   % #getAmp
   if length(Time.Xlab)~=3||~isequal(Time.Xlab{3},'hdof')
    error('Not a valid case');
+  elseif isnumeric(Time.X{2});
+    r1(:,3)=abs(Time.Y(:,1)); st{3,1}='princxxx'% ;
   elseif strcmpi(Time.X{2}{1},'q1R');
    r2=squeeze((Time.Y(:,:,1)));st{3,1}=sprintf('%s [%s]',Time.X{2}{1,1:2});
    r1(:,2+(1:size(r2,2)))=r2;
