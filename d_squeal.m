@@ -420,6 +420,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
     if isfield(MVR,'NL')&&~isempty(nl_spring('getpro',MVR))
      mo1=nl_solve('TgtMdlAssemble -evalFNL',mo1);
     end
+    if isequal(MVR.DOF,C1.DOF); assType=1; end % MVR already on C1.DOF
    elseif (~isfield(model,'Node')||~isfield(model,'Elt'))&&isfield(model,'DOF')
     mo1=model; C1=fe_case(mo1,'getCase'); if ~isfield(C1,'mDOF'); C1.mDOF=mo1.DOF; end
     assType=1;
@@ -576,8 +577,9 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    end
   end
   if 1==2 % Recheck cpx mode / matrices
-   mo1=SEf;  NL=mo1.NL{end};NL.b=sdth.GetData(NL.b);NL.c=sdth.GetData(NL.c);
+   dd=d_squeal('SolveModes',SEf); [dd.data(:,1:2) def.data(1:20,1:2)]
    % xxx you won't get it with fe_ceig due to matrix9 that is not symmetric
+   mo1=SEf;  NL=mo1.NL{end};NL.b=sdth.GetData(NL.b);NL.c=sdth.GetData(NL.c);
    ic=ismember(mo1.Opt(2,:),[3 7 70 11]);mo1.Klab(ic)
    ik=ismember(mo1.Opt(2,:),[1 5 8 9]);mo1.Klab(ik)
    K={feutilb('sumkcoef',mo1.K,ismember(mo1.Opt(2,:),[2 10]))
