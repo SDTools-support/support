@@ -1618,15 +1618,123 @@ if isfield(RO,'it')% d_squeal('viewpar{a(f,p),cuSqInstFreq,it4 7}')
    Time=fe_def('subdef',Time,@(x)x(:,1)>RO.it(1)&x(:,1)<RO.it(2));
 end
 omethod=sdth.eMethods.omethod;
-if any(sdtm.Contains(lower(RO.Failed),'f(p)'))
-  %% #ViewPar.f(p) Display instant freq as function of pressure -3
-  [r1,i2,st]=omethod('xvec',Time,1,{'Pres','Freq'});
-  gf=102;
-  figure(gf); plot(r1(:,1),r1(:,2))
-  xlabel(st(1));ylabel(st(2)); cleanFig(gf,Time,c2);  RO.back=1;
 
+%% #build needed quantities -3
+C0=struct;st1=cell(0,3);
+for j1=1:length(RO.Failed)
+  r2=sdth.findobj('_sub,~',RO.Failed{j1});
+  st2=[{r2(1).subs} r2(2).subs];
+  st1(j1,1:length(st2))=st2;
+end
+st1(cellfun(@isempty,st1))={''};
+st2={'f','iFreq';'a','Amean';'am','Amax';'wp','WP';
+     't','Time'
+     'Pr','Pressure';'Temp','TempPad'};
+[i1,i2]=ismember(st1(:),st2(:,1));
+st1(i1)=st2(i2(i1),2);
+
+[i2,i3]=ismember(st1,Time.Xlab{1}(:,1));
+[r1,i4,st]=omethod('xvec',Time,1,unique([reshape(st1(i2),[],1);{'WAng'}]));
+for j1=1:size(st,1)
+   C0.(regexprep(st{j1,1},'([^ ]*) .*','$1'))={r1(:,j1),st{j1,1}};
+end
+if ~isempty(intersect(lower(st1(:)),{'a','amean','amax','dr','wp','wang'}))
+ C0=getAmp(C0,Time,[],RO);
+ C0.Amean=C0.Amean(contains(C0.Amean(:,2),'[g]'),:);
+ C0.Amax=C0.Amax(contains(C0.Amax(:,2),'[g]'),:);
+end
+if isfield(C0,'Pressure');C0.Pressure={C0.Pressure{1}/1e5,'Pressure [bar]'};end
+st1(1,end+1:3)={''};RO.list=st1;
+RO.typ={'Amean(WP,iFreq)','a(wp,f)',103, ...
+    {'@axes',{'yscale','log','xgrid','on','ygrid','on'}}
+  'Amax(WP,iFreq)','am(wp,f)',103, ...
+    {'@axes',{'yscale','log','xgrid','on','ygrid','on'}}
+  'dr(iFreq,WP)','dr(f,wp)',106, ...
+    {'@axes',{'yscale','linear','xgrid','on','ygrid','on'}}
+  'dr(iFreq,Time)','dr(f,t)',106, ...
+    {'@axes',{'yscale','linear','xgrid','on','ygrid','on'}}
+  'dr(iFreq,aMean)','dr(f,a)',106, ...
+    {'@axes',{'yscale','linear','xgrid','on','ygrid','on'}}
+  'dr(iFreq,aMax)','dr(f,am)',106, ...
+    {'@axes',{'yscale','linear','xgrid','on','ygrid','on'}}
+  'dr(iFreq,aMax)','dr(f,am)',106, ...
+    {'@axes',{'yscale','linear','xgrid','on','ygrid','on'}}
+  'iFreq(Time)','f(t)',102, ...
+    {'@axes',{'yscale','linear','ygrid','on'}}
+  'iFreq(Time,AMean)','f(t,a)',102, ...
+    {'@axes',{'yscale','linear','ygrid','on'}}
+  'AMean(iFreq)','a(f)',104, ...
+    {'@axes',{'yscale','linear','ygrid','on'}}
+  'AMean(iFreq,Time)','a(f,t)',104, ...
+    {'@axes',{'yscale','linear','ygrid','on'}}
+  'Pressure(TempPad)','P(T)',300, ...
+    {'@axes',{'yscale','linear','ygrid','on'}}
+    };
+
+
+for j1=1:size(RO.list,1)
+  st2=sprintf('%s(%s,%s)',RO.list{j1,1:3});st2=strrep(st2,',)',')');
+  i2=strcmpi(st2,RO.typ(:,1)); 
+  if strcmp(st2,'()'); continue;elseif ~any(i2); error('Missing %s',st2); end
+  gf=RO.typ{i2,3};
+  gf=sdth.urn(sprintf('figure(%i).os{@Dock,{name,SqSig},name,%i %s,NumberTitle,off}',gf,gf,RO.typ{i2,2}));
+  figure(gf);
+  if gf==300;hold on;else; clf;end
+  ga=get(gf,'CurrentAxes'); if isempty(ga);ga=axes('parent',gf);end
+  if ~isempty(RO.list{j1,3})
+   r2={C0.(RO.list{j1,2}){1} C0.(RO.list{j1,1}){1} C0.(RO.list{j1,3}){1}};
+   st3={C0.(RO.list{j1,2}){2} C0.(RO.list{j1,1}){2} C0.(RO.list{j1,3}){2}};
+   h=vhandle.cdm.pline(r2{:},'parent',ga,'linewidth',2);
+   xlabel(st3{1});ylabel(st3{2});  axis tight; 
+   h(3)=colorbar;h(3).Label.String=st3{3};ii_plp('colormapband',parula(7));
+  else % Just a line
+   r2={C0.(RO.list{j1,2}){1} C0.(RO.list{j1,1}){1} };
+   st3={C0.(RO.list{j1,2}){2} C0.(RO.list{j1,1}){2}};
+   h=plot(r2{:},'parent',ga,'linewidth',2);
+   xlabel(st3{1});ylabel(st3{2});  axis tight; 
+  
+  end
+  if gf==300;hold off;end
+   cleanFig(gf,Time,c2);  RO.back=1;
+   cingui('objset',gf,RO.typ{i2,4})
+   RO.Failed{j1}='';iimouse('on');
 end
 
+if isfield(RO,'ciStoreName')
+  %% display parameters
+ %[~,r2]=sdtm.urnPar('a{polar,fs2}','{}{fs%ug,u%s}');
+ C1=struct('X',{{Time.X{1}(:,1),Time.Xlab{1}(2:end,:)}},...
+    'Xlab',{{Time.Xlab{1}(1,:),'Comp'}},'Y',Time.X{1}(:,2:end),'Ylab',2);
+ if isfield(Time,'name'); C1.name=Time.name;end
+ if isfield(Time,'info')&&isfield(Time.info,'key'); C1.name=Time.info.key;end
+ if isfield(RO,'fs') % Allow decimation
+  C1=sdtpy.decimate(C1,round(1/diff(C1.X{1}(1:2))/RO.fs));
+ end
+ if isfield(Time,'ID');C1.ID=Time.ID;end
+  % c11=iiplot(11);iicom(c11,'curveinit','Time',C1);
+ c12=sdth.urn('Dock.Id.ci.Clone{12}');setappdata(12,'SdtName','Par(t)');
+ c12.os_('p.','FnIy','ImToFigN','ImSw50','WrW49c');%
+ if ~isempty(C1.Y)
+  if ~isfield(RO,'ciStoreName');RO.ciStoreName='Parameters';end
+  iicom(c12,'curveinit',RO.ciStoreName,C1);
+  r1=[.13 .2 .8 .75];c12.ax(1,6:9)=r1;set(c12.ga,'position',r1);iiplot(c12);
+ end
+ if any(strcmpi(RO.Failed,'polar'))
+  c12=get(12,'userdata');iicom(c12,'polar Comp(2)')
+  C1=c12.Stack{'Parameters'};
+  t=C1.X{1}(:,1);
+  i1=sdtm.indNearest(t,(t(1):10:t(end))');
+  go=handle(c12.ua.ob(1));r2=[go.XData(i1)',go.YData(i1)'];r2(:,3)=max(get(c12.ga,'zlim'));
+  l=patch('parent',c12.ga,'vertices',r2,'faces',(1:length(i1))');
+  set(l,'facecolor','none','marker','*','markersize',12, ...
+      'FaceVertexCData',t(i1),'MarkerEdgeColor','flat','MarkerFaceColor','flat','linewidth',2) 
+  return
+ end
+end
+
+if all(cellfun(@isempty,RO.Failed)); return;end
+
+dbstack; keyboard;
 
 if any(sdtm.Contains(lower(RO.Failed),'pr(temp)'))
    r2=stack_get(c2,'','#^p');
@@ -1641,31 +1749,10 @@ if any(sdtm.Contains(lower(RO.Failed),'pr(temp)'))
    hold off;axis tight; title('');legend('location','best');grid on
    cleanFig(gf,Time,c2);  RO.back=1;
 end
-
-if any(sdtm.regContains(lower(RO.Failed),'f(t[,)]'))
-  %% #ViewPar.f(t) Display instant freq as function of time attempt to show wheel pos -3
-  [r1,i2,st]=omethod('xvec',Time,1,{'Time','Freq'});
-  try;[r1,st]=getAmp(r1,Time,st,RO);r1(:,4:end)=[];end
-  gf=sdth.urn('figure(103).os{@Dock,{name,SqSig},name,103 f(t),NumberTitle,off}');
-  if length(Time.Xlab)==3&&isequal(Time.Xlab{3},'hdof')
-   figure(gf);clf;ga=get(gf,'CurrentAxes'); if isempty(ga);ga=axes('parent',gf);end
-   y=[r1(:,3);0];
-   st1={[r1(:,1);NaN],[r1(:,2);NaN],y,y,'edgecolor','interp','tag','iFreq', ...
-       'facevertexalphadata',y/max(y),'edgealpha','interp','linewidth',2};
-   patch(st1{:},'parent',ga);
-   set(ga,'alim',[-.05 1]);
-   iimouse('on');
-  else;
-   figure(gf);plot(r1(:,1),r1(:,2))
-  end
-
-  xlabel(st(1));ylabel(st(2));  axis tight; 
-  cleanFig(gf,Time,c2);  RO.back=1;
-
-end
-if any(sdtm.Contains(lower(RO.Failed),'a(f)'))
+i1=sdtm.Contains(lower(RO.Failed),'a(f)');
+if any(i1)
   %% #ViewPar.a(f) amplitude as function of frequency -3
-  [r1,i2,st]=omethod('xvec',Time,1,{'Time','iFreq'});
+  [r1,i2,st]=omethod('xvec',Time,1,{'Time','iFreq'});RO.Failed(i1)=[];
   [r1,st]=getAmp(r1,Time,st,RO);r1(:,4:end)=[];
   if strncmp(RO.Failed{2},'{',1)
     [~,RP]=sdtm.urnPar(RO.Failed{2},'{}{lp%g}');
@@ -1702,8 +1789,13 @@ if ~isempty(i1)
   %% #ViewPar.a(f,p) Display instant freq as function of time attempt to show wheel pos -3
   st={'Pres','iFreq'}; i3=1:3;RO.aProp={'alim',[-.05 1]};
   if sdtm.regContains(RO.Failed{i1},'wp','i')
+     h=vhandle.cdm.pline(C0.Time{1},C0.iFreq{1},C0.Amean{1},'parent',ga,'edgecolor','interp','tag','iFreq', ...
+       'facevertexalphadata',y/max(y),'edgealpha','interp','linewidth',2);
       st1={'WAng','iFreq'};i3=[2 1 3]; RO.aProp={'alim',[-.05 1],'yscale','log'};
   end
+  RO.Failed(i1)=[];
+
+dbstack; keyboard; 
   [r1,i2,st]=omethod('xvec',Time,1,st1);
   [r1,st]=getAmp(r1,Time,st,RO);r1=r1(:,i3);st=st(i3,:);
 
@@ -1719,7 +1811,8 @@ if ~isempty(i1)
   axis tight; wheelPosLines(c2);
   cleanFig(gf,Time,c2);  RO.back=1;
 end
-if any(sdtm.Contains(lower(RO.Failed),'a(t)'))
+i1=sdtm.Contains(lower(RO.Failed),'a(t)');
+if any(i1);RO.Failed(i1)=[];
   %% #ViewPar.a_t Display amplitude as function of time and instant freq -3
   [r1,i2,st]=omethod('xvec',Time,1,{'Time','iFreq'});
   [r1,st]=getAmp(r1,Time,st);
@@ -1789,34 +1882,6 @@ if isfield(RO,'ci')&&~isempty(RO.ci)
 end
 if RO.back; return;end
 
-%[~,r2]=sdtm.urnPar('a{polar,fs2}','{}{fs%ug,u%s}');
-C1=struct('X',{{Time.X{1}(:,1),Time.Xlab{1}(2:end,:)}},...
-    'Xlab',{{Time.Xlab{1}(1,:),'Comp'}},'Y',Time.X{1}(:,2:end),'Ylab',2);
-if isfield(Time,'name'); C1.name=Time.name;end
-if isfield(Time,'info')&&isfield(Time.info,'key'); C1.name=Time.info.key;end
-if isfield(RO,'fs') % Allow decimation
- C1=sdtpy.decimate(C1,round(1/diff(C1.X{1}(1:2))/RO.fs));
-end
-if isfield(Time,'ID');C1.ID=Time.ID;end
-  % c11=iiplot(11);iicom(c11,'curveinit','Time',C1);
-c12=sdth.urn('Dock.Id.ci.Clone{12}');setappdata(12,'SdtName','Par(t)');
-c12.os_('p.','FnIy','ImToFigN','ImSw50','WrW49c');%
-if ~isempty(C1.Y)
- if ~isfield(RO,'ciStoreName');RO.ciStoreName='Parameters';end
- iicom(c12,'curveinit',RO.ciStoreName,C1);
- r1=[.13 .2 .8 .75];c12.ax(1,6:9)=r1;set(c12.ga,'position',r1);iiplot(c12);
-end
-if any(strcmpi(RO.Failed,'polar'))
-  c12=get(12,'userdata');iicom(c12,'polar Comp(2)')
-  C1=c12.Stack{'Parameters'};
-  t=C1.X{1}(:,1);
-  i1=sdtm.indNearest(t,(t(1):10:t(end))');
-  go=handle(c12.ua.ob(1));r2=[go.XData(i1)',go.YData(i1)'];r2(:,3)=max(get(c12.ga,'zlim'));
-  l=patch('parent',c12.ga,'vertices',r2,'faces',(1:length(i1))');
-  set(l,'facecolor','none','marker','*','markersize',12, ...
-      'FaceVertexCData',t(i1),'MarkerEdgeColor','flat','MarkerFaceColor','flat','linewidth',2)
-  
-end
 
 
  elseif comstr(Cam,'instfreq')
@@ -2671,7 +2736,8 @@ end
   if nargout>0; out=r2;end
 end
 function  [r1,st]=getAmp(r1,Time,st,RO);
-  % #getAmp
+  %% #getAmp
+  if nargin==3;RO=struct;end
   if length(Time.Xlab)~=3||~isequal(Time.Xlab{3},'hdof')
    error('Not a valid case');
   elseif isnumeric(Time.X{2});
@@ -2680,15 +2746,30 @@ function  [r1,st]=getAmp(r1,Time,st,RO);
    r2=squeeze((Time.Y(:,:,1)));st{3,1}=sprintf('%s [%s]',Time.X{2}{1,1:2});
    r1(:,2+(1:size(r2,2)))=r2;
   else
-   r1(:,3)=sum(abs(Time.Y(:,:,1)).^2,2);st{3,1}='Amplitude';
+   [st2,~,i2]=unique(Time.X{2}(:,2));
+   for j1=1:length(st2)
+    r1.Amean(j1,1:2)={sqrt(sum(abs(Time.Y(:,i2==j1,1)).^2,2)) sprintf('Amean [%s]',st2{j1})};
+    r1.Amax(j1,1:2)={max(abs(Time.Y(:,i2==j1,1)),[],2) sprintf('Amax [%s]',st2{j1})};
+   end
   end
-  if nargin==3;RO=struct;end
-  if isfield(RO,'MinAmpRatio'); 
-      r1(r1(:,3)/norm(r1(:,3),'inf')<RO.MinAmpRatio,3)=NaN;
+  if isfield(RO,'MinAmpRatio');
+     ze=@(x)gradient(log(x))./diff(Time.X{1}(1:2))./r1.iFreq{1}*100;
+     for j1=1:size(r1.Amean,1)
+      r2=r1.Amean{j1,1};
+      r2(r2/norm(r2,'inf')<RO.MinAmpRatio,1)=NaN;r1.Amean{j1,1}=r2;
+      r3=r1.Amax{j1,1};
+      r3(r3/norm(r3,'inf')<RO.MinAmpRatio,1)=NaN;r1.Amax{j1,1}=r3;
+      if contains(r1.Amax{j1,2},'[g]') % Growth estimation
+       % figure(1); plot(gradient(log(C0.Amean{1}))./C0.iFreq{1}/diff(Time.X{1}(1:2))*100)
+       coef=1; if contains(r1.iFreq{2},'kHz');coef=1e-3;end
+       r1.dr={[ze(r2) ]*coef,'Decay rate [%]'};
+      end
+     end
+
   end
-  if strncmpi(st{1},'wang',4) %Wang to WP
-    r1(:,1)=rem(r1(:,1)/2/pi,1)*4;st{1}='WP[0-4]';
-    i1=(diff(r1(:,1))<-3);r1(i1,1)=NaN;
+  if isfield(r1,'WAng') %Wang to WP
+    r1.WP={rem(r1.WAng{1}/2/pi,1)*4,'WP[0-4]'};
+    i1=(diff(r1.WP{1})<-3);r1.WP{1}(i1,1)=NaN;
   end
 end
 
@@ -2705,8 +2786,19 @@ end
 
 function  cleanFig(gf,Time,c2)
 %%
+ga=get(gf,'currentaxes');
  if isfield(Time,'name');
-   ii_plp('legend',gca,{'set','-corner .01 .99','string',{Time.name},'fontsize',12});
+   ii_plp('legend',ga,{'set','-corner .01 .99','string',{Time.name},'fontsize',12});
+ end
+ st1=ga.XLabel.String;
+ if strncmpi(st1,'ifreq',4)&&~contains(st1,'rg')
+  r1=ga.XLim;
+  ga.XLabel.String=sprintf('%s rg %.1f %%',st1,diff(r1)/mean(r1)*100);
+ end
+ st1=ga.YLabel.String;
+ if strncmpi(st1,'ifreq',4)&&~contains(st1,'rg')
+  r1=ga.YLim;
+  ga.YLabel.String=sprintf('%s rg %.1f %%',st1,diff(r1)/mean(r1)*100);
  end
 if nargin==3
   wheelPosLines(c2);
