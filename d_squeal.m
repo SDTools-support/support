@@ -577,7 +577,13 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    end
   end
   if 1==2 % Recheck cpx mode / matrices
-   dd=d_squeal('SolveModes',SEf); [dd.data(:,1:2) def.data(1:20,1:2)]
+   dd=d_squeal('SolveModes',SEf); [dd.data(:,1:2) def.data(1:20,1:2)];
+   SE2=SE;
+   SE2=feval(nl_spring('@JacAdd'),SE2,SE2.NL,'sumcat')
+   SE2=sdtm.rmfield(SE2,'FNLDOF','FNL','FNLlab','NL');
+   ddr=d_squeal('SolveModes',stack_set(SE2,'SE','MVR',SE2));
+   [ddr.data(1,:) def.data(18,:)];
+
    % xxx you won't get it with fe_ceig due to matrix9 that is not symmetric
    mo1=SEf;  NL=mo1.NL{end};NL.b=sdth.GetData(NL.b);NL.c=sdth.GetData(NL.c);
    ic=ismember(mo1.Opt(2,:),[3 7 70 11]);mo1.Klab(ic)
