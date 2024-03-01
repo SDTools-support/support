@@ -600,12 +600,13 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
     if length(SE.K)>3; in1=3+find(cellfun(@nnz,SE.K(4:end))==0);
      SE.K(in1)=[];SE.Klab(in1)=[];SE.Opt(:,in1)=[];
     end
-    SE.NL{end}.iopt(1)=0;SE.NL{end}.FInd=0;SE.NL{end}.iotp(4)=0;'xxx iopt'
-    i3=SE.NL{end}.iopt;
+    SE.NL{end,3}.iopt(1)=0;SE.NL{end,3}.FInd=0;SE.NL{end,3}.iotp(4)=0;'xxx iopt'
+    i3=SE.NL{end,3}.iopt;
     i3=sum(i3(3:4)+i3(3))*i3(5); % xxx StoreType
     SE.FNL(i3,1)=0;SE.FNLlab(end+1:i3)={''};SE.FNLDOF(end+1:i3)=0;
     % now first run
     % figure(1);NL=SE.NL{end}; plot(sort(NL.vnl(2,:,2)))
+    %SE.FNL=model.FNL+0; SE.FNLlab=model.FNLlab; SE.FNLDOF=model.FNLDOF
     [d2,mo3]=fe_time(SE); %iicom('curveinit','def',d2)
     
     if norm(d2.def,'Inf')>1e100; error('Diverged');end
