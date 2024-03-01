@@ -577,13 +577,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    end
   end
   if 1==2 % Recheck cpx mode / matrices
-   dd=d_squeal('SolveModes',SEf); [dd.data(:,1:2) def.data(1:20,1:2)];
-   SE2=SE;
-   SE2=feval(nl_spring('@JacAdd'),SE2,SE2.NL,'sumcat')
-   SE2=sdtm.rmfield(SE2,'FNLDOF','FNL','FNLlab','NL');
-   ddr=d_squeal('SolveModes',stack_set(SE2,'SE','MVR',SE2));
-   [ddr.data(1,:) def.data(18,:)];
-
+   dd=d_squeal('SolveModes',SEf); [dd.data(:,1:2) def.data(1:20,1:2)]
    % xxx you won't get it with fe_ceig due to matrix9 that is not symmetric
    mo1=SEf;  NL=mo1.NL{end};NL.b=sdth.GetData(NL.b);NL.c=sdth.GetData(NL.c);
    ic=ismember(mo1.Opt(2,:),[3 7 70 11]);mo1.Klab(ic)
@@ -647,12 +641,12 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    end
    if 1==2
     d_squeal('ViewInstFreq{dmBand100,harm1,do{ReEstY,f(t),a(t)},f 1500,ifBand100,aeBand100,clipBand500 3k,,tclip .01 .01}');
-    c3=iiplot(3,';');nmap=c3.data.nmap.nmap;C4=nmap('SqInstFreq');
+    c3=iiplot(3,';');nmap=c3.data.nmap.nmap;C4=nmap('SqShape');
     c14=sdth.urn('iiplot(3).clone(14)');iicom(c14,'curveinit','A1',C4);
     iicom(c3,'polarx2');
-    %vhandle.cdm.urnVec(C4,'{tlim1 100}{x,2}{y,l1,abs}{gf404,tight}');
+    %cdm.urnVec(C4,'{tlim1 100}{x,2}{y,l1,abs}{gf404,tight}');
     figure(403);clf;
-    h=vhandle.cdm.urnVec(C4,'{tlim1 100}{x,2}{y,l1,abs}{x,1,col}{gf403,tight,os{imgrid,ImSw80},pd{WrW49c,FnY}}');
+    h=cdm.urnVec(C4,'{tlim1 100}{x,2}{y,l1,abs}{x,1,col}{gf403,tight,os{imgrid,ImSw80},pd{WrW49c,FnY}}');
     set(h,'linewidth',2);ii_plp('ColorMapBand',parula(6));colorbar
    end
 
@@ -1622,7 +1616,7 @@ if isfield(RO,'ciStoreName')
   RO.ciStoreName=strrep(RO.ciStoreName,'$name',Time.name);
 end
 RO.back=0;
-if isfield(RO,'it')% d_squeal('viewpar{a(f,p),cuSqInstFreq,it4 7}')
+if isfield(RO,'it')% d_squeal('viewpar{a(f,p),cuSqShape,it4 7}')
    Time=fe_def('subdef',Time,@(x)x(:,1)>RO.it(1)&x(:,1)<RO.it(2));
 end
 omethod=sdth.eMethods.omethod;
@@ -1631,34 +1625,41 @@ omethod=sdth.eMethods.omethod;
 C0=struct;st1=cell(0,3);
 for j1=1:length(RO.Failed)
   r2=sdth.findobj('_sub,~',RO.Failed{j1});
+  if strcmpi(r2(1).subs,'lowpass') % d_squeal('ViewPar{lowpass{1001,,doMedfilt},Pr(Temp)}')
+   RO.filt=sdtpy(RO.Failed{j1});RO.Failed{j1}='';continue;
+  elseif strcmpi(r2(1).subs,'decimate') %d_squeal('ViewPar{decimate{1 NaN},Pr(Temp)}')
+   Time=sdtpy.decimate(Time,comstr(r2(2).subs{1},-1));
+   RO.Failed{j1}='';continue;
+  end 
   st2=[{r2(1).subs} r2(2).subs];
   st1(j1,1:length(st2))=st2;
 end
 st1(cellfun(@isempty,st1))={''};
 st2={'f','iFreq';'a','Amean';'am','Amax';'wp','WP';
      't','Time'
-     'Pr','Pressure';'Temp','TempPad'};
+     'Pr','Pressure';'Temp','TempPad';'tv','TorqueV'};
 [i1,i2]=ismember(st1(:),st2(:,1));
 st1(i1)=st2(i2(i1),2);
 
 [i2,i3]=ismember(st1,Time.Xlab{1}(:,1));
-[r1,i4,st]=omethod('xvec',Time,1,unique([reshape(st1(i2),[],1);{'WAng'}]));
+[r1,i4,st]=cdm.xvec(Time,1,unique([reshape(st1(i2),[],1);{'WAng'}]));
 for j1=1:size(st,1)
-   C0.(regexprep(st{j1,1},'([^ ]*) .*','$1'))={r1(:,j1),st{j1,1}};
+   st3=regexprep(st{j1,1},'([^ ]*) .*','$1');
+   C0.(st3)=cdm({r1(:,j1),st{j1,1},Time.name});
+   if isfield(RO,'filt');C0.(st3)=RO.filt*C0.(st3);end
 end
-if ~isempty(intersect(lower(st1(:)),{'a','amean','amax','dr','wp','wang'}))
+if ~isempty(intersect(lower(st1(:)),{'a', ...
+        'amean','amax','dr','wp','wang','torquev'}))
  C0=getAmp(C0,Time,[],RO);
- C0.Amean=C0.Amean(contains(C0.Amean(:,2),'[g]'),:);
- C0.Amax=C0.Amax(contains(C0.Amax(:,2),'[g]'),:);
 end
-if isfield(C0,'Pressure');C0.Pressure={C0.Pressure{1}/1e5,'Pressure [bar]'};end
+if isfield(C0,'Pressure');C0.Pressure=C0.Pressure/{1e5,'Pressure [bar]'};end
 st1(1,end+1:3)={''};RO.list=st1;
 RO.typ={'Amean(WP,iFreq)','a(wp,f)',103, ...
-    {'@axes',{'yscale','log','xgrid','on','ygrid','on'}}
+    {'@axes',{'yscale','log','xgrid','on','ygrid','on','xlim',[0 4]}}
   'Amax(WP,iFreq)','am(wp,f)',103, ...
-    {'@axes',{'yscale','log','xgrid','on','ygrid','on'}}
+    {'@axes',{'yscale','log','xgrid','on','ygrid','on','xlim',[0 4]}}
   'dr(iFreq,WP)','dr(f,wp)',106, ...
-    {'@axes',{'yscale','linear','xgrid','on','ygrid','on'}}
+    {'@axes',{'yscale','linear','xgrid','on','ygrid','on','clim',[0 4]}}
   'dr(iFreq,Time)','dr(f,t)',106, ...
     {'@axes',{'yscale','linear','xgrid','on','ygrid','on'}}
   'dr(iFreq,aMean)','dr(f,a)',106, ...
@@ -1671,11 +1672,17 @@ RO.typ={'Amean(WP,iFreq)','a(wp,f)',103, ...
     {'@axes',{'yscale','linear','ygrid','on'}}
   'iFreq(Time,AMean)','f(t,a)',102, ...
     {'@axes',{'yscale','linear','ygrid','on'}}
+  'iFreq(WP,dr)','f(wp,dr)',107, ...
+    {'@axes',{'yscale','linear','ygrid','on','clim',[-4 4]}}
   'AMean(iFreq)','a(f)',104, ...
     {'@axes',{'yscale','linear','ygrid','on'}}
   'AMean(iFreq,Time)','a(f,t)',104, ...
     {'@axes',{'yscale','linear','ygrid','on'}}
   'Pressure(TempPad)','P(T)',300, ...
+    {'@axes',{'yscale','linear','ygrid','on'}}
+  'Torque(Time)','Torque(t)',301, ...
+    {'@axes',{'yscale','linear','ygrid','on'}}
+  'TorqueV(Time)','TorqueV(t)',301, ...
     {'@axes',{'yscale','linear','ygrid','on'}}
     };
 
@@ -1683,23 +1690,23 @@ RO.typ={'Amean(WP,iFreq)','a(wp,f)',103, ...
 for j1=1:size(RO.list,1)
   st2=sprintf('%s(%s,%s)',RO.list{j1,1:3});st2=strrep(st2,',)',')');
   i2=strcmpi(st2,RO.typ(:,1)); 
-  if strcmp(st2,'()'); continue;elseif ~any(i2); error('Missing %s',st2); end
+  if strcmp(st2,'()'); continue;
+  elseif ~any(i2); sdtw('_nb','Missing %s',st2); 
+    i2=size(RO.typ,1)+1;
+    RO.typ(i2,:)={st2,st2,100,{'@axes',{'ygrid','on','xgrid','on'}}};
+  end
   gf=RO.typ{i2,3};
   gf=sdth.urn(sprintf('figure(%i).os{@Dock,{name,SqSig},name,%i %s,NumberTitle,off}',gf,gf,RO.typ{i2,2}));
   figure(gf);
   if gf==300;hold on;else; clf;end
   ga=get(gf,'CurrentAxes'); if isempty(ga);ga=axes('parent',gf);end
   if ~isempty(RO.list{j1,3})
-   r2={C0.(RO.list{j1,2}){1} C0.(RO.list{j1,1}){1} C0.(RO.list{j1,3}){1}};
-   st3={C0.(RO.list{j1,2}){2} C0.(RO.list{j1,1}){2} C0.(RO.list{j1,3}){2}};
-   h=vhandle.cdm.pline(r2{:},'parent',ga,'linewidth',2);
-   xlabel(st3{1});ylabel(st3{2});  axis tight; 
-   h(3)=colorbar;h(3).Label.String=st3{3};ii_plp('colormapband',parula(7));
+   r2={C0.(RO.list{j1,2}) C0.(RO.list{j1,1}) C0.(RO.list{j1,3})};
+   h=cdm.pline(r2{:},'parent',ga,'linewidth',2);
+   ii_plp('colormapband',parula(7));axis tight; 
   else % Just a line
-   r2={C0.(RO.list{j1,2}){1} C0.(RO.list{j1,1}){1} };
-   st3={C0.(RO.list{j1,2}){2} C0.(RO.list{j1,1}){2}};
-   h=plot(r2{:},'parent',ga,'linewidth',2);
-   xlabel(st3{1});ylabel(st3{2});  axis tight; 
+   h=cdm.plot(C0.(RO.list{j1,2}),C0.(RO.list{j1,1}),'parent',ga,'linewidth',2);
+   axis tight; 
   
   end
   if gf==300;hold off;end
@@ -1715,9 +1722,7 @@ if isfield(RO,'ciStoreName')
     'Xlab',{{Time.Xlab{1}(1,:),'Comp'}},'Y',Time.X{1}(:,2:end),'Ylab',2);
  if isfield(Time,'name'); C1.name=Time.name;end
  if isfield(Time,'info')&&isfield(Time.info,'key'); C1.name=Time.info.key;end
- if isfield(RO,'fs') % Allow decimation
-  C1=sdtpy.decimate(C1,round(1/diff(C1.X{1}(1:2))/RO.fs));
- end
+ C1=sdtpy.decimate(C1,Time.meta.decimate);
  if isfield(Time,'ID');C1.ID=Time.ID;end
   % c11=iiplot(11);iicom(c11,'curveinit','Time',C1);
  c12=sdth.urn('Dock.Id.ci.Clone{12}');setappdata(12,'SdtName','Par(t)');
@@ -1750,10 +1755,10 @@ if any(sdtm.Contains(lower(RO.Failed),'pr(temp)'))
    figure(gf);clf; hold on;
    for j2=1:size(r2,1)
     C2=r2{j2,3};
-    h(j2)=vhandle.cdm.urnVec(C2,'{y,#TempPad}{y,#Pressure}{gf300}');
+    h(j2)=cdm.urnVec(C2,'{y,#TempPad}{y,#Pressure}{gf300}');
     set(h(j2),'DisplayName',r2{j2,2});
    end
-   vhandle.cdm.changeUnit(300,'y',struct('coef',1e-5,'From','Pa','To','bar'))
+   cdm.changeUnit(300,'y',struct('coef',1e-5,'From','Pa','To','bar'))
    hold off;axis tight; title('');legend('location','best');grid on
    cleanFig(gf,Time,c2);  RO.back=1;
 end
@@ -1797,7 +1802,7 @@ if ~isempty(i1)
   %% #ViewPar.a(f,p) Display instant freq as function of time attempt to show wheel pos -3
   st={'Pres','iFreq'}; i3=1:3;RO.aProp={'alim',[-.05 1]};
   if sdtm.regContains(RO.Failed{i1},'wp','i')
-     h=vhandle.cdm.pline(C0.Time{1},C0.iFreq{1},C0.Amean{1},'parent',ga,'edgecolor','interp','tag','iFreq', ...
+     h=cdm.pline(C0.Time{1},C0.iFreq{1},C0.Amean{1},'parent',ga,'edgecolor','interp','tag','iFreq', ...
        'facevertexalphadata',y/max(y),'edgealpha','interp','linewidth',2);
       st1={'WAng','iFreq'};i3=[2 1 3]; RO.aProp={'alim',[-.05 1],'yscale','log'};
   end
@@ -1849,10 +1854,10 @@ if any(i1);RO.Failed(i1)=[];
   RO.back=1;
 end
 if any(sdtm.Contains(lower(RO.Failed),'at'))
-  %% #ViewPar.at : harmonic modulation d_squeal('viewpar{at,cuSqInstFreq}',C1) -3
+  %% #ViewPar.at : harmonic modulation d_squeal('viewpar{at,cuSqShape}',C1) -3
   gf=202;figure(gf); 
   [r1,i2,st]=omethod('xvec',Time,1,{'Time','iFreq','TR'});
-  % d_squeal('viewpar{at{5000},cuSqInstFreq}',C1)
+  % d_squeal('viewpar{at{5000},cuSqShape}',C1)
   [~,r2]=sdtm.urnPar(RO.Failed{sdtm.Contains(lower(RO.Failed),'at')},'{N%g}{harm%g,dh%g,der%g}');
   if ~isfield(r2,'dh');r2.dh=1;end
   r1=interp1(r1(:,1),r1,linspace(r1(1),r1(end,1),r2.N),'linear','extrap');
@@ -1907,7 +1912,7 @@ else
  RO=varargin{carg};carg=carg+1;
 end
 hfs=ii_signal('@sqSig');
-ROc=hfs('depend',RO,Time,projM,CAM);
+ROc=hfs('depend',RO,Time,projM,CAM); % sdtweb ii_signal sqsig.depend
 %try
     [out,RB]=hfs('obsPha',ROc); % sdtweb ii_signal obspha
 %catch err
@@ -1920,7 +1925,7 @@ if isfield(RO,'ci')&&~isempty(RO.ci)
     %'xxx need to adjust how to display freq if not spectro'
     ci=iiplot(RO.ci,';');
     if isequal(out.X{2},{'Freq'});r2=out;
-    else; r2=vhandle.cdm.urnVec(out,'{x,iFreq}');
+    else; r2=cdm.urnVec(out,'{x,iFreq}');
         r2=struct('X',{{out.X{1}(:,1),r2(2)}},'Y',r2{1});
     end
     ci.Stack{'spec'}.ID=struct('po',r2,'marker','xy'); 
@@ -1940,13 +1945,13 @@ end
 omethod=sdth.eMethods.omethod;
 if ~isempty(projM) % Store in standard map 
  projM('SqLastSpec')=RO;
- projM('SqInstFreq')=out;% Store result 
+ projM('SqShape')=out;% Store result 
 end
 st=regexprep(RO.do,'ReEstY[,]?',''); %'{ReEstY}'
 if isequal(st,'{}');st='';end
-if ~isempty(st);st=strrep(st,'}',',cuSqInstFreq}');end
+if ~isempty(st);st=strrep(st,'}',',cuSqShape}');end
 if ~isempty(st); d_squeal(['viewpar' st]);end
-%if sdtm.Contains(lower(RO.do),'f(t)'); d_squeal('viewpar{f(t),cuSqInstFreq}');end
+%if sdtm.Contains(lower(RO.do),'f(t)'); d_squeal('viewpar{f(t),cuSqShape}');end
  elseif comstr(Cam,'bandpass')
  %% #viewBandPass
  RO=varargin{carg};carg=carg+1;
@@ -1989,7 +1994,7 @@ if ~isempty(st); d_squeal(['viewpar' st]);end
   c2=sdth.urn('Dock.Id.ci');projM=c2.data.nmap.nmap;
   Time=c2.Stack{'Time'};
  end
- r1=vhandle.cdm.urnVec(Time,'{x,Time}{x,RPM}');
+ r1=cdm.urnVec(Time,'{x,Time}{x,RPM}');
 
  dt=diff(r1{1}([1 end]))/(size(r1{1},1)-1);
  r2=r1{2,1};r2(r2<=0)=1e-15;
@@ -2063,7 +2068,7 @@ if any(i1);
   gf=sdth.urn(sprintf('figure(%i).os{@Dock,{name,SqSig},name,%i f(t),NumberTitle,off}',RO.gf*[1 1]));
   clf;
   if isfield(RC,'yy')
-   r3=vhandle.cdm.urnVec(Time,sprintf('{x,#%s}',RC.yy));
+   r3=cdm.urnVec(Time,sprintf('{x,#%s}',RC.yy));
    r2=interp1(Time.X{1}(:,1),r3{1},spec.X{2});
    yyaxis('right');
    xlabel('Time [s]');
@@ -2087,7 +2092,7 @@ if any(i1);
 end
 if sdtm.Contains(RC.Failed,'old')
  %% #ViewOccOld -3
- C2=projM('SqInstFreq');RO=projM('SqLastSpec');
+ C2=projM('SqShape');RO=projM('SqLastSpec');
 %r2=C2.Y;r2=r2./r2(:,1);r2=z*r2;r2=r2.*sum(abs(r2).^2,2).^(-.5);
 [~,RO]=sdtm.urnPar(CAM,'{tref%ug}:{xlim%ug}');
 RO.iref=sdtm.indNearest(C2.X{1}(:,1),RO.tref);
@@ -2686,12 +2691,12 @@ if 1==2
    C3=struct('X',{{ob.XData,{'freq';'amp'}}},'Xlab',{{'Time','com'}},'Y',[f(i3) C3(:)]);
    C3=lp*C3;%  r3=sdtpy.decimate(r3,10);
    C3.Y(C3.Y(:,1)<r4(1)|C3.Y(:,1)>r4(2),1)=NaN;
-   vhandle.cdm.pline(C3.Y(:,1),10.^C3.Y(:,2),C3.X{1},'linewidth',1,'linestyle',':')
+   cdm.pline(C3.Y(:,1),10.^C3.Y(:,2),C3.X{1},'linewidth',1,'linestyle',':')
   end
   % figure(1);imagesc(t,f(ind),Z(ind,:));set(gca,'climmode','auto')
 end
 if sdtm.regContains(RO.do,'demA','i')
-
+dbstack; keyboard; 
   Time=c13.Stack{'Time'};C3=[];
   % only keep accelerations
   Yt=Time.Y(:,strcmpi(Time.X{2}(:,2),'g'));
@@ -2718,7 +2723,7 @@ if sdtm.regContains(RO.do,'demA','i')
    if isempty(C3); C1.X{1}=Time.X{1};C1.Xlab{1}=Time.Xlab{1};
    else; C1.X{1}=Time.X{1}(:,1);C1.Xlab{1}=Time.Xlab{1}(1,:);
    end
-   C2=sdtpy.decimate(C1,round(1/(1000*RB.dt)));
+   C2=sdtpy.decimate(C1,[1000 NaN]);%round(1/(1000*RB.dt)));
    if isempty(C3);C3=C2; C3.T={C2.T}; 
    else; C3.T{j1}=C2.T; C3.X{2}=[C3.X{2};C2.X{2}];C3.Y=[C3.Y C2.Y];
    end
@@ -2743,11 +2748,10 @@ end
 
   if nargout>0; out=r2;end
 end
-function  [r1,st]=getAmp(r1,Time,st,RO);
+function  [C0,st]=getAmp(C0,Time,st,RO);
   %% #getAmp
   if nargin==3;RO=struct;end
   if length(Time.Xlab)~=3||~isequal(Time.Xlab{3},'hdof')
-   error('Not a valid case');
   elseif isnumeric(Time.X{2});
     r1(:,3)=abs(Time.Y(:,1)); st{3,1}='princxxx'% ;
   elseif strcmpi(Time.X{2}{1},'q1R');
@@ -2756,28 +2760,32 @@ function  [r1,st]=getAmp(r1,Time,st,RO);
   else
    [st2,~,i2]=unique(Time.X{2}(:,2));
    for j1=1:length(st2)
-    r1.Amean(j1,1:2)={sqrt(sum(abs(Time.Y(:,i2==j1,1)).^2,2)) sprintf('Amean [%s]',st2{j1})};
-    r1.Amax(j1,1:2)={max(abs(Time.Y(:,i2==j1,1)),[],2) sprintf('Amax [%s]',st2{j1})};
+    C0.Amean(j1,1:2)={sqrt(sum(abs(Time.Y(:,i2==j1,1)).^2,2)) sprintf('Amean [%s]',st2{j1})};
+    C0.Amax(j1,1:2)={max(abs(Time.Y(:,i2==j1,1)),[],2) sprintf('Amax [%s]',st2{j1})};
    end
   end
   if isfield(RO,'MinAmpRatio');
-     ze=@(x)gradient(log(x))./diff(Time.X{1}(1:2))./r1.iFreq{1}*100;
-     for j1=1:size(r1.Amean,1)
-      r2=r1.Amean{j1,1};
-      r2(r2/norm(r2,'inf')<RO.MinAmpRatio,1)=NaN;r1.Amean{j1,1}=r2;
-      r3=r1.Amax{j1,1};
-      r3(r3/norm(r3,'inf')<RO.MinAmpRatio,1)=NaN;r1.Amax{j1,1}=r3;
-      if contains(r1.Amax{j1,2},'[g]') % Growth estimation
+     ze=@(x)gradient(log(x))./diff(Time.X{1}(1:2))./double(C0.iFreq)*100;
+     for j1=1:size(C0.Amean,1)
+      r2=C0.Amean{j1,1};
+      r2(r2/norm(r2,'inf')<RO.MinAmpRatio,1)=NaN;C0.Amean{j1,1}=r2;
+      r3=C0.Amax{j1,1};
+      r3(r3/norm(r3,'inf')<RO.MinAmpRatio,1)=NaN;C0.Amax{j1,1}=r3;
+      if contains(C0.Amax{j1,2},'[g]') % Growth estimation
        % figure(1); plot(gradient(log(C0.Amean{1}))./C0.iFreq{1}/diff(Time.X{1}(1:2))*100)
-       coef=1; if contains(r1.iFreq{2},'kHz');coef=1e-3;end
-       r1.dr={[ze(r2) ]*coef,'Decay rate [%]'};
+       coef=1; if contains(C0.iFreq.label,'kHz');coef=1e-3;end
+       C0.dr=cdm({[ze(r2) ]*coef,'Decay rate [%]'},Time.name);
       end
      end
 
   end
-  if isfield(r1,'WAng') %Wang to WP
-    r1.WP={rem(r1.WAng{1}/2/pi,1)*4,'WP[0-4]'};
-    i1=(diff(r1.WP{1})<-3);r1.WP{1}(i1,1)=NaN;
+  if isfield(C0,'WAng') %Wang to WP
+    r2=rem(double(C0.WAng)/2/pi,1)*4;i1=(diff(r2)<-3);r2(i1,1)=NaN;
+    C0.WP=cdm({r2,'WP[0-4]',Time.name});  
+  end
+  if isfield(C0,'Amean')
+   C0.Amean=cdm(C0.Amean(contains(C0.Amean(:,2),'[g]'),:));
+   C0.Amax=cdm(C0.Amax(contains(C0.Amax(:,2),'[g]'),:));
   end
 end
 
@@ -2798,16 +2806,20 @@ ga=get(gf,'currentaxes');
  if isfield(Time,'name');
    ii_plp('legend',ga,{'set','-corner .01 .99','string',{Time.name},'fontsize',12});
  end
- st1=ga.XLabel.String;
- if strncmpi(st1,'ifreq',4)&&~contains(st1,'rg')
-  r1=ga.XLim;
-  ga.XLabel.String=sprintf('%s rg %.1f %%',st1,diff(r1)/mean(r1)*100);
+
+ st2={ga.XLabel,'XLim';ga.YLabel,'YLim'};
+ r2=getappdata(ga,'LayoutPeers'); 
+ if contains(class(r2),'ColorBar')
+     st2(end+1,1:2)={r2.Label,'CLim'};
  end
- st1=ga.YLabel.String;
- if strncmpi(st1,'ifreq',4)&&~contains(st1,'rg')
-  r1=ga.YLim;
-  ga.YLabel.String=sprintf('%s rg %.1f %%',st1,diff(r1)/mean(r1)*100);
+ for j1=1:size(st2,1)
+  st1=st2{j1,1}.String;
+  if strncmpi(st1,'ifreq',4)&&~contains(st1,'rg')
+   r1=ga.(st2{j1,2});
+   st2{j1,1}.String=sprintf('%s rg %.1f %%',st1,diff(r1)/mean(r1)*100);
+  end
  end
+
 if nargin==3
   wheelPosLines(c2);
 end
