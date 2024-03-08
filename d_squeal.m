@@ -1624,37 +1624,10 @@ omethod=sdth.eMethods.omethod;
 
 %% #build needed quantities -3
 C0=struct;st1=cell(0,3);
-for j1=1:length(RO.Failed)
-  r2=sdth.findobj('_sub,~',RO.Failed{j1});
-  if strcmpi(r2(1).subs,'lowpass') % d_squeal('ViewPar{lowpass{1001,,doMedfilt},Pr(Temp)}')
-   RO.filt=sdtpy(RO.Failed{j1});RO.Failed{j1}='';continue;
-  elseif strcmpi(r2(1).subs,'decimate') %d_squeal('ViewPar{decimate{1 NaN},Pr(Temp)}')
-   Time=sdtpy.decimate(Time,comstr(r2(2).subs{1},-1));
-   RO.Failed{j1}='';continue;
-  end 
-  st2=[{r2(1).subs} r2(2).subs];
-  st1(j1,1:length(st2))=st2;
-end
-st1(cellfun(@isempty,st1))={''};
-st2={'f','iFreq';'a','Amean';'am','Amax';'wp','WP';
-     't','Time'
-     'Pr','Pressure';'Temp','TempPad';'tv','TorqueV'};
-[i1,i2]=ismember(st1(:),st2(:,1));
-st1(i1)=st2(i2(i1),2);
-
-[i2,i3]=ismember(st1,Time.Xlab{1}(:,1));
-[r1,i4,st]=cdm.xvec(Time,1,unique([reshape(st1(i2),[],1);{'WAng'}]));
-for j1=1:size(st,1)
-   st3=regexprep(st{j1,1},'([^ ]*) .*','$1');
-   C0.(st3)=cdm({r1(:,j1),st{j1,1},Time.name});
-   if isfield(RO,'filt');C0.(st3)=RO.filt*C0.(st3);end
-end
-if ~isempty(intersect(lower(st1(:)),{'a', ...
-        'amean','amax','dr','wp','wang','torquev'}))
- C0=getAmp(C0,Time,[],RO);
-end
-if isfield(C0,'Pressure');C0.Pressure=C0.Pressure/{1e5,'Pressure [bar]'};end
-st1(1,end+1:3)={''};RO.list=st1;
+RO.ShortLong={'f','iFreq','%.2f';'a','Amean','%.1f';'am','Amax','%.1f';
+     'wp','WP','%.2f';'t','Time',java.lang.String('.00');
+     'Pr','Pressure','%.2f';'Temp','TempPad','%.2f';'tv','TorqueV','%.2f'
+     'Dr','DecayR',java.lang.String('.0%')};
 RO.typ={'Amean(WP,iFreq)','a(wp,f)',103, ...
     {'@axes',{'yscale','log','xgrid','on','ygrid','on','xlim',[0 4]}}
   'Amax(WP,iFreq)','am(wp,f)',103, ...
@@ -1687,12 +1660,20 @@ RO.typ={'Amean(WP,iFreq)','a(wp,f)',103, ...
     {'@axes',{'yscale','linear','ygrid','on'}}
     };
 
+[C0,st2,st1]=cdm.xvec(Time,[RO.Failed;{'WAng(t)'}],RO);
+
+if ~isempty(intersect(lower(st1(:)),{'a', ...
+        'amean','amax','dr','wp','wang','torquev'}))
+ C0=getAmp(C0,Time,[],RO);
+end
+if isfield(C0,'Pressure');C0.Pressure=C0.Pressure/{1e5,'Pressure [bar]'};end
+st1(end,:)=[]; st1(1,end+1:4)={''};RO.list=st1;
 
 for j1=1:size(RO.list,1)
   st2=sprintf('%s(%s,%s)',RO.list{j1,1:3});st2=strrep(st2,',)',')');
   i2=strcmpi(st2,RO.typ(:,1)); 
   if strcmp(st2,'()'); continue;
-  elseif ~any(i2); sdtw('_nb','Missing %s',st2); 
+  elseif ~any(i2); sdtw('_nb','Missing %s',st2); %default style
     i2=size(RO.typ,1)+1;
     RO.typ(i2,:)={st2,st2,100,{'@axes',{'ygrid','on','xgrid','on'}}};
   end
@@ -1701,7 +1682,36 @@ for j1=1:size(RO.list,1)
   figure(gf);
   if gf==300;hold on;else; clf;end
   ga=get(gf,'CurrentAxes'); if isempty(ga);ga=axes('parent',gf);end
-  if ~isempty(RO.list{j1,3})
+  if strcmpi(RO.list{j1,4},'radial')
+   r2={C0.(RO.list{j1,2}) C0.(RO.list{j1,1}) C0.(RO.list{j1,3})};
+   h=cdm.radialpline(r2{:},'parent',ga,'linewidth',2);
+  elseif strcmpi(RO.list{j1,4},'wtstat')
+   %% wtstat : wheel turn statistics    
+   i1=[1;find(~isfinite(double(C0.WP)));length(C0.WP)];
+   r1=struct('ColumnName',{[{'WT','tstart'} setdiff(fieldnames(C0),{'Time','WAng','WP'},'stable')']}, ...
+       'table',[(1:length(i1)-1)' C0.Time(i1(2:end))],'name','Occ');
+   r1.ColumnName{3,2}=java.lang.String('.00');
+
+   for j3=1:length(i1)-1
+     ind=i1(j3)+1:i1(j3+1)-1;
+    for j2=3:size(r1.ColumnName,2)
+     if j3==1
+       i3=strcmpi(RO.ShortLong(:,1),r1.ColumnName{1,j2});
+       if ~any(i3);i3=strcmpi(RO.ShortLong(:,2),r1.ColumnName{1,j2});end
+       if any(i3); r1.ColumnName{3,j2}=RO.ShortLong{i3,3};end
+     end
+     r2=C0.(r1.ColumnName{1,j2})(ind);r2(~isfinite(r2))=[];
+     if isempty(r2);r1.table(j3,:)=NaN;
+     else; r1.table(j3,j2)=mean(r2);
+     end
+    end
+   end
+   r1.table(~isfinite(r1.table(:,1)),:)=[];
+   if nargout==1; out=r1;return;
+   else; r1=vhandle.tab(r1);asTab(r1);
+   end
+
+  elseif ~isempty(RO.list{j1,3})
    r2={C0.(RO.list{j1,2}) C0.(RO.list{j1,1}) C0.(RO.list{j1,3})};
    h=cdm.pline(r2{:},'parent',ga,'linewidth',2);
    ii_plp('colormapband',parula(7));axis tight; 
@@ -1749,7 +1759,7 @@ end
 if all(cellfun(@isempty,RO.Failed)); return;end
 
 dbstack; keyboard;
-
+%% obsolete commands 
 if any(sdtm.Contains(lower(RO.Failed),'pr(temp)'))
    r2=stack_get(c2,'','#^p');
    gf=sdth.urn(sprintf('figure(%i).os{@Dock,{name,SqSig},name,%i P(T),NumberTitle,off}',300*[1 1]));
@@ -1944,6 +1954,7 @@ if sdtm.Contains(lower(RO.do),'autoseg')
  stack_set(c2,'curve','EvtTime',C3);
 end
 omethod=sdth.eMethods.omethod;
+if ~isequal(projM,c2.data.nmap.nmap);sdtw('_ewt','report problem');end
 if ~isempty(projM) % Store in standard map 
  projM('SqLastSpec')=RO;
  projM('SqShape')=out;% Store result 
@@ -2135,7 +2146,35 @@ cingui('objset',13,{'@OsDic','ImSw80{@line,""}'})
 end
 
 %ylim([0 1]);xlim([25 280]);grid on
+ elseif comstr(Cam,'summary')
+ %% #viewSummary : 
 
+ li=dir(varargin{2});% xxx generic
+ RO=varargin{3}; c2=sdth.urn('Dock.Id.ci'); projM=c2.data.nmap.nmap;
+ for j1=1:length(li)
+   load(li(j1).name,'Demod');projM('SqShape')=Demod;
+   r2=d_squeal(['ViewPar' RO.ViewPar]);r2.ColumnName{1,end+1}='name';
+   r2.table=num2cell(r2.table);
+   r2.table(:,size(r2.ColumnName,2))={Demod.meta.Name};
+   if j1==1; ua=r2;
+   else; ua.table=[ua.table;r2.table];
+   end
+ end
+ ub=vhandle.tab(ua);asTab(ub);
+ C0=struct;
+ for j1=1:size(ua.ColumnName,2);
+   try; C0.(ua.ColumnName{1,j1})=vertcat(ua.table{:,j1});end
+ end
+
+ gf=sdth.urn('figure(201).os{@Dock,{name,SqSig},name,201 WT Summary,NumberTitle,off}');
+ figure(double(gf));clf;
+ cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImSw80','WrW49c'});
+ 
+ yyaxis('left');
+ plot(1:length(C0.Pressure),C0.Pressure,'.')
+ xlabel('Wheel Turn');ylabel('Pressure [Bar]');
+ yyaxis('right');
+ plot(1:length(C0.Pressure),C0.TempPad,'.');ylabel('TempPad [C]');
 
  elseif comstr(Cam,'ci')
  %% #viewCi : dock init
@@ -2752,6 +2791,9 @@ end
 function  [C0,st]=getAmp(C0,Time,st,RO);
   %% #getAmp
   if nargin==3;RO=struct;end
+  if length(Time.Xlab)>3&&isequal(Time.Xlab{3},'hdof')
+    Time.Y=Time.Y(:,:,:,1); Time.X(4)=[];Time.Xlab(4)=[]; 
+  end
   if length(Time.Xlab)~=3||~isequal(Time.Xlab{3},'hdof')
   elseif isnumeric(Time.X{2});
     r1(:,3)=abs(Time.Y(:,1)); st{3,1}='princxxx'% ;
