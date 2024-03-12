@@ -1671,20 +1671,24 @@ st1(end,:)=[]; st1(1,end+1:4)={''};RO.list=st1;
 
 for j1=1:size(RO.list,1)
   st2=sprintf('%s(%s,%s)',RO.list{j1,1:3});st2=strrep(st2,',)',')');
-  i2=strcmpi(st2,RO.typ(:,1)); 
+  iTyp=strcmpi(st2,RO.typ(:,1)); 
   if strcmp(st2,'()'); continue;
-  elseif ~any(i2); sdtw('_nb','Missing %s',st2); %default style
-    i2=size(RO.typ,1)+1;
-    RO.typ(i2,:)={st2,st2,100,{'@axes',{'ygrid','on','xgrid','on'}}};
+  elseif ~any(iTyp); sdtw('_nb','Missing %s',st2); %default style
+    iTyp=size(RO.typ,1)+1;
+    RO.typ(iTyp,:)={st2,st2,100,{'@axes',{'ygrid','on','xgrid','on'}}};
   end
-  gf=RO.typ{i2,3};
-  gf=sdth.urn(sprintf('figure(%i).os{@Dock,{name,SqSig},name,%i %s,NumberTitle,off}',gf,gf,RO.typ{i2,2}));
+  gf=RO.typ{iTyp,3};
+  gf=sdth.urn(sprintf('figure(%i).os{@Dock,{name,SqSig},name,%i %s,NumberTitle,off}',gf,gf,RO.typ{iTyp,2}));
   figure(gf);
   if gf==300;hold on;else; clf;end
   ga=get(gf,'CurrentAxes'); if isempty(ga);ga=axes('parent',gf);end
   if strcmpi(RO.list{j1,4},'radial')
    r2={C0.(RO.list{j1,2}) C0.(RO.list{j1,1}) C0.(RO.list{j1,3})};
    h=cdm.radialpline(r2{:},'parent',ga,'linewidth',2);
+  elseif strncmpi(RO.list{j1,4},'hist',4)
+   %% Amplitude bin 
+   r2={C0.(RO.list{j1,2}) C0.(RO.list{j1,1}) C0.(RO.list{j1,3})};
+   h=cdm.hist2(RO.list{j1,4},r2{:});
   elseif strcmpi(RO.list{j1,4},'wtstat')
    %% wtstat : wheel turn statistics    
    i1=[1;find(~isfinite(double(C0.WP)));length(C0.WP)];
@@ -1722,8 +1726,8 @@ for j1=1:size(RO.list,1)
   end
   if gf==300;hold off;end
    cleanFig(gf,Time,c2);  RO.back=1;
-   cingui('objset',gf,RO.typ{i2,4})
-   RO.Failed{j1}='';iimouse('on');
+   cingui('objset',gf,RO.typ{iTyp,4})
+   RO.list{j1}='';iimouse('on');
 end
 
 if isfield(RO,'ciStoreName')
@@ -1744,6 +1748,8 @@ if isfield(RO,'ciStoreName')
   r1=[.13 .2 .8 .75];c12.ax(1,6:9)=r1;set(c12.ga,'position',r1);iiplot(c12);
  end
  if any(strcmpi(RO.Failed,'polar'))
+     'xxx'
+     dbstack; keyboard; 'not failed'
   c12=get(12,'userdata');iicom(c12,'polar Comp(2)')
   C1=c12.Stack{'Parameters'};
   t=C1.X{1}(:,1);
@@ -1756,7 +1762,7 @@ if isfield(RO,'ciStoreName')
  end
 end
 
-if all(cellfun(@isempty,RO.Failed)); return;end
+if all(cellfun(@isempty,RO.list(:,1))); return;end
 
 dbstack; keyboard;
 %% obsolete commands 
@@ -2006,8 +2012,8 @@ if ~isempty(st); d_squeal(['viewpar' st]);end
   c2=sdth.urn('Dock.Id.ci');projM=c2.data.nmap.nmap;
   Time=c2.Stack{'Time'};
  end
- r1=cdm.urnVec(Time,'{x,Time}{x,RPM}');
-
+ r1=cdm.urnVec(Time,'{x,Time}{x,#RPM}');
+ 
  dt=diff(r1{1}([1 end]))/(size(r1{1},1)-1);
  r2=r1{2,1};r2(r2<=0)=1e-15;
  phi=cumsum(r2)*dt/60*2*pi;[r3,i3]=unique(phi);
@@ -2683,12 +2689,11 @@ function out=specMax(RO)
   if ob.YData(1)==0;Z(1:2,:)=NaN;end
   st=c13.ua.YFcn;   if sdtm.Contains(st,'log10(abs(r3))');Z=10.^Z;end
   try; 
-      spec=c13.Stack{'spec'}; RO.fCoef=1;
-      if isa(spec,'curvemodel')
-       RO.fCoef=spec.Source.Xlab{2}{3}.coef;
-      else
-         RO.fCoef=spec.Xlab{2}{3}.coef;
+      spec=c13.Stack{'spec'}; RO.fCoef=1;RO.fUnit='Hz';
+      if isa(spec,'curvemodel');r2=spec.Source.Xlab{2}{3};
+      else;r2=spec.Xlab{2}{3};
       end
+      RO.fCoef=r2.coef;RO.fUnit=r2.DispUnit;
   end
   f=ob.YData;t=ob.XData;
 
@@ -2701,7 +2706,8 @@ function out=specMax(RO)
 
   gf=sdth.urn('figure(101).os{@Dock,{name,SqSig},name,101 SpecMax,NumberTitle,off}');
   figure(double(gf));clf;
-  h=plot(ob.YData,r2);set(h,'linewidth',1,'marker','.');xlabel('Frequency [Hz]');ylabel('F(spectro)')
+  h=plot(ob.YData,r2);set(h,'linewidth',1,'marker','.');
+  xlabel(sprintf('Frequency [%s]',RO.fUnit));ylabel('F(spectro)')
   ga=get(h(1),'parent');set(ga,'yscale','log');legend(h,'Max','SMean');
 
   ii_plp('legend',ga,{'set','-corner .01 .99', ...
@@ -2736,6 +2742,7 @@ if 1==2
   % figure(1);imagesc(t,f(ind),Z(ind,:));set(gca,'climmode','auto')
 end
 if sdtm.regContains(RO.do,'demA','i')
+  %% peak detection 
 dbstack; keyboard; 
   Time=c13.Stack{'Time'};C3=[];
   % only keep accelerations
@@ -2781,13 +2788,81 @@ if 1==2
   Tobs=pinv(horzcat(C3.T{:}));
   Yt=Time.Y(:,strcmpi(Time.X{2}(:,2),'g'))*Tobs';
   C2=Time; C2.Y=Yt; C2.X{2}=C3.X{2};C3.Xlab{2}=C2.Xlab{2};
-d_squeal('ViewSpec{BlockSize10240 Overlap.9 fmin.5k 13k tmin 0 300,zlog}',C2);
-
+  d_squeal('ViewSpec{BlockSize10240 Overlap.9 fmin.5k 13k tmin 0 300,zlog}',C2);
 
 end
 
   if nargout>0; out=r2;end
 end
+
+function out=AutoMeta(Time,RO)
+%% #AutoMeta : fill meta information from a squeal test 
+if nargin==1
+  RO=struct; 
+end
+if ~isfield(RO,'forInfo')
+  RO.forInfo={'RPM','%.0f %.0f',@(x)[min(x) max(x)]
+    'Pressure','%.0f %.0f Bar',@(x)[min(x) max(x)]/1e5
+    'TempPad','%.0f %.0f C',@(x)[min(x) max(x)]
+    'TempDisk','%.0f %.0f C',@(x)[min(x) max(x)]
+    'Torque','%.0f %.0f Nm',@(x)[min(x) max(x)]
+    'WAng','%.1f turns',@(x)diff(x([1 end]))/2/pi
+    'Disp','%.1f %.1f micron',@(x)([min(x) max(x)]-mean(x))
+    };
+end
+dt=diff(Time.X{1}([1 end],1))/(size(Time.X{1},1)-1);
+if isfield(RO,'ClipPres')
+   r1=cdm.urnVec(Time,'{x,#Pres}');
+   if RO.ClipPres(1)<1&&isscalar(RO.ClipPres)
+    [r2,r3]=histcounts(r1{1}/1e5,1:ceil(max(r1{1})/1e5));
+    r3(find(r2>4e3,1,'first'))
+    r2=mean(r1{1})*RO.ClipPres;
+    it=find(r1{1}>r2,1,'first'):find(r1{1}>r2,1,'last');
+   elseif RO.ClipPres(1)<1 
+     %% step/amp %Use grandient 
+     it=1:round(RO.ClipPres(1)/dt):length(r1{1});
+     r2=gradient(r1{1}(it));r2(r1{1}(it)<0)=0;
+     %figure(1);semilogy(Time.X{1}(it,1),abs(r2));%abs(gradient(z(it))))
+     it=it(find(abs(r2)>RO.ClipPres(2),1,'first')+1):it(find(abs(r2)>RO.ClipPres(2),1,'last')-1);
+     [Time.Xlab{1}(:,1) num2cell(Time.X{1}(it([1 end]),:))']
+
+   else % Pascal
+    % remove parts that are too low pressure
+    it=find(r1{1}>RO.ClipPres,1,'first'):find(r1{1}>RO.ClipPres,1,'last');
+   end
+   if nnz(it)
+    Time=fe_def('subdef',Time,it);
+    i2=strcmpi(Time.Xlab{1}(:,1),'WAng');
+    off=-Time.X{1}(1,i2); Time.X{1}(:,i2)=Time.X{1}(:,i2)-off;
+    if isfield(Time,'ID')
+       % dbstack; keyboard; possibly shift
+    end
+   end
+end
+   %% AutoMeta 
+   st3=RO.forInfo;
+   [i2,i3]=ismember(st3(:,1),Time.X{2}(:,1));
+   if nnz(i3)==0
+    [i2,i3]=ismember(st3(:,1),Time.Xlab{1}(:,1));Y=Time.X{1};
+    st1=Time.Xlab{1}(:,1);
+   else; Y=Time.Y;st1=Time.X{2}(:,1); 
+   end
+   st3(~i2,:)=[];
+   for j1=1:size(st3,1)
+    x=Y(:,strcmpi(st1,st3{j1}));
+    st3{j1,4}=sprintf(st3{j1,2},st3{j1,3}(x));
+    % Drag mostly constant velocity
+    % Stop xxx
+    % xxx
+   end
+    'xxx missing type detection' % Pressure profile
+   Time.meta.info=st3(:,[1 4]);
+   Time.meta.fs=round(1/dt); Time.meta.decimate=round(Time.meta.fs/1000);
+
+   out=Time; 
+
+end
+
 function  [C0,st]=getAmp(C0,Time,st,RO);
   %% #getAmp
   if nargin==3;RO=struct;end
@@ -2798,8 +2873,9 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
   elseif isnumeric(Time.X{2});
     r1(:,3)=abs(Time.Y(:,1)); st{3,1}='princxxx'% ;
   elseif strcmpi(Time.X{2}{1},'q1R');
-   r2=squeeze((Time.Y(:,:,1)));st{3,1}=sprintf('%s [%s]',Time.X{2}{1,1:2});
-   r1(:,2+(1:size(r2,2)))=r2;
+   r2=abs(squeeze((Time.Y(:,:,1))));
+   C0.Amean={r2,sprintf('%s [%s]',Time.X{2}{1,1:2})};
+   C0.Amax={r2,sprintf('%s [%s]',Time.X{2}{1,1:2})};
   else
    [st2,~,i2]=unique(Time.X{2}(:,2));
    for j1=1:length(st2)
@@ -2827,8 +2903,15 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
     C0.WP=cdm({r2,'WP[0-4]',Time.name});  
   end
   if isfield(C0,'Amean')
-   C0.Amean=cdm(C0.Amean(contains(C0.Amean(:,2),'[g]'),:));
-   C0.Amax=cdm(C0.Amax(contains(C0.Amax(:,2),'[g]'),:));
+   i2=contains(C0.Amean(:,2),'[g]');
+   if any(i2);
+    C0.Amean=cdm(C0.Amean(i2,:));
+    C0.Amax=cdm(C0.Amax(contains(C0.Amax(:,2),'[g]'),:));
+   else
+    i2=1;
+    C0.Amean=cdm(C0.Amean(i2,:));
+    C0.Amax=cdm(C0.Amax(i2,:));
+   end
   end
 end
 
