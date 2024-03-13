@@ -1617,6 +1617,7 @@ if isfield(RO,'ciStoreName')
   RO.ciStoreName=strrep(RO.ciStoreName,'$name',Time.name);
 end
 RO.back=0;
+if carg<=nargin;RO=sdth.sfield('addmissing',varargin{carg},RO);end
 if isfield(RO,'it')% d_squeal('viewpar{a(f,p),cuSqShape,it4 7}')
    Time=fe_def('subdef',Time,@(x)x(:,1)>RO.it(1)&x(:,1)<RO.it(2));
 end
@@ -1660,12 +1661,14 @@ RO.typ={'Amean(WP,iFreq)','a(wp,f)',103, ...
     {'@axes',{'yscale','linear','ygrid','on'}}
     };
 
+RO.getDep=@getAmp;
 [C0,st2,st1]=cdm.xvec(Time,[RO.Failed;{'WAng(t)'}],RO);
-
-if ~isempty(intersect(lower(st1(:)),{'a', ...
-        'amean','amax','dr','wp','wang','torquev'}))
- C0=getAmp(C0,Time,[],RO);
+t=double(C0.Time);ind=find(diff(t)>diff(t(1:2))*3); 
+if ~isempty(ind);ind=unique([ind;ind+1]);
+ for st=fieldnames(C0);C0.(st{1}).Source.data(ind)=NaN;end
 end
+
+
 if isfield(C0,'Pressure');C0.Pressure=C0.Pressure/{1e5,'Pressure [bar]'};end
 st1(end,:)=[]; st1(1,end+1:4)={''};RO.list=st1;
 
@@ -1761,7 +1764,7 @@ if isfield(RO,'ciStoreName')
   return
  end
 end
-
+if nargout>0;out=C0;end
 if all(cellfun(@isempty,RO.list(:,1))); return;end
 
 dbstack; keyboard;
@@ -2683,8 +2686,9 @@ function out=specMax(RO)
   % feval(d_squeal('@specMax'),struct('do',{'demA'},'gMin',1))
 
   if nargin==0;RO=struct('do',{''});end
-  
+  if ~isfield(RO,'do');RO.do={''};end
   c13=get(13,'userdata');  ob=handle(c13.ua.ob(1));
+  if isfield(RO,'filt')&&contains(RO.filt,'f50');cdm.viewFilt('f50',13);end
   if isprop(ob,'ZData');Z=ob.ZData; else;Z=ob.CData;end
   if ob.YData(1)==0;Z(1:2,:)=NaN;end
   st=c13.ua.YFcn;   if sdtm.Contains(st,'log10(abs(r3))');Z=10.^Z;end
@@ -2703,11 +2707,12 @@ function out=specMax(RO)
   i5=find(rem(f,50*RO.fCoef)==0);i5=[i5 i5-1 i5+1];i5(i5==0)=1;i5(i5>length(f))=length(f);
   r2(i5(:,1),2)=(r2(i5(:,2),2)+r2(i5(:,3),2))/2; 
 
-
   gf=sdth.urn('figure(101).os{@Dock,{name,SqSig},name,101 SpecMax,NumberTitle,off}');
-  figure(double(gf));clf;
+  figure(double(gf));
+  if isfield(RO,'hold');hold(RO.hold);else; clf;end
   h=plot(ob.YData,r2);set(h,'linewidth',1,'marker','.');
-  xlabel(sprintf('Frequency [%s]',RO.fUnit));ylabel('F(spectro)')
+  xlabel(sprintf('Frequency [%s]',RO.fUnit));
+  ylabel(sprintf('Spectro [%.1f - %.1f s]',min(t),max(t)))
   ga=get(h(1),'parent');set(ga,'yscale','log');legend(h,'Max','SMean');
 
   ii_plp('legend',ga,{'set','-corner .01 .99', ...
@@ -2741,6 +2746,7 @@ if 1==2
   end
   % figure(1);imagesc(t,f(ind),Z(ind,:));set(gca,'climmode','auto')
 end
+
 if sdtm.regContains(RO.do,'demA','i')
   %% peak detection 
 dbstack; keyboard; 
