@@ -473,7 +473,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
      def.defL=C1.T*def.defL;
     end
    end
-   out=def;
+   out=def; if nargout>1; out1=mo1; end
 
   else
    %% #SolveModesNL -3
@@ -533,6 +533,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    '-normE(#3#"renorm with elastic matrices")' ...
    '-TimeCont(#%s#"initialize for continuation")' ...
    '-Merge(#%g#"indices of NL to be merged")' ...
+   '-q0(#3#"add static state in reduction basis")' ...
    ],{RO,CAM}); Cam=lower(CAM);
 
   if RO.minrio
@@ -557,7 +558,19 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
     TR=struct('DOF',def.DOF,'def',TR,'data',def.data);
 
    end
+
+  elseif isfield(def,'TR'); TR=def.TR;
+  else; error('Need to define a reduction basis')
   end % stra
+
+  if RO.q0
+   q0=stack_get(SE,'curve','q0','get');
+   if ~isempty(q0)
+    q0=feutilb('placeindof',TR.DOF,q0);
+    TR.def=[TR.def q0.def]; TR.data(end+1,1)=0;
+   end
+   RO.q0='m';
+  end
 
   if RO.normE % xxx post renorm with elastic matrices only
    % I guess this is needed for diagonal modal newmark
@@ -572,21 +585,34 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    SEf=SE;
    SE=nlutil('HrRedNL',SE,TR,RO);
    % else; % we would call fe_reduc for a redefined assembly
-   while nnz(SE.K{end}==0);
-       i1=length(SE.K);SE.K(i1)=[];SE.Klab(i1)=[];SE.Opt(:,i1)=[];
+   while nnz(SE.K{end}==0); 
+    i1=length(SE.K);SE.K(i1)=[];SE.Klab(i1)=[];SE.Opt(:,i1)=[];
    end
   end
   if 1==2 % Recheck cpx mode / matrices
-   dd=d_squeal('SolveModes',SEf); [dd.data(:,1:2) def.data(1:20,1:2)]
-   % xxx you won't get it with fe_ceig due to matrix9 that is not symmetric
-   mo1=SEf;  NL=mo1.NL{end};NL.b=sdth.GetData(NL.b);NL.c=sdth.GetData(NL.c);
-   ic=ismember(mo1.Opt(2,:),[3 7 70 11]);mo1.Klab(ic)
-   ik=ismember(mo1.Opt(2,:),[1 5 8 9]);mo1.Klab(ik)
-   K={feutilb('sumkcoef',mo1.K,ismember(mo1.Opt(2,:),[2 10]))
-    feutilb('sumkcoef',mo1.K,ic)
-    feutilb('sumkcoef',mo1.K,ik)
-    }'; def=fe_ceig(horzcat(K,SE.DOF),[1 5 20 1e3]);def.data
-   full(NL.b(:,1:3:end)*speye(size(NL.b,2)/3)*NL.c(1:4:end,:))
+   %SE.NL{1,3}=feval(nl_contact('@legToChandle'),SE.NL{1,3},SE); SE.NL(:,4)=[]
+   ddf=d_squeal('SolveModes',SEf); [ddf.data(:,1:2) def.data(1:20,1:2)]
+   %dd=d_squeal('SolveModes',SE); [dd.data(:,1:2) def.data(1:20,1:2)]
+   SE2=SE; % check reduction with original states
+   SE2=feval(nl_spring('@JacAdd'),SE2,SE2.NL,'sumcat')
+   SE2=sdtm.rmfield(SE2,'FNLDOF','FNL','FNLlab','NL');
+   ddr=d_squeal('SolveModes',stack_set(SE2,'SE','MVR',SE2));
+   [ddr.data(1,:) def.data(18,:)]
+
+   % FNLDOF StoreType3 only for contact at the moment
+   SE3=SE; %SE3.FNL=SEf.FNL; SE3.FNLlab=SEf.FNLlab; SE3.FNLDOF=SEf.FNLDOF;
+   SE3.NL(:,4)=[]
+   %SE3=stack_set(SE3,'curve','q0',rmfield(q0r,'FNL'));
+   RC=struct('backTgtMdl',2,'sepKj',1)
+   [dd]=d_squeal('SolveModes',SE3,RC); SE3t=dd.SE; dd=dd.Mode
+   [dd.data(:,1:2) ddr.data(:,1:2)] 
+   [SE3t.NL{1,4}{1,3} SEf.NL{1,4}{1,3}]
+
+
+SE3.NL{1,3}=feval(nl_contact('@legToChandle'),SE3.NL{1,3},SE3); 
+[dd]=d_squeal('SolveModes',SE3,RC); SE3t=dd.SE; dd=dd.Mode
+ [dd.data(:,1:2) ddr.data(:,1:2)] 
+ 
   end
 
    if ~isempty(RO.TimeCont)
@@ -600,7 +626,8 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
     if length(SE.K)>3; in1=3+find(cellfun(@nnz,SE.K(4:end))==0);
      SE.K(in1)=[];SE.Klab(in1)=[];SE.Opt(:,in1)=[];
     end
-    SE.NL{end,3}.iopt(1)=0;SE.NL{end,3}.FInd=0;SE.NL{end,3}.iotp(4)=0;'xxx iopt'
+    SE.NL{end,3}.iopt(1)=0;SE.NL{end,3}.FInd=0;SE.NL{end,3}.iopt(4)=0;'xxx iopt'
+    SE.NL{end,3}.iopt(3)=4;
     i3=SE.NL{end,3}.iopt;
     i3=sum(i3(3:4)+i3(3))*i3(5); % xxx StoreType
     SE.FNL(i3,1)=0;SE.FNLlab(end+1:i3)={''};SE.FNLDOF(end+1:i3)=0;
