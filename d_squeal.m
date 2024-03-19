@@ -1495,7 +1495,10 @@ elseif comstr(Cam,'specevt')
 elseif comstr(Cam,'spec');[CAM,Cam]=comstr(CAM,5);
 %% #ViewSpec _tro : standardized viewing of base spectrogram 
 c2=sdth.urn('Dock.Id.ci');Time=stack_get(c2,'curve','Time','g');
-projM=c2.data.nmap.nmap;
+projM=c2.data;
+if isfield(projM,'nmap');projM=projM.nmap.nmap;
+else;projM=vhandle.nmap;c2.data.nmap=struct('nmap','projM');
+end
 if isempty(Cam)
   m1=c2.Stack{'curData'};if isempty(m1);m1=c2.Stack{'Time'}.meta;end
   st=m1.views;st=st{sdtm.regContains(st,'ViewSpec')};
