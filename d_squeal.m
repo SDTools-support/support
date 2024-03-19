@@ -590,6 +590,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    end
   end
   if 1==2 % Recheck cpx mode / matrices
+   %SE.NL{1,3}=feval(nl_contact('@legToChandle'),SE.NL{1,3},SE); SE.NL(:,4)=[]
    ddf=d_squeal('SolveModes',SEf); [ddf.data(:,1:2) def.data(1:20,1:2)]
    %dd=d_squeal('SolveModes',SE); [dd.data(:,1:2) def.data(1:20,1:2)]
    SE2=SE; % check reduction with original states
@@ -607,6 +608,11 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    [dd.data(:,1:2) ddr.data(:,1:2)] 
    [SE3t.NL{1,4}{1,3} SEf.NL{1,4}{1,3}]
 
+
+SE3.NL{1,3}=feval(nl_contact('@legToChandle'),SE3.NL{1,3},SE3); 
+[dd]=d_squeal('SolveModes',SE3,RC); SE3t=dd.SE; dd=dd.Mode
+ [dd.data(:,1:2) ddr.data(:,1:2)] 
+ 
   end
 
    if ~isempty(RO.TimeCont)
