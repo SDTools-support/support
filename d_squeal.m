@@ -563,7 +563,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
   else; error('Need to define a reduction basis')
   end % stra
 
-  if RO.q0
+  if RO.q0 % add q0 reduction basis
    q0=stack_get(SE,'curve','q0','get');
    if ~isempty(q0)
     q0=feutilb('placeindof',TR.DOF,q0);
@@ -589,30 +589,57 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
     i1=length(SE.K);SE.K(i1)=[];SE.Klab(i1)=[];SE.Opt(:,i1)=[];
    end
   end
+
   if 1==2 % Recheck cpx mode / matrices
-   %SE.NL{1,3}=feval(nl_contact('@legToChandle'),SE.NL{1,3},SE); SE.NL(:,4)=[]
+   % check modes before HR
    ddf=d_squeal('SolveModes',SEf); [ddf.data(:,1:2) def.data(1:20,1:2)]
-   %dd=d_squeal('SolveModes',SE); [dd.data(:,1:2) def.data(1:20,1:2)]
-   SE2=SE; % check reduction with original states
+   % check reduction with original states
+   SE2=SE;
    SE2=feval(nl_spring('@JacAdd'),SE2,SE2.NL,'sumcat')
    SE2=sdtm.rmfield(SE2,'FNLDOF','FNL','FNLlab','NL');
    ddr=d_squeal('SolveModes',stack_set(SE2,'SE','MVR',SE2));
    [ddr.data(1,:) def.data(18,:)]
 
    % FNLDOF StoreType3 only for contact at the moment
+   % Check w/ evalFNL on legacy NL
    SE3=SE; %SE3.FNL=SEf.FNL; SE3.FNLlab=SEf.FNLlab; SE3.FNLDOF=SEf.FNLDOF;
    SE3.NL(:,4)=[]
    %SE3=stack_set(SE3,'curve','q0',rmfield(q0r,'FNL'));
    RC=struct('backTgtMdl',2,'sepKj',1)
    [dd]=d_squeal('SolveModes',SE3,RC); SE3t=dd.SE; dd=dd.Mode
-   [dd.data(:,1:2) ddr.data(:,1:2)] 
-   [SE3t.NL{1,4}{1,3} SEf.NL{1,4}{1,3}]
+   [dd.data(:,1:2) ddr.data(:,1:2)]
+   max(abs([SE3t.NL{1,4}{1,3}-SEf.NL{1,4}{1,3}]))
 
+   % check with chandle and evalFNL
+   SE3.NL{1,3}=feval(nl_contact('@legToChandle'),SE3.NL{1,3},SE3);
+   [dd]=d_squeal('SolveModes',SE3,RC); SE3t=dd.SE; dd=dd.Mode
+   [dd.data(:,1:2) ddr.data(:,1:2)]
+   
+  end
 
-SE3.NL{1,3}=feval(nl_contact('@legToChandle'),SE3.NL{1,3},SE3); 
-[dd]=d_squeal('SolveModes',SE3,RC); SE3t=dd.SE; dd=dd.Mode
- [dd.data(:,1:2) ddr.data(:,1:2)] 
- 
+  % transform NL to chandle at his stage for now
+  if isfield(SE,'NL')
+   i1=ismember(SE.NL(:,1),'nl_contact');
+   for j1=find(i1(:)')
+    SE.NL{j1,3}=feval(nl_contact('@legToChandle'),SE.NL{j1,3},SE);
+   end
+  end
+
+  if 1==2
+   % things to sort
+   % check final stability
+   RC=struct('backTgtMdl',2,'sepKj',1,'betaR',1e-9)
+   [dd]=d_squeal('SolveModes',SE,RC); SE3t=dd.SE; dd=dd.Mode
+   [dd.data(1,:) def.data(18,:)]
+   % reeval FNL
+   q0=stack_get(SE,'curve','q0','get'); q0.data=0;
+   q01=nl_solve('deffnl',SE,q0)
+   SE=stack_set(SE,'curve','q0',q01)
+
+   %SE.Stack{end-1,3}.Rayleigh=[0 1e-9]; % should be ok in timeopt
+
+   % check static equilibrium
+
   end
 
    if ~isempty(RO.TimeCont)
@@ -622,15 +649,11 @@ SE3.NL{1,3}=feval(nl_contact('@legToChandle'),SE3.NL{1,3},SE3);
     end
     if ~isfield(SE,'nmap');SE.nmap=vhandle.nmap;end
     SE.nmap('LastContinue')='do';
-    % xxx matrices handling
-    if length(SE.K)>3; in1=3+find(cellfun(@nnz,SE.K(4:end))==0);
-     SE.K(in1)=[];SE.Klab(in1)=[];SE.Opt(:,in1)=[];
-    end
-    SE.NL{end,3}.iopt(1)=0;SE.NL{end,3}.FInd=0;SE.NL{end,3}.iopt(4)=0;'xxx iopt'
-    SE.NL{end,3}.iopt(3)=4;
-    i3=SE.NL{end,3}.iopt;
-    i3=sum(i3(3:4)+i3(3))*i3(5); % xxx StoreType
-    SE.FNL(i3,1)=0;SE.FNLlab(end+1:i3)={''};SE.FNLDOF(end+1:i3)=0;
+      %SE.NL{end,3}.iopt(1)=0;SE.NL{end,3}.FInd=0;SE.NL{end,3}.iopt(4)=0;'xxx iopt'
+      %SE.NL{end,3}.iopt(3)=4;
+      %i3=SE.NL{end,3}.iopt;
+      %i3=sum(i3(3:4)+i3(3))*i3(5); % xxx StoreType
+      %SE.FNL(i3,1)=0;SE.FNLlab(end+1:i3)={''};SE.FNLDOF(end+1:i3)=0;
     % now first run
     % figure(1);NL=SE.NL{end}; plot(sort(NL.vnl(2,:,2)))
     %SE.FNL=model.FNL+0; SE.FNLlab=model.FNLlab; SE.FNLDOF=model.FNLDOF
