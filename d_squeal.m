@@ -628,14 +628,14 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
 
   if 1==2
    % things to sort
-   % check final stability
+   % check final stability with BetaK 
    RC=struct('backTgtMdl',2,'sepKj',1,'betaR',1e-8)
    [dd]=d_squeal('SolveModes',SE,RC); SE3t=dd.SE; dd=dd.Mode
    [dd.data(1,:) def.data(18,:)]
-   % reeval FNL
+   % reeval FNL, and set FcEq to balance static forces (from static to dynamic model)
    q0=stack_get(SE,'curve','q0','get'); q0.data=0; %q0.def(1:2)=0; 
    [q01,r1]=nl_solve('deffnl-getRes',SE,q0)
-   q01.def(:,2)=[1e-6;0;0];
+   q01.def(:,2)=[1e-6;0;0]; % that would be v0
    SE=stack_set(SE,'curve','q0',q01)
 SE.Load.DOF=SE.DOF; SE.Load.def=r1; SE.Load.lab{1}='steq';
    %SE.Stack{end-1,3}.Rayleigh=[0 1e-9]; % should be ok in timeopt
