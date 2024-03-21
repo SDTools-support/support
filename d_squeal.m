@@ -577,6 +577,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    TR=feutilb('placeindof',SE.DOF,TR);
    K=feutilb('tkt',TR.def,SE.K);
    d1=fe_eig({K{1},K{3},[]},2);
+   %[gg,wj]=fe_norm(TR.def,SE.K{1},SE.K{3});
    TR.def=TR.def*d1.def;
   end
 
@@ -628,14 +629,15 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
   if 1==2
    % things to sort
    % check final stability
-   RC=struct('backTgtMdl',2,'sepKj',1,'betaR',1e-9)
+   RC=struct('backTgtMdl',2,'sepKj',1,'betaR',1e-8)
    [dd]=d_squeal('SolveModes',SE,RC); SE3t=dd.SE; dd=dd.Mode
    [dd.data(1,:) def.data(18,:)]
    % reeval FNL
-   q0=stack_get(SE,'curve','q0','get'); q0.data=0;
-   q01=nl_solve('deffnl',SE,q0)
+   q0=stack_get(SE,'curve','q0','get'); q0.data=0; %q0.def(1:2)=0; 
+   [q01,r1]=nl_solve('deffnl-getRes',SE,q0)
+   q01.def(:,2)=[1e-6;0;0];
    SE=stack_set(SE,'curve','q0',q01)
-
+SE.Load.DOF=SE.DOF; SE.Load.def=r1; SE.Load.lab{1}='steq';
    %SE.Stack{end-1,3}.Rayleigh=[0 1e-9]; % should be ok in timeopt
 
    % check static equilibrium
