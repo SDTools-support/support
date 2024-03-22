@@ -534,12 +534,13 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    '-TimeCont(#%s#"initialize for continuation")' ...
    '-Merge(#%g#"indices of NL to be merged")' ...
    '-q0(#3#"add static state in reduction basis")' ...
+   '-steq(#3#"add static equilibrium force")' ...
    ],{RO,CAM}); Cam=lower(CAM);
 
   if RO.minrio
    %% #doMinRIO reduction basis generation as post -3
    [u1,i1]=min(def.data(:,2));
-   if 1==2 % #ToDo24/02_timesqueal -3  
+   if 1==2 % #ToDo24/02_timesqueal -3
      NL=model.NL{1,3}; li=model.NL{1,4} % list of implicit jacobian
      % Z=
      % Z\psi = 0 ? 
@@ -570,6 +571,12 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
     TR.def=[TR.def q0.def]; TR.data(end+1,1)=0;
    end
    RO.q0='m';
+   if 1==2
+    TRn=RO.nmap('TRn'); 
+    c1=fe_c(TRn.DOF,model.Case.DOF);
+    TRn.def=TRn.def-model.Case.T*(model.K{1}*c1*TR.def*TR.def'*TRn.def);
+    TR.def=[TR.def TRn.def];
+   end
   end
 
   if RO.normE % xxx post renorm with elastic matrices only
@@ -626,46 +633,47 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    end
   end
 
+
+  if RO.steq
+   % reeval FNL, and set FcEq to balance static forces (from static to dynamic model)
+   q0=stack_get(SE,'curve','q0','get'); q0.data=0; %q0.def(1:2)=0; 
+   [q01,r1]=nl_solve('deffnl-getRes',SE,q0)
+   SE=stack_set(SE,'curve','q0',q01);
+   SE.Load.DOF=SE.DOF; SE.Load.def=r1; SE.Load.lab{1}='steq';
+  end
+
   if 1==2
    % things to sort
    % check final stability with BetaK 
    RC=struct('backTgtMdl',2,'sepKj',1,'betaR',1e-8)
    [dd]=d_squeal('SolveModes',SE,RC); SE3t=dd.SE; dd=dd.Mode
    [dd.data(1,:) def.data(18,:)]
-   % reeval FNL, and set FcEq to balance static forces (from static to dynamic model)
-   q0=stack_get(SE,'curve','q0','get'); q0.data=0; %q0.def(1:2)=0; 
-   [q01,r1]=nl_solve('deffnl-getRes',SE,q0)
+   % intial speed ?
+   q0=stack_get(SE,'curve','q0','get');
    q01.def(:,2)=[1e-6;0;0]; % that would be v0
    SE=stack_set(SE,'curve','q0',q01)
-SE.Load.DOF=SE.DOF; SE.Load.def=r1; SE.Load.lab{1}='steq';
-   %SE.Stack{end-1,3}.Rayleigh=[0 1e-9]; % should be ok in timeopt
 
-   % check static equilibrium
+   % check static equilibrium looks ok
 
   end
 
-   if ~isempty(RO.TimeCont)
-    %% #SolveRedOpt.TimeCont prepare time continue at TimeRed exit
-    if comstr(RO.TimeCont,'{')
-     SE=d_fetime('TimeOpt',struct('urn',RO.TimeCont(2:end-1)),SE);
-    end
-    if ~isfield(SE,'nmap');SE.nmap=vhandle.nmap;end
-    SE.nmap('LastContinue')='do';
-      %SE.NL{end,3}.iopt(1)=0;SE.NL{end,3}.FInd=0;SE.NL{end,3}.iopt(4)=0;'xxx iopt'
-      %SE.NL{end,3}.iopt(3)=4;
-      %i3=SE.NL{end,3}.iopt;
-      %i3=sum(i3(3:4)+i3(3))*i3(5); % xxx StoreType
-      %SE.FNL(i3,1)=0;SE.FNLlab(end+1:i3)={''};SE.FNLDOF(end+1:i3)=0;
-    % now first run
-    % figure(1);NL=SE.NL{end}; plot(sort(NL.vnl(2,:,2)))
-    %SE.FNL=model.FNL+0; SE.FNLlab=model.FNLlab; SE.FNLDOF=model.FNLDOF
-    [d2,mo3]=fe_time(SE); %iicom('curveinit','def',d2)
-    
-    if norm(d2.def,'Inf')>1e100; error('Diverged');end
-
-    co2=SE.nmap('LastContinue'); sdtm.store(RO)%iigui(RO,'setInNmap');
-    clear out; return;
+  if ~isempty(RO.TimeCont)
+   %% #SolveRedOpt.TimeCont prepare time continue at TimeRed exit
+   if comstr(RO.TimeCont,'{')
+    SE=d_fetime('TimeOpt',struct('urn',RO.TimeCont(2:end-1)),SE);
    end
+   if ~isfield(SE,'nmap');SE.nmap=vhandle.nmap;end
+   SE.nmap('LastContinue')='do';
+   % now first run
+   % figure(1);NL=SE.NL{end}; plot(sort(NL.vnl(2,:,2)))
+   %SE.FNL=model.FNL+0; SE.FNLlab=model.FNLlab; SE.FNLDOF=model.FNLDOF
+   [d2,mo3]=fe_time(SE); %iicom('curveinit','def',d2)
+
+   if norm(d2.def,'Inf')>1e100; error('Diverged');end
+
+   co2=SE.nmap('LastContinue'); sdtm.store(RO)%iigui(RO,'setInNmap');
+   clear out; return;
+  end
 
 
    out=SE;
