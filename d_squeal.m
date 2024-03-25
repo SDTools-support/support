@@ -650,7 +650,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    [dd.data(1,:) def.data(18,:)]
    % intial speed ?
    q0=stack_get(SE,'curve','q0','get');
-   q01.def(:,2)=[1e-6;0;0]; % that would be v0
+   q01.def(:,2)=[1e-7;0;0]; % that would be v0
    SE=stack_set(SE,'curve','q0',q01)
 
    % check static equilibrium looks ok
