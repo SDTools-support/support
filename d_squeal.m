@@ -2790,10 +2790,12 @@ function out=specMax(RO)
   else
    [r3,i3]=max(Z,[],1);
    [N,X]=hist(i3,round(length(i3)/10));
-   RO.iOcc=round(X(sdtpy.find_peaks(N,'height',max(N)/30,'prominence',1)));RO.fOcc=f(RO.iOcc);
-   %figure(13);h=line(r3.X{1},r3.Y(:,1),'color','r');
-   % RO.iOcc=sdtpy.find_peaks(log10(r2(:,2)),'prominence',.5);RO.fOcc=f(RO.iOcc);
-   fprintf('Found occurences %s\n',sdtm.toString(RO.fOcc(:)'/RO.fCoef))
+   try
+    RO.iOcc=round(X(sdtpy.find_peaks(N,'height',max(N)/30,'prominence',1)));RO.fOcc=f(RO.iOcc);
+    %figure(13);h=line(r3.X{1},r3.Y(:,1),'color','r');
+    % RO.iOcc=sdtpy.find_peaks(log10(r2(:,2)),'prominence',.5);RO.fOcc=f(RO.iOcc);
+    fprintf('Found occurences %s\n',sdtm.toString(RO.fOcc(:)'/RO.fCoef))
+   end
   end
 
 if 1==2
