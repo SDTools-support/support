@@ -1654,14 +1654,14 @@ else;% If spectro
  else; % Update needed
   r2=specMax;
  end
- [~,i2]=max(r2);
+ [~,i2]=max(r2(:,1));
  RO.f=C2.X{2}(i2); out=RO; 
 end 
 
 c2.os_('p.','ImToFigN','ImSw80','WrW49c');c13.os_('p.','ImToFigN','ImSw80','WrW49c');
 
 iimouse('interacturn',13,menu_generation('interact.surf3d'));
-nmap=c2.data.nmap.nmap;
+nmap=sdth.urn(sprintf('iiplot(%i).nmap',c2.opt(1)));
 out.SpecEdit=spec.Source.Edit; % Save handle to spec parameters
 out.Time=Time;
 nmap('SqLastSpec')=out; % Save context of last spec
@@ -1986,7 +1986,7 @@ if RO.back; return;end
 if carg>nargin||comstr(Cam,'instfreq{') 
  c2=sdth.urn('Dock.Id.ci'); 
  Time=c2.Stack{'Time'};% (SqLastSpec).Time is preemptive 
- projM=c2.data.nmap.nmap; 
+ projM=sdth.urn(sprintf('iiplot(%i).nmap',c2.opt(1))); 
  RO=useOrDefault(projM,'InstFreq');
  if isempty(RO);RO=sdtm.pcin('gr.IFreq','uo');end
 
@@ -2948,6 +2948,7 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
    C0.Amean={r2,sprintf('%s [%s]',Time.X{2}{1,1:2})};
    C0.Amax={r2,sprintf('%s [%s]',Time.X{2}{1,1:2})};
   else
+   if size(Time.X{2},2)==1;Time.X{2}(:,2)={''};end
    [st2,~,i2]=unique(Time.X{2}(:,2));
    for j1=1:length(st2)
     C0.Amean(j1,1:2)={sqrt(sum(abs(Time.Y(:,i2==j1,1)).^2,2)) sprintf('Amean [%s]',st2{j1})};
