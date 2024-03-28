@@ -101,8 +101,8 @@ disp([{'CT';'CS'} num2cell([CT;CS])])
 %% EndSource EndTuto
 
 elseif comstr(Cam,'tutoshearpatch')
-    
 %% #TutoShearPatch : Piezoelectric shear patch - statics -2
+
 % see sdtweb pz_basics#pz_patch_num_shear 
 %
 %% BeginSource sdtweb('_example','pz_theory.tex#pz_patch_num_shear')
@@ -1415,14 +1415,13 @@ iicom(ci,'CurveInit','P1-MFC homogenization',out);
 else; error('Script%s unknown',CAM);
     
 end
-%% #Mesh -------------------------------------------------------------------
+
 elseif comstr(Cam,'mesh');[CAM,Cam]=comstr(CAM,5);
+%% #Mesh -------------------------------------------------------------------
 
 if comstr(Cam,'patch');[CAM,Cam]=comstr(CAM,6);
-% -----------------------------------------------------------------------
-% -----------------------------------------------------------------------
-% -----------------------------------------------------------------------
 %% #MeshPatch : generic patch using volume elements
+
 if carg<=nargin&&isstruct(varargin{carg});RO=varargin{carg};carg=carg+1;
 else; RO=struct;
 end
@@ -1508,9 +1507,6 @@ out=model;  % Send output to out variable
 if nargout>1; out1=RO; end % Send MeshInfo back
 
 elseif comstr(Cam,'pic181disk');[CAM,Cam]=comstr(CAM,6);
-% -----------------------------------------------------------------------
-% -----------------------------------------------------------------------
-% -----------------------------------------------------------------------
 %% #MeshPIC181disk : mesh a disk made of PIC181 bulk piezo
 
 % Parameter handling
@@ -1810,8 +1806,9 @@ else; out=model;
 end
 out1=RO;
 
-%% #MeshBaseAccel: basic acceleromter mesh
+
 elseif comstr(Cam,'baseaccel')
+%% #MeshBaseAccel: basic acceleromter mesh
 
 % Mesh
 model=feutil('object quad 1 1',[0 0 0;5 0 0;0 0 3],4,2);
@@ -1858,8 +1855,9 @@ if nargout==0; feplot(model);fecom colordatamat
 else; out=model;
 end
 
-%% #MeshPiezoShaker: calibration of a piezo with a shaker
+
 elseif comstr(Cam,'piezoshaker')
+%% #MeshPiezoShaker: calibration of a piezo with a shaker
 
 % Mesh
 model=feutil('object quad 4 4',      [0 0   0;10 0 0;0 0 -10],8,2);
@@ -1929,9 +1927,11 @@ if nargout==0; feplot(model);fecom colordatamat
 else; out=model;
 end  
 
-%% #MeshLangConcrete: Langevin Transducer in concrete
+
 
 elseif comstr(Cam,'langconcrete')
+%% #MeshLangConcrete: Langevin Transducer in concrete
+
 % Mesh
 model=feutil('object quad 1 1',      [0 0   0;25 0 0;0 0 19],8,5);
 model=feutil('object quad 2 2',model,[0 0   19;25 0 0;0 0  2],8,2);
@@ -1974,11 +1974,9 @@ if nargout==0; feplot(model);fecom colordatamat
 else; out=model;
 end  
     
-
-    
-%% #MeshIDEPatch : patch with inter digitated electrodes 
 elseif comstr(Cam,'ide')
-    
+%% #MeshIDEPatch : patch with inter digitated electrodes     
+
 % Parameter handling
 [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
    ' lx(400e-6#%g#"patch width")'...
@@ -2617,14 +2615,13 @@ model.unit='SI';
 dbstack; keyboard
 
 elseif comstr(Cam,'baffledpiston'); [CAM,Cam]=comstr(CAM,14);
-    %% #MeshBaffledPiston : mesh a circular piston
+    %% #MeshBaffledPiston : mesh a circular piston -2
     
 
 
 % -----------------------------------------------------------------------
 % -----------------------------------------------------------------------
 % -----------------------------------------------------------------------
-%% #MeshPatch : generic patch using volume elements
 if carg<=nargin&&isstruct(varargin{carg});RO=varargin{carg};carg=carg+1;
 else; RO=struct;
 end
@@ -2659,7 +2656,7 @@ model.Node(:,5:7)=model.Node(:,5:7)/1000; model.unit='SI'; % go to m
 
 
 
-%% #MeshEnd
+%% #MeshEnd 
 else;error('Mesh%s unknown',CAM);
 end
 
@@ -2844,6 +2841,141 @@ end
 else;error('Mat%s unknown',CAM);
 end
 
+
+%% #Figstyles --------------------------------------------------------------
+
+elseif comstr(Cam,'setplotwd');[CAM,Cam]=comstr(CAM,7);
+%% #SetPlotWD : defines default dir for figures -2
+ sdtroot('setproject',struct('PlotWd', ...
+   fullfile(fileparts(which('d_piezo')),'../figures'),'Report',''));
+
+ % xxxAD for SDTools the expected directory is project/plots or tex/plots OK for you ?
+
+elseif comstr(Cam,'definestyles');[CAM,Cam]=comstr(CAM,11);
+    %% #DefineStyles: defines default styles for feplot and iiplot figures -2
+    
+sdtroot('SetOsDic',{
+    'cms_wide',{'Position',[NaN NaN 800 600]} % ImSw100 ImSw80{@line,""} : removes the @line part of the style ImSw80
+    'cms_tall',{'Position',[NaN NaN 600 800]}
+    'cms_tw',{'Position',[NaN NaN 800 800]}
+    'cms_f14' ,{'@axes',{'fontsize',14},'@title',{'fontsize',14},'@ii_legend',{'fontsize',14}}
+    'cms_grid',{'@axes',{'xgrid','on','ygrid','on','zgrid','on'}}});
+li=sdtroot('cbosdicget',[],'cms_grid')
+sdtm.toString(sdtroot('cbosdicget',[],'ImSw80'))
+% d_piezo('reset') ProjectWd='@tempdir/sdtdemos/piezo' 
+% To change transparency
+sdtroot('setosdic',{'FiAlpha',{'@PlotInfo',{'sel-linface','','showpatch','','coloredgealpha.5','','colorfacealpha.1',''}}})
+
+elseif comstr(Cam,'setstyle');[CAM,Cam]=comstr(CAM,8);
+  %% #SetStyle: apply style to a feplot or iiplot -2
+    
+ curfh=varargin{2};
+ d_piezo('DefineStyles'); % Not very smart but robust
+
+    %Apply style to figure for output % xxxAD needs to be replaced by
+    %cf.osd calls
+    if curfh.opt(1,3)==3 % setslyle.feplot This is a feplot
+        % xxxAd
+     cf=curfh;
+     cf.osd_('cms_wide','LgMl-FontSize14','FnI') % size/ratio + Legend type (LgMl=model+defo title) 14pt + Output file name based on ii_legend
+     % LgMl{Fontsize,14,FontFace,bold} % xxx a faire 
+     feplot(cf);
+    
+     % for feplot add triax with 14 pt text
+     fecom('triaxon','@text',{'Fontsize',14});
+
+     
+    else % setstyle.iiplot
+     ci=curfh;
+     ci.osd_('cms_wide','cms_grid')
+     ci.ua.axProp={'@OsDic',{'cms_f14'}};% Needs to be done for each channel
+     
+     ci.os_({'@axes',{'linewidth',1},'@line',{'linewidth',2}})
+     comgui('imftitle',ci); iiplot % for refresh
+     ci.os_('@OsDic(SDT Root)',{'FnIy2'})
+
+    end    
+    
+    %xxxAD : this should be predefined using styles 
+    if size(varargin)>2
+     fname=varargin{3};
+         cingui('plotwd',curfh,'FileName',{'@Plotwd',fname,'.jpeg'},...
+     'printOpt',{'-r600'}) ;
+    end
+    
+    % No change of style for figure output
+    curfh.os_('FgWysiwyg');
+    %% #FigstylesEnd -2
+
+%% #Oldstyles (obsolete) ---------------------------------------------------
+elseif comstr(Cam,'im')
+
+% see also sdtweb('nida13','imw'), sdtweb('oscarui','imw')
+ if nargin==2&&~isstruct(varargin{2}) % generate the calling string
+   %comp12t('imw','Dispersion_.png')
+   pw0=pwd;
+   if ~ischar(varargin{2}); % Apply reshaping to figure
+     gf=varargin{2};if isa(gf,'sdth');cf=gf; gf=gf.opt(1);end
+     if ~ishandle(gf);figure(gf);plot([0 1]);end
+     val=d_piezo(CAM);
+     [st1,st2]=fileparts(pwd);
+     if strcmpi(st2,'tex'); % force plotwd here
+      val=[val {'@PlotWd',fullfile(pwd,'plots')}];       
+     end
+     if strcmpi(get(gf,'tag'),'iiplot');
+        ci=get(gf,'userdata'); ci.ua.axProp=val;iiplot(ci);
+     else; cingui('objset',gf,val)
+     end
+   elseif strcmpi(varargin{2},'.') 
+    %% oscarui('imfw','.')
+    st=sprintf('imwrite-objSet"@oscarui(''%s'')"-ftitle',varargin{1});
+    comgui(st);
+   else
+       dbstack;keyboard
+    cd(nida13('wd','plots'));
+    st=sprintf('imwrite-objSet"@nida13(''%s'')"-ftitle%s',varargin{1:2});
+    comgui(st);
+    cd(pw0);
+   end
+ % z=sdt_table_generation('Rep');comstr(z{strcmpi(z(:,1),'LargeWide'),3},-30)
+ elseif comstr(Cam,'imxfa1') 
+ % #ImXFA1 : basic display of transfers -2
+   out={'@figure',{'position',[NaN,NaN,800,481]},'@exclude',{'legend.*'}, ...
+       '@text',{'FontSize',14},'@axes',{'FontSize',14,'box','on','position',[.13 .15 .775 .815]}, ...
+       '@xlabel',{'FontSize',14},'@ylabel',{'FontSize',14}, ...
+       '@zlabel',{'FontSize',14},'@title',{'FontSize',14}};
+   %  @line,{'linewidth',2}
+ elseif comstr(Cam,'imxfa') 
+ % #ImXFA : basic display of transfers -2
+   out={'@figure',{'position',[NaN,NaN,800,481]},'@exclude',{'legend.*'}, ...
+       '@text',{'FontSize',14},'@axes',{'FontSize',14,'box','on'}, ...
+       '@xlabel',{'FontSize',14},'@ylabel',{'FontSize',14}, ...
+       '@zlabel',{'FontSize',14},'@title',{'FontSize',14}};
+ elseif comstr(Cam,'imraise')
+ % #Imraise -2
+    out={'@EndFcn','ga=findall(gf,''type'',''axes'');for j1=1:length(ga);ga(j1).Position=ga(j1).Position+[0 .05 0 0];end'};
+ elseif comstr(Cam,'imfa') 
+ % #ImFa feplot for Cassem examples -2
+   out={'@figure',{'position',[NaN,NaN,600,450]},'@exclude',{'legend.*'}, ...
+       '@ii_legend',{'FontSize',14,'interpreter','none'}};
+
+ elseif comstr(Cam,'imcheck') 
+%% #Imcheck options -2
+RO=varargin{carg};carg=carg+1;
+if ~isfield(RO,'PlotWd');
+  try; RO.PlotWd=oscarui('wd@PlotWd');
+  catch; error('You must provide a PlotWd');
+  end
+end
+if ~isfield(RO,'HtmWidth'); RO.HtmWidth=[];end % Default width
+if ~isfield(RO,'RelPath'); RO.RelPath=2;end % Path for file history
+
+out=RO;
+
+%% #OldstylesEnd
+ else; error('%s unknown',CAM);
+ end
+
 %% #Solve -------------------------------------------------------------------
 elseif comstr(Cam,'solve');[CAM,Cam]=comstr(CAM,6);
 
@@ -2882,7 +3014,7 @@ out.DOF=(1:size(T,2))'+.99;
 assignin('caller','T',out); clear out;
 
 elseif comstr(Cam,'patchcapacity')
-%% #SolvePatchCapacity : reduction for capacity resolution
+%% #SolvePatchCapacity : reduction for capacity resolution -2
 
 model=[];Sens=[];eval(iigui({'model','Case','Load','out','Sens','RunOpt'},'MoveFromCaller'));
 m=feval(fe_reduc('@get_mat'),model.K,2,model,RunOpt);
@@ -2890,7 +3022,7 @@ k=feval(fe_reduc('@get_mat'),model.K,1,model,RunOpt);
 
 Freq=stack_get(model,'info','Freq','get');
 if ~isempty(Freq)
-  %% #FrfSnapShot % Called from fe_reduc
+  %% FrfSnapShot % Called from fe_reduc
   MVR=struct('T',Case.T,'TIn',Case.TIn,'full',1, ...
     'K',{feutilb('tkt',Case.T,model.K)},'Klab',{model.Klab}, ...
    'BIN',[],'w',Freq(:)*2*pi,'DOF',model.DOF);
@@ -2995,7 +3127,7 @@ assignin('caller','T',out); clear out;
 assignin('caller','PostFcn','assignin(''caller'',''Load'',Load)'); 
 
 elseif comstr(Cam,'patchdfrf')
-%% #SolvePatchDfrf : capacity of an isolated patch
+%% #SolvePatchDfrf : capacity of an isolated patch - 2
 
 mo1=RO;carg=3;
 
@@ -3114,7 +3246,7 @@ end
 else;error('Solve%s unknown',CAM);
 end
 elseif comstr(Cam,'pcond')
-%% #Pcond coef : rescales electrical DOFs for better conditionning
+%% #Pcond: rescales electrical DOFs for better conditionning
 % model=fe_case(model,'pcond','Piezo','d_piezo(''Pcond 1e8'')');
 %  default coef is 1e8
 [CAM,Cam,r1]=comstr('cond',[-25 2],CAM,Cam); if isempty(r1);r1=1e8;end
@@ -3134,76 +3266,9 @@ elseif comstr(Cam,'pcond')
  %z=diag(k);mean(z(fe_c(model.DOF,.21,'ind')))/mean(z(fe_c(model.DOF,.21,'ind',2)))
 
  
-%% #im : figure formatting ---------------------------------------------------
-elseif comstr(Cam,'im')
 
-% see also sdtweb('nida13','imw'), sdtweb('oscarui','imw')
- if nargin==2&&~isstruct(varargin{2}) % generate the calling string
-   %comp12t('imw','Dispersion_.png')
-   pw0=pwd;
-   if ~ischar(varargin{2}); % Apply reshaping to figure
-     gf=varargin{2};if isa(gf,'sdth');cf=gf; gf=gf.opt(1);end
-     if ~ishandle(gf);figure(gf);plot([0 1]);end
-     val=d_piezo(CAM);
-     [st1,st2]=fileparts(pwd);
-     if strcmpi(st2,'tex'); % force plotwd here
-      val=[val {'@PlotWd',fullfile(pwd,'plots')}];       
-     end
-     if strcmpi(get(gf,'tag'),'iiplot');
-        ci=get(gf,'userdata'); ci.ua.axProp=val;iiplot(ci);
-     else; cingui('objset',gf,val)
-     end
-   elseif strcmpi(varargin{2},'.') 
-    %% oscarui('imfw','.')
-    st=sprintf('imwrite-objSet"@oscarui(''%s'')"-ftitle',varargin{1});
-    comgui(st);
-   else
-       dbstack;keyboard
-    cd(nida13('wd','plots'));
-    st=sprintf('imwrite-objSet"@nida13(''%s'')"-ftitle%s',varargin{1:2});
-    comgui(st);
-    cd(pw0);
-   end
- % z=sdt_table_generation('Rep');comstr(z{strcmpi(z(:,1),'LargeWide'),3},-30)
- elseif comstr(Cam,'imxfa1') 
- % #ImXFA : basic display of transfers 
-   out={'@figure',{'position',[NaN,NaN,800,481]},'@exclude',{'legend.*'}, ...
-       '@text',{'FontSize',14},'@axes',{'FontSize',14,'box','on','position',[.13 .15 .775 .815]}, ...
-       '@xlabel',{'FontSize',14},'@ylabel',{'FontSize',14}, ...
-       '@zlabel',{'FontSize',14},'@title',{'FontSize',14}};
-   %  @line,{'linewidth',2}
- elseif comstr(Cam,'imxfa') 
- % #ImXFA : basic display of transfers 
-   out={'@figure',{'position',[NaN,NaN,800,481]},'@exclude',{'legend.*'}, ...
-       '@text',{'FontSize',14},'@axes',{'FontSize',14,'box','on'}, ...
-       '@xlabel',{'FontSize',14},'@ylabel',{'FontSize',14}, ...
-       '@zlabel',{'FontSize',14},'@title',{'FontSize',14}};
- elseif comstr(Cam,'imraise')
-    out={'@EndFcn','ga=findall(gf,''type'',''axes'');for j1=1:length(ga);ga(j1).Position=ga(j1).Position+[0 .05 0 0];end'};
- elseif comstr(Cam,'imfa') 
- % #ImFa feplot for Cassem examples
-   out={'@figure',{'position',[NaN,NaN,600,450]},'@exclude',{'legend.*'}, ...
-       '@ii_legend',{'FontSize',14,'interpreter','none'}};
-
- elseif comstr(Cam,'imcheck') 
-%% #Imcheck options
-RO=varargin{carg};carg=carg+1;
-if ~isfield(RO,'PlotWd');
-  try; RO.PlotWd=oscarui('wd@PlotWd');
-  catch; error('You must provide a PlotWd');
-  end
-end
-if ~isfield(RO,'HtmWidth'); RO.HtmWidth=[];end % Default width
-if ~isfield(RO,'RelPath'); RO.RelPath=2;end % Path for file history
-
-out=RO;
-
-%% 
- else; error('%s unknown',CAM);
- end
  
-%% clean end
-%% #TutoDo: recover model from a specific tuto step -3
+%% #TutoDo: recover model from a specific tuto step
 elseif comstr(Cam,'tuto'); 
  eval(sdtweb('_tuto',struct('file','d_piezo','CAM',CAM)));
  if nargout==0; clear out; end
@@ -3212,12 +3277,12 @@ elseif comstr(Cam,'cvs')
  out=sdtcheck('revision','$Revision: c3f9e0b $  $Date: 2021-03-16 18:05:59 +0100 $ ');
 else; error('%s unknown',CAM);
 end 
-%% #End function
+ 
 end
 
 
 function [model,RO,RB]=meshRect(model,RO,RB);
-%% #MexhRect Insert a rectangle
+%% #fct-MeshRect: Insert a rectangle
 %if ~isempty(i2);RB.MatId=i2;end
 %      RO.Rect(end+1,1:7)=[RB.xc RB.lx 0 RB.yc RB.ly 0 RB.ang]; 
 %      if ~isempty(i2); RO.Rect(end,8:9)=i2; end % Mat/Pro of shape
@@ -3268,7 +3333,7 @@ if RB.lx==0||RB.ly==0; RB=struct; return; end
 end
 
 function [model,RO,RB]=meshCirc(model,RO,RB);
-%% #MeshCirc Add circular patches
+%% #fct-MeshCirc: Add circular patches
 % RO global options, RB current options of patch
 % RO.Circ=[xc yc rc lc (MatId ProId)] 
 if RB.rc==0; RB=struct; RO.RefineToQuad=1; return; end
@@ -3362,7 +3427,7 @@ if RB.rc==0; RB=struct; RO.RefineToQuad=1; return; end
  if ~isfield(RO,'Circ');RO.Circ=[];end
  RO.Circ(end+1,1:6)=[RB.xc RB.yc RB.rc RB.lc RO.MatId RO.ProId];
 end
-%% #RefineToQuad
+%% #fct-RefineToQuad: Refine to second degree elements
 function [model,RO]=RefineToQuad(model,RO);
 
 if isfield(RO,'RefineToQuad');
