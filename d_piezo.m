@@ -30,7 +30,11 @@ if comstr(Cam,'tutopatch')
 
 %% BeginSource sdtweb('_example','pz_theory.tex#tutopzpatchext')
 
+% Init working directory for figure generation
+d_piezo('SetPlotwd');
 % See full example as MATLAB code in d_piezo('ScriptTutoPatch')
+d_piezo('DefineStyles');
+
 %% Step 1 Build mesh - Define electrodes
 % Meshing script can be viewed with sdtweb d_piezo('MeshPatch')
 model=d_piezo('MeshPatch lx=1e-2 ly=1e-2 h=2e-3 nx=1 ny=1 nz=1');
@@ -57,6 +61,8 @@ cf=feplot(model,def);
 % Electric field representation
 p_piezo('viewElec EltSel "matid1" DefLen 20e-4 reset',cf);
 fecom('colormap',[1 0 0]);fecom('undef line');iimouse('resetview');
+cf.mdl.name='E-field'; % Sets figure name
+d_piezo('SetStyle',cf); feplot(cf);
 %% Step 5 : check constitutive law
 % Decompose constitutive law
 CC=p_piezo('viewdd -struct',cf); %
@@ -97,6 +103,11 @@ disp([{'','CdensT','CdensS'};{'Numeric';'Theoretical'} ...
 p_piezo('electrodeTotal',cf) %
 disp('Theoretical values of capacitance')
 disp([{'CT';'CS'} num2cell([CT;CS])])
+cf.mdl.name='Charge'; % Sets figure name
+
+d_piezo('SetStyle',cf); feplot(cf);
+fecom('ch 1')
+
 
 %% EndSource EndTuto
 
@@ -107,6 +118,10 @@ elseif comstr(Cam,'tutoshearpatch')
 %
 %% BeginSource sdtweb('_example','pz_theory.tex#tutopzpatchshear')
 
+% Init working directory for figure generation
+d_piezo('SetPlotwd');
+d_piezo('DefineStyles');
+
 % See full example as MATLAB code in d_piezo('ScriptTutoShearPatch')
 %% Step 1 Build mesh and define electrodes
 %Meshing script can be viewed with sdtweb d_piezo('MeshPatch')
@@ -116,7 +131,7 @@ model=d_piezo('MeshPatch lx=1e-2 ly=1e-2 h=2e-3 nx=1 ny=1 nz=1');
 model=p_piezo('ElectrodeMPC Top -ground',model,'z==2e-3');
 model=p_piezo('ElectrodeMPC Bottom -Input "Free patch"',model,'z==0');
 
-% Rotate basis to align poling direction with y (-90deg around x)
+% Rotate basis to align poling direction with y (-90 deg around x)
 model.bas=basis('rotate',[],'rx=-90',1); %create local basis with id=1
 model=feutil('setpro 1 COORDM=1',model); % assign basis with id=1 to pro=1
 %% Step 2 Compute static response
@@ -130,13 +145,13 @@ def.fun=[0 1]; def=feutil('rmfield',def,'data','LabFcn');
 %    see code with sdtweb d_piezo('scriptFullConstrain')
 def=d_piezo('scriptFullConstrain',model,def);
 def.lab{2}='Constrained patch, shear';
-
 %% Step 3 Vizualise deformed shape
 cf=feplot(model,def); fecom('undef line');
 
 % Electric field representation
 p_piezo('viewElec EltSel "matid1" DefLen 20e-4 reset',cf);
-iimouse('zoom reset')
+cf.mdl.name='E-field'; % Sets figure name
+d_piezo('SetStyle',cf); feplot(cf);
 %% Step 4 : Check constitutive law
 % Decompose constitutive law
 CC=p_piezo('viewdd -struct',cf); %
@@ -189,19 +204,19 @@ elseif comstr(Cam,'tutodiskimpedance')
 %% BeginSource sdtweb('_example','pz_theory.tex#tutopzdiskimpedance')
 
 % Init working directory for figure generation
-t_avc('SetPlotWd')
-% See full example as Matlab code in d_piezo('ScriptTutoPZ_disk_impedance')
-t_avc('Definestyles');
+d_piezo('SetPlotWd')
+% See full example as Matlab code in d_piezo('ScriptTutoDiskImpedance')
+d_piezo('Definestyles');
 
 %% Step 1 Build and represent mesh and electrodes
 model=d_piezo('MeshPIC181disk th=2e-3 r=8e-3 ner=10 nez=4 nrev=16');
 feplot(model); cf=fecom; cf.mdl.name='PIC 181 piezo disk mesh'; iimouse('resetview')
-t_avc('setstyle',cf)
+d_piezo('setstyle',cf)
 % Visualize electrodes
-fecom('curtabCase',{'Top Actuator';'Bottom Actuator'}) % That seems to be correct
-fecom(';showline;proviewon;triax') % xxxEB why did the mesh disappear ?
+fecom('curtabCase',{'Top Actuator';'Bottom Actuator'}) % 
+fecom(';showline;proviewon;triax') % 
 cf.mdl.name='PIC 181 piezo disk electrodes'
-t_avc('setstyle',cf)
+d_piezo('setstyle',cf)
 %% Step 2 : Define range of frequencies and compute dynamic response
 frq=linspace(20e3,200e3,256);
 def=fe_simul('dfrf',stack_set(model,'info','Freq',frq)); 
@@ -210,16 +225,17 @@ def=fe_simul('dfrf',stack_set(model,'info','Freq',frq));
 % visualize potential
 feplot(model,def); cf=fecom; 
 fecom(';showpatch;colordata21;'); cf.mdl.name='PIC 181 piezo disk voltage'
-t_avc('setstyle',cf) ; 
+d_piezo('setstyle',cf) ; 
 cf.osd_('cbtr{string,Voltage(V)}')
 fecom('colorscaleone') %To have the correct scale
 
 % View electric field
 fecom(';showline;scd 1e-4')
-p_piezo('viewElec EltSel "matid1" DefLen 1e-4',cf); cf.mdl.name='PIC 181 piezo disk E-field'
+p_piezo('viewElec EltSel "matid1" DefLen 1e-4',cf); 
+cf.mdl.name='PIC 181 piezo disk E-field'
 % To have a single color change clim (must be done with axProp to bypass normal)
 st=cf.ua.axProp; st(3:4)={'@axes',{'clim',[480 510]}};cf.ua.axProp=st;
-t_avc('setstyle',cf)
+d_piezo('setstyle',cf)
 cf.osd_('cbtr{string,E(V/m)}')
 %% Step 3: Compute q/V as a function of the frequency
 sens=fe_case(model,'sens');
@@ -227,12 +243,12 @@ C1=fe_case('SensObserve −DimPos 2 3 1',sens,def);
 C1=sdsetprop(C1,'PlotInfo','sub','magpha','scale','xlin;ylog');
 ci=iiplot; 
 iicom(ci,'curveInit',C1.name,C1); iicom('submagpha');
-t_avc('setstyle',ci);
+d_piezo('setstyle',ci);
 %% Step 4: Compute and plot electric impedance
 % extract impedance
 C2=C1; C2.Y=1./(2*pi*1i*C2.X{1}.*C2.Y); C2.X{2}={'Imp(Ohm)'};
 iicom(ci,'curveInit',C2.name,C2); iicom('submagpha');
-t_avc('setstyle',ci);
+d_piezo('setstyle',ci);
 
 %% EndSource EndTuto
 
@@ -256,8 +272,8 @@ model.unit='mm';
 model.pl = fe_mat('convert SI mm',model.pl);
 %% Step 2 - Compute response due to V and visualize
 % low freq response to avoid rigid body modes
-model=stack_set(model,'info','Freq',10);
 model=fe_case(model,'pcond','Piezo','d_piezo(''Pcond'')');
+model=stack_set(model,'info','Freq',10);
 def=fe_simul('dfrf',model);
 % Plot deformed shape
 cf=feplot(model,def); fecom('view3'); fecom('viewy-90'); fecom('viewz+90')
@@ -299,9 +315,9 @@ cf.def.lab={'T11';'T22';'T33';'T23';'T13';'T12';'D1';'D2';'D3'}; %
 fecom('colordata 99 -edgealpha.1');
 fecom('colorbar',d_imw('get','CbTR','String','Stress/Voltage [kPa/muV]'));
 iimouse('trans2d 0 0 0 1.6 1.6 1.6')
-% Replace with 'PiezoStrain' material
-mo2=model; mo2.pl=m_piezo('dbval 1 PiezoStrain');
 %% Step 8 - Strain  visualisation
+% Replace with 'PiezoStrain' material
+mo2=model; mo2.pl=m_piezo('dbval 1 PiezoStrain')
 % Now represent strain fields using fe_stress
 c1=fe_stress('stressAtInteg -gstate',mo2,def);
 cf.sel='reset';cf.def=fe_stress('expand',mo2,c1);
@@ -309,7 +325,6 @@ cf.def.lab={'S11';'S22';'S33';'S23';'S13';'S12';'E1';'E2';'E3'};
 fecom('colordata 99 -edgealpha.1');
 fecom('colorbar',d_imw('get','CbTR','String','Strain/Voltage [1/muV]'));
 iimouse('trans2d 0 0 0 1.6 1.6 1.6')
-
 
 %% EndSource EndTuto
 
@@ -362,7 +377,7 @@ elseif comstr(Cam,'tutoplatemeshingbasics')
 model.pl=m_elastic('dbval 1 Aluminum');
 model.pl=m_piezo(model.pl,'dbval 3 -elas2 SONOX_P502_iso');
 % To avoid warning due to the use of simplified piezo properties.
-model=p_piezo('DToSimple',model);
+model=p_piezo('DToSimple',model)
   model.pl=m_elastic('dbval 1 Aluminum');
   d=zeros(1,18); d([11 13])=560e-12; d([3 6])=-185e-12; d(9)=440e-12;
   eps=zeros(1,9); eps([1 5 9])= 8.854e-12*1850;
@@ -389,7 +404,7 @@ model=p_piezo('ElectrodeSensQ  1684 Q-S2',model);
 model=p_piezo('ElectrodeSensQ  1685 Q-S3',model);
 model=fe_case(model,'SensDof','Tip',1054.03); % Displ sensor top right corner
 sens=fe_case(model,'sens');
-model=fe_case(model,'FixDof','SC*1683-1685',(1682:1685)+.21);
+model=fe_case(model,'FixDof','SC*1683-1685',[1682:1685]+.21);
 d0=fe_simul('dfrf',stack_set(model,'info','Freq',0)); % direct refer frf at 0Hz
 feplot(model,d0); fecom(';view3;colordatagroup;undefline');
 d=sens.cta(4,:)*d0.def % Tip displacement is positive.
@@ -448,7 +463,7 @@ elseif comstr(Cam,'tutoplatemeshingauto')
 %% BeginSource sdtweb('_example','pz_tuto.tex#pz_meshing_auto')
 
 % See full example as MATLAB code in d_piezo('ScriptTutoPlateMeshingAuto')
-%% Step 1 : model of host plate - - - - - - - - - - - - - - - - - - - - - - - -
+%% Step 1 : model of host plate -
  model=struct('Node',[1 0 0 0 0 0 0],'Elt',[]);
  model=feutil('addelt',model,'mass1',1);
  % Note that the extrusion values are chosen to include the patch edges
@@ -623,11 +638,11 @@ model=fe_case(model,'FixDof','Cantilever','x==0 -DOF 1:6');
 RG.list={'Name','Lam','shape'
    'Main_plate', model,''  % Base structure
    'Act1', ... % name of patch
-   'BaseId1 +Noliac.NCE51.OD0TH1 -Noliac.NCE51.OD0TH1', ...
-   struct('shape','lscirc','xc',15+55/2,'yc',12+25/2,'rc',10),
+   'BaseId1 +Disk.Sonox_P502_iso.RC10TH1 -Disk.Sonox_P502_iso.RC10TH1', ...
+   struct('shape','lscirc','xc',15+55/2,'yc',12+25/2),
    'Act2', ... % name of patch
-   'BaseId1 +Noliac.NCE51.OD0TH1 -Noliac.NCE51.OD0TH1', ...
-   struct('shape','lscirc','xc',15+55/2,'yc',63+25/2,'rc',10)};
+   'BaseId1 +Disk.Sonox_P502_iso.RC10TH1 -Disk.Sonox_P502_iso.RC10TH1', ...
+   struct('shape','lscirc','xc',15+55/2,'yc',63+25/2)};
 
 %
 mo3=d_piezo('MeshPlate',RG);
@@ -680,11 +695,11 @@ model=fe_case(model,'FixDof','Cantilever','x==0 -DOF 1:6');
 RG.list={'Name','Lam','shape'
    'Main_plate', model,''  % Base structure
    'Act1', ... % name of patch
-   'BaseId1 +Noliac.NCE51.OD0TH1 -Noliac.NCE51.OD0TH1', ...
-   struct('shape','lscirc','xc',15+55/2,'yc',12+25/2,'rc',10),
+   'BaseId1 +Disk.Sonox_P502_iso.RC10TH1 -Disk.Sonox_P502_iso.RC10TH1', ...
+   struct('shape','lscirc','xc',15+55/2,'yc',12+25/2),
    'Act2', ... % name of patch
-   'BaseId1 +Noliac.NCE51.OD0TH1 -Noliac.NCE51.OD0TH1', ...
-   struct('shape','lscirc','xc',15+55/2,'yc',63+25/2,'rc',10)};
+   'BaseId1 +Disk.Sonox_P502_iso.RC10TH1 -Disk.Sonox_P502_iso.RC10TH1', ...
+   struct('shape','lscirc','xc',15+55/2,'yc',63+25/2)};
 
 %
 mo3=d_piezo('MeshPlate',RG);
@@ -738,7 +753,7 @@ r1=p_piezo('TabInfo',model); % List piezo related properties
 %% Step 2 - Define actuators and sensors
 nd=feutil('find node x==463 & y==100',model);
 model=fe_case(model,'SensDof','Tip',nd+.03); % Displ sensor
-i1=p_piezo('TabInfo',model);i1=i1.Electrodes.data(:,1);
+i1=p_piezo('TabInfo',model);i1=i1.Electrodes(:,1);
 model=fe_case(model,'DofSet','V-Act',struct('def',1,'DOF',i1(1)+.21)); %Act
 model=p_piezo(sprintf('ElectrodeSensQ  %i Q-Act',i1(1)),model); % Charge sensors
 model=p_piezo(sprintf('ElectrodeSensQ  %i Q-S1',i1(2)),model);
@@ -749,7 +764,7 @@ model=fe_case(model,'FixDof','SC*S1-S3',i1(2:end)+.21);
 sens=fe_case(model,'sens');
 %% Step 3 Compute static and dynamic response
 d0=fe_simul('dfrf',stack_set(model,'info','Freq',0)); % direct refer frf at 0Hz
-cf.def=d0; fecom(';view3;scd .1;colordatagroup;undefline')
+cf.def=d0; fecom(';view3;scd 20;colordatagroup;undefline')
 % Compute frequency response function (full model)
 if sdtkey('cvsnum','mklserv_client')>=126;ofact('mklserv_utils -silent')
     f=linspace(1,100,400); % in Hz
@@ -790,7 +805,7 @@ r1=p_piezo('TabInfo',model); % List piezo related properties
 %% Step 2 - Define actuators and sensors
 nd=feutil('find node x==463 & y==100',model);
 model=fe_case(model,'SensDof','Tip',nd+.03); % Displ sensor
-i1=p_piezo('TabInfo',model);i1=i1.Electrodes.data(:,1);
+i1=p_piezo('TabInfo',model);i1=i1.Electrodes(:,1);
 model=fe_case(model,'DofSet','V-Act',struct('def',1,'DOF',i1(1)+.21)); %Act
 model=p_piezo(sprintf('ElectrodeSensQ  %i Q-Act',i1(1)),model); % Charge sensors
 model=p_piezo(sprintf('ElectrodeSensQ  %i Q-S1',i1(2)),model);
@@ -801,7 +816,7 @@ model=fe_case(model,'FixDof','SC*S1-S3',i1(2:end)+.21);
 sens=fe_case(model,'sens');
 %% Step 3 Compute static and dynamic response
 d0=fe_simul('dfrf',stack_set(model,'info','Freq',0)); % direct refer frf at 0Hz
-cf.def=d0; fecom(';view3;scd .1;colordatagroup;undefline')
+cf.def=d0; fecom(';view3;scd 20;colordatagroup;undefline')
 % Compute frequency response function (full model)
 if sdtkey('cvsnum','mklserv_client')>=126;ofact('mklserv_utils -silent')
     f=linspace(1,100,400); % in Hz
@@ -910,8 +925,6 @@ r1=[d1.data(1:end)./d2.data(1:end)];
 plot(r1,'*','linewidth',2);axis tight
 xlabel('Mode number');ylabel('f_{OC}/f_{SC}');
 
-
-
 %% EndSource EndTuto
 
 elseif comstr(Cam,'tutoplate_mfc');
@@ -965,10 +978,9 @@ elseif comstr(Cam,'tutoplate_triang');
 % --- requires gmsh
 model=d_piezo('MeshTrianglePlate');
 cf=feplot(model); fecom('colordatapro'); fecom('view2')
-%% Step 2 - Define actuators and sensors 
+%% Step 2 - Define actuators and sensors
 model=fe_case(model,'SensDof','Tip',7.03); % Displ sensor
 model=fe_case(model,'DofSet','V-Act',struct('def',[-1; 1],'DOF',[100001; 100002]+.21));
-
 %% Step 3 - Compute static response to voltage actuation
 d0=fe_simul('dfrf',stack_set(model,'info','Freq',0));
 cf.def=d0; fecom('colordataz -alpha .8 -edgealpha .1')
@@ -1001,7 +1013,6 @@ C2=qbode(sys,linspace(0,500,1000)'*2*pi,'struct'); C2.name='-';
 ci=iiplot;
 iicom(ci,'curveinit',{'curve',C1.name,C1;'curve',C2.name,C2});
 iicom('submagpha');
-
 
 %% EndSource EndTuto
 
@@ -1038,31 +1049,30 @@ sens=fe_case(model,'sens');
  % Extract w1 and W1 and compute alpha_1
 C=C1.Y(:,1);
 % Find poles and zeros of impedance (1/jwC)
-if ~exist('findpeaks','file'); warning('Skipping step, signal toolbox'); return;end
- [pksPoles,locsPoles]=findpeaks(abs(1./C)); Wi=w(locsPoles);
- [pksZeros,locsZeros]=findpeaks(abs(C)); wi=w(locsZeros);
- % concentrate on mode of interest (mode 1)
+if ~exist('findpeaks','file'); warning('Skipping step, signal toolbox');
+return;end
+[pksPoles,locsPoles]=findpeaks(abs(1./C)); Wi=w(locsPoles);
+[pksZeros,locsZeros]=findpeaks(abs(C)); wi=w(locsZeros);
+% concentrate on mode of interest (mode 1)
  W1=w(locsPoles(1)); w1=w(locsZeros(1));
- % Compute alpha for mode of interest
- a1=sqrt((W1^2-w1^2)/W1^2);
- % Compute Cs2 for mode of interest
- i1=1; i2=locsZeros(1); i3=locsZeros(2);
- dw2=w(i3)-w(i2); wCs2=w(i2)+dw2/2;
- [y,i]=min(abs(w-wCs2)); Cs2=abs(C(i));
- %% Determine shunt parameters (R and L) and apply it to damp 1st mode
- % Tuning using Yamada's rule
- d=1; r=sqrt((3*a1^2)/(2-a1^2));
- L_Yam=1/d^2/Cs2/W1^2; R_Yam=r/Cs2/W1;
-
+% Compute alpha for mode of interest
+a1=sqrt((W1^2-w1^2)/W1^2);
+% Compute Cs2 for mode of interest
+i1=1; i2=locsZeros(1); i3=locsZeros(2);
+dw2=w(i3)-w(i2); wCs2=w(i2)+dw2/2;
+[y,i]=min(abs(w-wCs2)); Cs2=abs(C(i));
+%% Determine shunt parameters (R and L) and apply it to damp 1st mode
+% Tuning using Yamada's rule
+d=1; r=sqrt((3*a1^2)/(2-a1^2));
+L_Yam=1/d^2/Cs2/W1^2; R_Yam=r/Cs2/W1;
 %% Step 4 - Compute dynamic response with optimal shunt
 w=linspace(0,40,1e3)*2*pi;
 C1=qbode(sys,w,'struct'); C1.name='no shunt';
 
 % Implement shunt using feeback - requires control toolbox - compute FRF
-if ~exist('feedback','file'); warning('Skipping step, control toolbox'); 
+if ~exist('feedback','file'); warning('Skipping step, control toolbox');
   return;
 end
-
 A=tf([L_Yam R_Yam 0],1); % RL shunt in tf form
 sys2=feedback(sys,A,1,1,1);
 % qbode does not work with feedback so use freqresp from control toolbox
@@ -1073,8 +1083,6 @@ sys2=feedback(sys,A,1,1,1);
 iicom('CurveReset');
 iicom(ci,'curveinit',{'curve',C1.name,C1;'curve',C2.name,C2});
 iicom(ci,'ch 4')
-
-
 
 %% EndSource EndTuto
 
@@ -1106,7 +1114,6 @@ model=fe_case(model,'Fsurf','Bottom excitation',data);
 
 % Other parameters
 model=stack_set(model,'info','Freq',logspace(3,5.3,200)'); % freq. for computation
-
 %% Step 3 - Compute dynamic response (full) and plot Bode diagram
 ofact('silent'); d1=fe_simul('dfrf',model);
 
@@ -1127,8 +1134,8 @@ iicom(ci,'curveInit',C1.name,C1);iicom ch3; iicom('submagpha');
  model=fe_case(model,'remove','Bottom excitation')
 
 % Link dofs of base and impose unit vertical displacement
-rb=feutilb('geomrb',feutil('getnode z==0',model),[0 0 0], ...
-     feutil('getdof',model));
+n1=feutil('getnode z==0',model);
+rb=feutilb('geomrb',n1,[0 0 0],fe_c(feutil('getdof',model),n1(:,1),'dof'));
 rb=fe_def('subdef',rb,3); % Keep vertical displacement
 model=fe_case(model,'DofSet','Base',rb);
 
@@ -1162,8 +1169,8 @@ model=fe_case(model,'FixDof','V=0 on Top Sensor', ...
   model=stack_set(model,'info','Freq',logspace(3,5.3,200)');
 
 % Link dofs of base and impose unit vertical displacement
-rb=feutilb('geomrb',feutil('getnode z==0',model),[0 0 0], ...
-     feutil('getdof',model));
+n1=feutil('getnode z==0',model);
+rb=feutilb('geomrb',n1,[0 0 0],fe_c(feutil('getdof',model),n1(:,1),'dof'));
 rb=fe_def('subdef',rb,3); % Keep vertical displacement
 model=fe_case(model,'DofSet','Base',rb);
 
@@ -1191,8 +1198,6 @@ model=fe_case(model,'DofSet','Base',rb);
  iicom(ci,'curveinit',{'curve',C2.name,C2;'curve',C4.name,C4});
  iicom('ch 3'); iicom('submagpha');
 
-
-
 %% EndSource EndTuto
 
 
@@ -1219,7 +1224,6 @@ model=fe_case(model,'remove','Q-Top sensor');
 
 % Frequencies for computation
 model=stack_set(model,'info','Freq',logspace(3,5.3,200)');
-
  %% Step 3 - Compute response, voltage input on shaker
  ofact('silent'); model.DOF=[]; d1=fe_simul('dfrf',model);
 
@@ -1239,13 +1243,12 @@ model=stack_set(model,'info','Freq',logspace(3,5.3,200)');
   ci=iiplot;
  iicom(ci,'curveinit',C5); iicom('ch 3'); iicom('submagpha');
  
- 
 %% EndSource EndTuto
 
 elseif comstr(Cam,'tutomfc_p2_homo');
 %% #TutoMFC_P2_homo : Piezoelectric homogenization of P2-type MFC -2
 
-%% BeginSource sdtweb('_example','pz_tuto.tex#ScriptPz_P2_homo')
+%% BeginSource sdtweb('_example','pz_tuto.tex#pz_P2_homo')
 
 % See full example as MATLAB code in d_piezo('ScriptTutoMFC_P2_homo')
 %% Step 1 - Meshing of RVE
@@ -1259,8 +1262,8 @@ RO=fe_range('valCell',Range,jPar,struct('Table',2));% Current experiment
 
 % Create mesh
 model= ...
-d_piezo(sprintf('meshhomomfcp2 rho=%0.5g lx=%0.5g ly=%0.5g lz=%0.5g dd=%0.5g',...
-    [RO.rho RO.lx RO.ly RO.lz RO.dd]));
+d_piezo(sprintf(['meshhomomfcp2 rho=%0.5g lx=%0.5g ly=%0.5g' ...
+  'lz=%0.5g dd=%0.5g'],[RO.rho RO.lx RO.ly RO.lz RO.dd]));
 
 
 % Define the six local problems
@@ -1319,11 +1322,10 @@ rho0=Range.val(:,strcmpi(Range.lab,'rho'));
 
 out=struct('X',{{rho0,{'E_T','E_L','nu_{LT}','G_{LT}','G_{Tz}','G_{Lz}', ...
     'e_{31}','e_{32}','d_{31}','d_{32}','epsilon_{33}^T'}'}},'Xlab',...
-    {{'\rho','Component'}},'Y',[E1' E2' nu21' G12' G13' G23' e32' e31' d32' d31' ...
-    eps33t'/8.854e-12]);
+    {{'\rho','Component'}},'Y',[E1' E2' nu21' G12' G13' G23' e32' e31' ...
+    d32' d31' eps33t'/8.854e-12]);
 ci=iiplot; iicom('CurveReset');
 iicom(ci,'CurveInit','P2-MFC homogenization',out);
-
 
 %% EndSource EndTuto
 elseif comstr(Cam,'tutomfc_p1_homo');
@@ -1343,8 +1345,8 @@ RO=fe_range('valCell',Range,jPar,struct('Table',2));% Current experiment
 
 % Create mesh
 model=...
-d_piezo(sprintf('meshhomomfcp1 rho=%0.5g lx=%0.5g ly=%0.5g lz=%0.5g e=%0.5g dd=%0.5g', ...
-    [RO.rho RO.lx RO.ly RO.lz RO.e RO.dd]));
+d_piezo(sprintf(['meshhomomfcp1 rho=%0.5g lx=%0.5g ly=%0.5g lz=%0.5g' ...
+   ' e=%0.5g dd=%0.5g'],[RO.rho RO.lx RO.ly RO.lz RO.e RO.dd]));
 
 %%
 RB=struct('CellDir',[max(model.dx) max(model.dy) max(model.dz)],'Load', ...
@@ -1403,8 +1405,8 @@ rho0=Range.val(:,strcmpi(Range.lab,'rho'));
 
 out=struct('X',{{rho0,{'E_L','E_T','nu_{LT}','G_{LT}','G_{Lz}','G_{Tz}', ...
     'e_{31}','e_{33}','d_{31}','d_{33}','epsilon_{33}^T'}'}},'Xlab',...
-    {{'\rho','Component'}},'Y',[E1' E2' nu12' G12' G13' G23' e31' e33' d31' d33' ...
-    eps33t'/8.854e-12]);
+    {{'\rho','Component'}},'Y',[E1' E2' nu12' G12' G13' G23' e31' e33' ...
+    d31' d33' eps33t'/8.854e-12]);
 ci=iiplot;
 iicom('CurveReset');
 iicom(ci,'CurveInit','P1-MFC homogenization',out);
