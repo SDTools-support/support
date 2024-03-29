@@ -473,7 +473,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
      def.defL=C1.T*def.defL;
     end
    end
-   out=def;
+   out=def; if nargout>1; out1=mo1; end
 
   else
    %% #SolveModesNL -3
@@ -533,12 +533,14 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    '-normE(#3#"renorm with elastic matrices")' ...
    '-TimeCont(#%s#"initialize for continuation")' ...
    '-Merge(#%g#"indices of NL to be merged")' ...
+   '-q0(#3#"add static state in reduction basis")' ...
+   '-steq(#3#"add static equilibrium force")' ...
    ],{RO,CAM}); Cam=lower(CAM);
 
   if RO.minrio
    %% #doMinRIO reduction basis generation as post -3
    [u1,i1]=min(def.data(:,2));
-   if 1==2 % #ToDo24/02_timesqueal -3  
+   if 1==2 % #ToDo24/02_timesqueal -3
      NL=model.NL{1,3}; li=model.NL{1,4} % list of implicit jacobian
      % Z=
      % Z\psi = 0 ? 
@@ -557,13 +559,32 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
     TR=struct('DOF',def.DOF,'def',TR,'data',def.data);
 
    end
+
+  elseif isfield(def,'TR'); TR=def.TR;
+  else; error('Need to define a reduction basis')
   end % stra
+
+  if RO.q0 % add q0 reduction basis
+   q0=stack_get(SE,'curve','q0','get');
+   if ~isempty(q0)
+    q0=feutilb('placeindof',TR.DOF,q0);
+    TR.def=[TR.def q0.def]; TR.data(end+1,1)=0;
+   end
+   RO.q0='m';
+   if 1==2
+    TRn=RO.nmap('TRn'); 
+    c1=fe_c(TRn.DOF,model.Case.DOF);
+    TRn.def=TRn.def-model.Case.T*(model.K{1}*c1*TR.def*TR.def'*TRn.def);
+    TR.def=[TR.def TRn.def];
+   end
+  end
 
   if RO.normE % xxx post renorm with elastic matrices only
    % I guess this is needed for diagonal modal newmark
    TR=feutilb('placeindof',SE.DOF,TR);
    K=feutilb('tkt',TR.def,SE.K);
    d1=fe_eig({K{1},K{3},[]},2);
+   %[gg,wj]=fe_norm(TR.def,SE.K{1},SE.K{3});
    TR.def=TR.def*d1.def;
   end
 
@@ -572,48 +593,87 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    SEf=SE;
    SE=nlutil('HrRedNL',SE,TR,RO);
    % else; % we would call fe_reduc for a redefined assembly
-   while nnz(SE.K{end}==0);
-       i1=length(SE.K);SE.K(i1)=[];SE.Klab(i1)=[];SE.Opt(:,i1)=[];
+   while nnz(SE.K{end}==0); 
+    i1=length(SE.K);SE.K(i1)=[];SE.Klab(i1)=[];SE.Opt(:,i1)=[];
    end
   end
+
   if 1==2 % Recheck cpx mode / matrices
-   dd=d_squeal('SolveModes',SEf); [dd.data(:,1:2) def.data(1:20,1:2)]
-   % xxx you won't get it with fe_ceig due to matrix9 that is not symmetric
-   mo1=SEf;  NL=mo1.NL{end};NL.b=sdth.GetData(NL.b);NL.c=sdth.GetData(NL.c);
-   ic=ismember(mo1.Opt(2,:),[3 7 70 11]);mo1.Klab(ic)
-   ik=ismember(mo1.Opt(2,:),[1 5 8 9]);mo1.Klab(ik)
-   K={feutilb('sumkcoef',mo1.K,ismember(mo1.Opt(2,:),[2 10]))
-    feutilb('sumkcoef',mo1.K,ic)
-    feutilb('sumkcoef',mo1.K,ik)
-    }'; def=fe_ceig(horzcat(K,SE.DOF),[1 5 20 1e3]);def.data
-   full(NL.b(:,1:3:end)*speye(size(NL.b,2)/3)*NL.c(1:4:end,:))
+   % check modes before HR
+   ddf=d_squeal('SolveModes',SEf); [ddf.data(:,1:2) def.data(1:20,1:2)]
+   % check reduction with original states
+   SE2=SE;
+   SE2=feval(nl_spring('@JacAdd'),SE2,SE2.NL,'sumcat')
+   SE2=sdtm.rmfield(SE2,'FNLDOF','FNL','FNLlab','NL');
+   ddr=d_squeal('SolveModes',stack_set(SE2,'SE','MVR',SE2));
+   [ddr.data(1,:) def.data(18,:)]
+
+   % FNLDOF StoreType3 only for contact at the moment
+   % Check w/ evalFNL on legacy NL
+   SE3=SE; %SE3.FNL=SEf.FNL; SE3.FNLlab=SEf.FNLlab; SE3.FNLDOF=SEf.FNLDOF;
+   SE3.NL(:,4)=[]
+   %SE3=stack_set(SE3,'curve','q0',rmfield(q0r,'FNL'));
+   RC=struct('backTgtMdl',2,'sepKj',1)
+   [dd]=d_squeal('SolveModes',SE3,RC); SE3t=dd.SE; dd=dd.Mode
+   [dd.data(:,1:2) ddr.data(:,1:2)]
+   max(abs([SE3t.NL{1,4}{1,3}-SEf.NL{1,4}{1,3}]))
+
+   % check with chandle and evalFNL
+   SE3.NL{1,3}=feval(nl_contact('@legToChandle'),SE3.NL{1,3},SE3);
+   [dd]=d_squeal('SolveModes',SE3,RC); SE3t=dd.SE; dd=dd.Mode
+   [dd.data(:,1:2) ddr.data(:,1:2)]
+   
   end
 
-   if ~isempty(RO.TimeCont)
-    %% #SolveRedOpt.TimeCont prepare time continue at TimeRed exit
-    if comstr(RO.TimeCont,'{')
-     SE=d_fetime('TimeOpt',struct('urn',RO.TimeCont(2:end-1)),SE);
-    end
-    if ~isfield(SE,'nmap');SE.nmap=vhandle.nmap;end
-    SE.nmap('LastContinue')='do';
-    % xxx matrices handling
-    if length(SE.K)>3; in1=3+find(cellfun(@nnz,SE.K(4:end))==0);
-     SE.K(in1)=[];SE.Klab(in1)=[];SE.Opt(:,in1)=[];
-    end
-    SE.NL{end,3}.iopt(1)=0;SE.NL{end,3}.FInd=0;SE.NL{end,3}.iotp(4)=0;'xxx iopt'
-    i3=SE.NL{end,3}.iopt;
-    i3=sum(i3(3:4)+i3(3))*i3(5); % xxx StoreType
-    SE.FNL(i3,1)=0;SE.FNLlab(end+1:i3)={''};SE.FNLDOF(end+1:i3)=0;
-    % now first run
-    % figure(1);NL=SE.NL{end}; plot(sort(NL.vnl(2,:,2)))
-    %SE.FNL=model.FNL+0; SE.FNLlab=model.FNLlab; SE.FNLDOF=model.FNLDOF
-    [d2,mo3]=fe_time(SE); %iicom('curveinit','def',d2)
-    
-    if norm(d2.def,'Inf')>1e100; error('Diverged');end
-
-    co2=SE.nmap('LastContinue'); sdtm.store(RO)%iigui(RO,'setInNmap');
-    clear out; return;
+  % transform NL to chandle at his stage for now
+  if isfield(SE,'NL')
+   i1=ismember(SE.NL(:,1),'nl_contact');
+   for j1=find(i1(:)')
+    SE.NL{j1,3}=feval(nl_contact('@legToChandle'),SE.NL{j1,3},SE);
    end
+  end
+
+
+  if RO.steq
+   % reeval FNL, and set FcEq to balance static forces (from static to dynamic model)
+   q0=stack_get(SE,'curve','q0','get'); q0.data=0; %q0.def(1:2)=0; 
+   [q01,r1]=nl_solve('deffnl-getRes',SE,q0)
+   SE=stack_set(SE,'curve','q0',q01);
+   SE.Load.DOF=SE.DOF; SE.Load.def=r1; SE.Load.lab{1}='steq';
+  end
+
+  if 1==2
+   % things to sort
+   % check final stability with BetaK 
+   RC=struct('backTgtMdl',2,'sepKj',1,'betaR',1e-8)
+   [dd]=d_squeal('SolveModes',SE,RC); SE3t=dd.SE; dd=dd.Mode
+   [dd.data(1,:) def.data(18,:)]
+   % intial speed ?
+   q0=stack_get(SE,'curve','q0','get');
+   q01.def(:,2)=[1e-7;0;0]; % that would be v0
+   SE=stack_set(SE,'curve','q0',q01)
+
+   % check static equilibrium looks ok
+
+  end
+
+  if ~isempty(RO.TimeCont)
+   %% #SolveRedOpt.TimeCont prepare time continue at TimeRed exit
+   if comstr(RO.TimeCont,'{')
+    SE=d_fetime('TimeOpt',struct('urn',RO.TimeCont(2:end-1)),SE);
+   end
+   if ~isfield(SE,'nmap');SE.nmap=vhandle.nmap;end
+   SE.nmap('LastContinue')='do';
+   % now first run
+   % figure(1);NL=SE.NL{end}; plot(sort(NL.vnl(2,:,2)))
+   %SE.FNL=model.FNL+0; SE.FNLlab=model.FNLlab; SE.FNLDOF=model.FNLDOF
+   [d2,mo3]=fe_time(SE); %iicom('curveinit','def',d2)
+
+   if norm(d2.def,'Inf')>1e100; error('Diverged');end
+
+   co2=SE.nmap('LastContinue'); sdtm.store(RO)%iigui(RO,'setInNmap');
+   clear out; return;
+  end
 
 
    out=SE;
@@ -1495,7 +1555,10 @@ elseif comstr(Cam,'specevt')
 elseif comstr(Cam,'spec');[CAM,Cam]=comstr(CAM,5);
 %% #ViewSpec _tro : standardized viewing of base spectrogram 
 c2=sdth.urn('Dock.Id.ci');Time=stack_get(c2,'curve','Time','g');
-projM=c2.data.nmap.nmap;
+projM=c2.data;
+if isfield(projM,'nmap');projM=projM.nmap.nmap;
+else;projM=vhandle.nmap;c2.data.nmap=struct('nmap','projM');
+end
 if isempty(Cam)
   m1=c2.Stack{'curData'};if isempty(m1);m1=c2.Stack{'Time'}.meta;end
   st=m1.views;st=st{sdtm.regContains(st,'ViewSpec')};
@@ -1591,14 +1654,14 @@ else;% If spectro
  else; % Update needed
   r2=specMax;
  end
- [~,i2]=max(r2);
+ [~,i2]=max(r2(:,1));
  RO.f=C2.X{2}(i2); out=RO; 
 end 
 
 c2.os_('p.','ImToFigN','ImSw80','WrW49c');c13.os_('p.','ImToFigN','ImSw80','WrW49c');
 
 iimouse('interacturn',13,menu_generation('interact.surf3d'));
-nmap=c2.data.nmap.nmap;
+nmap=sdth.urn(sprintf('iiplot(%i).nmap',c2.opt(1)));
 out.SpecEdit=spec.Source.Edit; % Save handle to spec parameters
 out.Time=Time;
 nmap('SqLastSpec')=out; % Save context of last spec
@@ -1923,7 +1986,7 @@ if RO.back; return;end
 if carg>nargin||comstr(Cam,'instfreq{') 
  c2=sdth.urn('Dock.Id.ci'); 
  Time=c2.Stack{'Time'};% (SqLastSpec).Time is preemptive 
- projM=c2.data.nmap.nmap; 
+ projM=sdth.urn(sprintf('iiplot(%i).nmap',c2.opt(1))); 
  RO=useOrDefault(projM,'InstFreq');
  if isempty(RO);RO=sdtm.pcin('gr.IFreq','uo');end
 
@@ -2727,10 +2790,12 @@ function out=specMax(RO)
   else
    [r3,i3]=max(Z,[],1);
    [N,X]=hist(i3,round(length(i3)/10));
-   RO.iOcc=round(X(sdtpy.find_peaks(N,'height',max(N)/30,'prominence',1)));RO.fOcc=f(RO.iOcc);
-   %figure(13);h=line(r3.X{1},r3.Y(:,1),'color','r');
-   % RO.iOcc=sdtpy.find_peaks(log10(r2(:,2)),'prominence',.5);RO.fOcc=f(RO.iOcc);
-   fprintf('Found occurences %s\n',sdtm.toString(RO.fOcc(:)'/RO.fCoef))
+   try
+    RO.iOcc=round(X(sdtpy.find_peaks(N,'height',max(N)/30,'prominence',1)));RO.fOcc=f(RO.iOcc);
+    %figure(13);h=line(r3.X{1},r3.Y(:,1),'color','r');
+    % RO.iOcc=sdtpy.find_peaks(log10(r2(:,2)),'prominence',.5);RO.fOcc=f(RO.iOcc);
+    fprintf('Found occurences %s\n',sdtm.toString(RO.fOcc(:)'/RO.fCoef))
+   end
   end
 
 if 1==2
@@ -2883,6 +2948,7 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
    C0.Amean={r2,sprintf('%s [%s]',Time.X{2}{1,1:2})};
    C0.Amax={r2,sprintf('%s [%s]',Time.X{2}{1,1:2})};
   else
+   if size(Time.X{2},2)==1;Time.X{2}(:,2)={''};end
    [st2,~,i2]=unique(Time.X{2}(:,2));
    for j1=1:length(st2)
     C0.Amean(j1,1:2)={sqrt(sum(abs(Time.Y(:,i2==j1,1)).^2,2)) sprintf('Amean [%s]',st2{j1})};
