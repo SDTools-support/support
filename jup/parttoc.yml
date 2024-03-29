@@ -1,0 +1,12 @@
+parts:
+- caption: SDT-base
+  numbered: True
+  chapters:
+      - file: tuto
+        sections:
+          - file: _tuto/tuto_Interact
+          - file: _tuto/tuto_By
+          - file: _tuto/tuto_ExpGUI
+          #- file: tutoEMA
+          #- file: tutoBy 
+      #- file: jup_proc
