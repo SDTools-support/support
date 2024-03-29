@@ -28,7 +28,7 @@ if comstr(Cam,'tutopatch')
 %% #TutoPatch : Piezoelectric extension patch - Statics -2
 % see sdtweb pz_basics#pz_patch_num_ext 
 
-%% BeginSource sdtweb('_example','pz_theory.tex#tutopzpatchext')
+%% BeginSource sdtweb('_example','pz_theory.tex#pz_patch_num_ext')
 
 % See full example as MATLAB code in d_piezo('ScriptTutoPatch')
 %% Step 1 Build mesh - Define electrodes
@@ -105,7 +105,7 @@ elseif comstr(Cam,'tutoshearpatch')
 
 % see sdtweb pz_basics#pz_patch_num_shear 
 %
-%% BeginSource sdtweb('_example','pz_theory.tex#tutopzpatchshear')
+%% BeginSource sdtweb('_example','pz_theory.tex#pz_patch_num_shear')
 
 % See full example as MATLAB code in d_piezo('ScriptTutoShearPatch')
 %% Step 1 Build mesh and define electrodes
@@ -186,7 +186,7 @@ elseif comstr(Cam,'tutodiskimpedance')
 %% #TutoDiskImpedance : Piezoelectric Disk impedance -2
 % see sdtweb eq_dyn#pz_disk_impedance
 
-%% BeginSource sdtweb('_example','pz_theory.tex#tutopzdiskimpedance')
+%% BeginSource sdtweb('_example','pz_theory.tex#pz_disk_impedance')
 
 % Init working directory for figure generation
 t_avc('SetPlotWd')
