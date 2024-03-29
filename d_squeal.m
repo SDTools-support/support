@@ -1726,11 +1726,12 @@ RO.typ={'Amean(WP,iFreq)','a(wp,f)',103, ...
 
 RO.getDep=@getAmp;
 [C0,st2,st1]=cdm.xvec(Time,[RO.Failed;{'WAng(t)'}],RO);
-t=double(C0.Time);ind=find(diff(t)>diff(t(1:2))*3); 
-if ~isempty(ind);ind=unique([ind;ind+1]);
- for st=fieldnames(C0);C0.(st{1}).Source.data(ind)=NaN;end
+if isfield(C0,'Time')
+ t=double(C0.Time);ind=find(diff(t)>diff(t(1:2))*3); 
+ if ~isempty(ind);ind=unique([ind;ind+1]);
+  for st=fieldnames(C0);C0.(st{1}).Source.data(ind)=NaN;end
+ end
 end
-
 
 if isfield(C0,'Pressure');C0.Pressure=C0.Pressure/{1e5,'Pressure [bar]'};end
 st1(end,:)=[]; st1(1,end+1:4)={''};RO.list=st1;
@@ -1739,6 +1740,10 @@ for j1=1:size(RO.list,1)
   st2=sprintf('%s(%s,%s)',RO.list{j1,1:3});st2=strrep(st2,',)',')');
   iTyp=strcmpi(st2,RO.typ(:,1)); 
   if strcmp(st2,'()'); continue;
+  elseif strncmpi(RO.list{j1,1},'pole',4);
+    iTyp=size(RO.typ,1)+1;
+    RO.typ(iTyp,:)={st2,st2,200,{'@axes',{'ygrid','on','xgrid','on'}, ...
+        '@ylabel',{'String','Frequency [Hz]'},'@patch',{'linewidth',4}}};
   elseif ~any(iTyp); sdtw('_nb','Missing %s',st2); %default style
     iTyp=size(RO.typ,1)+1;
     RO.typ(iTyp,:)={st2,st2,100,{'@axes',{'ygrid','on','xgrid','on'}}};
@@ -1746,7 +1751,8 @@ for j1=1:size(RO.list,1)
   gf=RO.typ{iTyp,3};
   gf=sdth.urn(sprintf('figure(%i).os{@Dock,{name,SqSig},name,%i %s,NumberTitle,off}',gf,gf,RO.typ{iTyp,2}));
   figure(gf);
-  if gf==300;hold on;else; clf;end
+  if gf==300;hold on;
+  end
   ga=get(gf,'CurrentAxes'); if isempty(ga);ga=axes('parent',gf);end
   if strcmpi(RO.list{j1,4},'radial')
    r2={C0.(RO.list{j1,2}) C0.(RO.list{j1,1}) C0.(RO.list{j1,3})};
@@ -1780,6 +1786,12 @@ for j1=1:size(RO.list,1)
    if nargout==1; out=r1;return;
    else; r1=vhandle.tab(r1);asTab(r1);
    end
+  elseif strncmpi(RO.list{j1,1},'pole',4)
+   %% pole: wheel turn statistics    
+   r2={C0.(RO.list{j1,2}); C0.(RO.list{j1,1}) };
+   zeta=@(x)-real(x)./abs(x)*100; r2{3}=cdm({zeta(double(r2{2})),'Damping [%]'});
+   r2{2}.data=abs(r2{2}.data);
+   h=cdm.pline(r2{:},'parent',ga,'linewidth',2);
 
   elseif ~isempty(RO.list{j1,3})
    r2={C0.(RO.list{j1,2}) C0.(RO.list{j1,1}) C0.(RO.list{j1,3})};
