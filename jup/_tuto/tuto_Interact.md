@@ -10,7 +10,7 @@ This tutorial aims at illustrating the main ways to interact with `feplot`
 
 ## Step 1 : Initalize feplot with GARTEUR test case
 
-:::{dropdown} <a href="matlab:d_feplot('tutoInteract-s1;')"><img src="../_images/run16.png" >Run step </a>. Expand to display source code.
+:::{dropdown} <a href="matlab:d_feplot('tutoInteract-s1;')"><img src="../../_images/run16.png" >Run step </a>. Expand to display source code.
 ```matlab
 cf=demosdt('DemoGartDataFEM -plot');
 
@@ -30,7 +30,7 @@ Run this step to load in a feplot figure the GARTEUR test case.
  figure with the key `?` when the `feplot` figure is the current figure**
 ## Step 2 : Camera controls
 
-:::{dropdown} <a href="matlab:d_feplot('tutoInteract-s2;')"><img src="../_images/run16.png" >Run step </a>. Expand to display source code.
+:::{dropdown} <a href="matlab:d_feplot('tutoInteract-s2;')"><img src="../../_images/run16.png" >Run step </a>. Expand to display source code.
 ```matlab
 
 ```
@@ -93,7 +93,7 @@ Run this step to load in a feplot figure the GARTEUR test case.
  ``` 
 ## Step 3 : Shape animation + channel navigation
 
-:::{dropdown} <a href="matlab:d_feplot('tutoInteract-s3;')"><img src="../_images/run16.png" >Run step </a>. Expand to display source code.
+:::{dropdown} <a href="matlab:d_feplot('tutoInteract-s3;')"><img src="../../_images/run16.png" >Run step </a>. Expand to display source code.
 ```matlab
 
 ```
@@ -114,7 +114,7 @@ Run this step to load in a feplot figure the GARTEUR test case.
  ``` 
 ## Step 4 : Feplot capture
 
-:::{dropdown} <a href="matlab:d_feplot('tutoInteract-s4;')"><img src="../_images/run16.png" >Run step </a>. Expand to display source code.
+:::{dropdown} <a href="matlab:d_feplot('tutoInteract-s4;')"><img src="../../_images/run16.png" >Run step </a>. Expand to display source code.
 ```matlab
 
 ```
@@ -140,7 +140,7 @@ Run this step to load in a feplot figure the GARTEUR test case.
 :::
 ## Step 5 : Interaction with the model / analysis
 
-:::{dropdown} <a href="matlab:d_feplot('tutoInteract-s5;')"><img src="../_images/run16.png" >Run step </a>. Expand to display source code.
+:::{dropdown} <a href="matlab:d_feplot('tutoInteract-s5;')"><img src="../../_images/run16.png" >Run step </a>. Expand to display source code.
 ```matlab
 %%
 

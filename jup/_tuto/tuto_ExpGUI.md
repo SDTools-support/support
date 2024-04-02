@@ -4,7 +4,7 @@ This tutorial aims at illustrating how to implement and analyze expansion
  technique using GUI in SDT.
 ## Step 1 : Load required data for expansion
 
-:::{dropdown} <a href="matlab:d_cor('tutoExpGUI-s1;')"><img src="../_images/run16.png" >Run step </a>. Expand to display source code.
+:::{dropdown} <a href="matlab:d_cor('tutoExpGUI-s1;')"><img src="../../_images/run16.png" >Run step </a>. Expand to display source code.
 ```matlab
 
 [model,def,id]=demosdt('DemoGartDataCoShape');
@@ -33,7 +33,7 @@ that also contains the sensor definition and wireframe geometry in the
  :::
 ## Step 2 : Define a model parameter from script
 
-:::{dropdown} <a href="matlab:d_cor('tutoExpGUI-s2;')"><img src="../_images/run16.png" >Run step </a>. Expand to display source code.
+:::{dropdown} <a href="matlab:d_cor('tutoExpGUI-s2;')"><img src="../../_images/run16.png" >Run step </a>. Expand to display source code.
 ```matlab
 model=fe_case(model,'ParAdd k 1.0 0.1 10','ConstrainedLayer','pro4');
 
@@ -54,7 +54,7 @@ model=fe_case(model,'ParAdd k 1.0 0.1 10','ConstrainedLayer','pro4');
  expansion.
 ## Step 3 : Open the dock `CoShape`
 
-:::{dropdown} <a href="matlab:d_cor('tutoExpGUI-s3;')"><img src="../_images/run16.png" >Run step </a>. Expand to display source code.
+:::{dropdown} <a href="matlab:d_cor('tutoExpGUI-s3;')"><img src="../../_images/run16.png" >Run step </a>. Expand to display source code.
 ```matlab
 RO=struct('model',model,'va',id,'vb',def);
 VC=iicom('DockCoShape',RO);
@@ -76,7 +76,7 @@ To open the dock `CoShape` with the required data, store them in a `RO`
  ```
 ## Step 4 : Build the reduced parameterized model for expansion
 
-:::{dropdown} <a href="matlab:d_cor('tutoExpGUI-s4;')"><img src="../_images/run16.png" >Run step </a>. Expand to display source code.
+:::{dropdown} <a href="matlab:d_cor('tutoExpGUI-s4;')"><img src="../../_images/run16.png" >Run step </a>. Expand to display source code.
 ```matlab
 % Compute reduced model for expansion
 ii_mac(VC,'SetCoExp',struct('sparse',1,'Reduce','Mode+Sens','do','Reduce'));
@@ -90,7 +90,7 @@ Open the tab `CoExp` to build the reduced parameterized model
  Click on ![](../_icons/run16.png)
 ## Step 5 : Specify design points for expansion computation
 
-:::{dropdown} <a href="matlab:d_cor('tutoExpGUI-s5;')"><img src="../_images/run16.png" >Run step </a>. Expand to display source code.
+:::{dropdown} <a href="matlab:d_cor('tutoExpGUI-s5;')"><img src="../../_images/run16.png" >Run step </a>. Expand to display source code.
 ```matlab
 ii_mac(VC,'SetCoExp',struct('jw','1:5','lgamma','1:5',...
 'param1','@log(-1,1,11)','MDRE','do'));
@@ -99,7 +99,7 @@ ii_mac(VC,'SetCoExp',struct('jw','1:5','lgamma','1:5',...
 :::
 ## Step 6 : Switch between post-expansion analyzes
 
-:::{dropdown} <a href="matlab:d_cor('tutoExpGUI-s6;')"><img src="../_images/run16.png" >Run step </a>. Expand to display source code.
+:::{dropdown} <a href="matlab:d_cor('tutoExpGUI-s6;')"><img src="../../_images/run16.png" >Run step </a>. Expand to display source code.
 ```matlab
 ii_mac(VC,'SetMDRE',struct('ShowExp','do'));
 ii_mac(VC,'SetMDRE',struct('ShowExpTest','do'));
@@ -113,7 +113,7 @@ ii_mac(VC,'SetMDRE',struct('ShowErrModSensOnly','do'));
 :::
 ## Step 7 : Show model error vs. parameter for all $\gamma$
 
-:::{dropdown} <a href="matlab:d_cor('tutoExpGUI-s7;')"><img src="../_images/run16.png" >Run step </a>. Expand to display source code.
+:::{dropdown} <a href="matlab:d_cor('tutoExpGUI-s7;')"><img src="../../_images/run16.png" >Run step </a>. Expand to display source code.
 ```matlab
 ii_mac(VC,'SetMDRE',struct('ShowExpTest','do'));
 ii_mac(VC,'SetMDRE',struct('Xaxis3',1,'Dim3',1,'Dim2','all','Dim4','ErrMod','Dim5',1));

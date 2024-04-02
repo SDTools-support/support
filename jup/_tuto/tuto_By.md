@@ -23,7 +23,7 @@ The previous tutorial [](tutoEMA) has focused on the identification of
  transfers depends on the temperature.
 ## Step 1 : Load wireframe and parametric transfers
 
-:::{dropdown} <a href="matlab:gartid('tutoBy-s1;')"><img src="../_images/run16.png" >Run step </a>. Expand to display source code.
+:::{dropdown} <a href="matlab:gartid('tutoBy-s1;')"><img src="../../_images/run16.png" >Run step </a>. Expand to display source code.
 ```matlab
 [XF,wire]=demosdt('DemoGartBy');
 [ci,cf]=iicom('dockid',struct('model',wire,'XF',XF));
@@ -46,7 +46,7 @@ Load the curve containing all the measurement blocks and eventually the
 :::
 ## Step 2 : Switch to By mode
 
-:::{dropdown} <a href="matlab:gartid('tutoBy-s2;')"><img src="../_images/run16.png" >Run step </a>. Expand to display source code.
+:::{dropdown} <a href="matlab:gartid('tutoBy-s2;')"><img src="../../_images/run16.png" >Run step </a>. Expand to display source code.
 ```matlab
 % Simulate click on button "Init By Mode"
 iicom(ci,'SetIdent',struct('ByMode','do'))
