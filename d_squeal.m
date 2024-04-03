@@ -568,7 +568,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    q0=stack_get(SE,'curve','q0','get');
    if ~isempty(q0)
     q0=feutilb('placeindof',TR.DOF,q0);
-    TR.def=[TR.def q0.def]; TR.data(end+1,1)=0;
+    TR.def=[TR.def q0.def]; TR.data(end+1:end+size(q0.def,2),1)=0;
    end
    RO.q0='m';
    if 1==2
@@ -639,7 +639,13 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    q0=stack_get(SE,'curve','q0','get'); q0.data=0; %q0.def(1:2)=0; 
    [q01,r1]=nl_solve('deffnl-getRes',SE,q0)
    SE=stack_set(SE,'curve','q0',q01);
-   SE.Load.DOF=SE.DOF; SE.Load.def=r1; SE.Load.lab{1}='steq';
+   if isempty(SE.Load.def)
+    SE.Load.DOF=SE.DOF;
+    SE.Load.def=r1; SE.Load.lab{1}='steq';
+   else
+    SE.Load.def(:,end+1)=r1; SE.Load.lab{1,end+1}='steq';
+    SE.Load.curve(1,end+1)={''};
+   end
   end
 
   if 1==2
@@ -721,6 +727,10 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
   if carg<=nargin; RO=varargin{carg}; carg=carg+1; else; RO=struct; end
   RB=struct('matdes',[2 3 1 9 7],'enh',9,'RangeType','Grid');
   RO=sdth.sfield('AddMissing',RO,RB);
+
+  if ~isfield(model,'Elt')&&isfield(model,'nmap')
+   RO.nmap=model.nmap; [u1,u2,model]=sdth.GetData(model,'-mdl');
+  end
   
   % Linearize coupling
   if ~isempty(nl_spring('getpro',model))
@@ -801,6 +811,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    end
    out=MVR;
   end
+  sdtm.store(RO)
   
  elseif comstr(Cam,'cmt')
  %% #SolveCMT: CMT reduction for squeal models
