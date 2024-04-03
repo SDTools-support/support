@@ -2,7 +2,7 @@
 # Learn more at https://jupyterbook.org/customize/config.html
 
 title: Structural Dynamics Toolbox
-author: SDTools team
+author: SDTools 
 logo: ./_images/logoL.png
 only_build_toc_files: true
 # Define the name of the latex output file for PDF builds
