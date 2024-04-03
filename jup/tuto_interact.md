@@ -10,7 +10,7 @@
 :columns: 4
 :link: tuto:FeplotInteract
 :link-type: any
-**Feplot**
+**Feplot interactivity**
 ^^^
 ![](_images/tuto_FeplotInteract.png)
 +++

@@ -1,7 +1,7 @@
 (tuto:correl)=
 # Test/simulation correlation methods
 
-**Section [](tuto:correl)** lists lists tutorials about test/simulation correlation methods (topology correlation, shape correlation,...)
+**Section [](tuto:correl)** lists tutorials that deal with topology correlation, shape correlation, model updating...
 
 ::::{grid}
 :gutter: 3

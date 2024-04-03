@@ -1,7 +1,7 @@
 (tuto:test)=
 # Test analysis methods
 
-**Section [](tuto:test)** lists tutorials about test analysis methods (test mesh building, EMA, Time demodulation...)
+**Section [](tuto:test)** lists tutorials about test mesh building, EMA, Time demodulation...
 
 ::::{grid}
 :gutter: 3
