@@ -1,8 +1,14 @@
 - caption: SDT-base
-  numbered: True
+  numbered: 3
   chapters:
       - file: base/tuto
         sections:
-          - file: base/_tuto/tuto_Interact
-          - file: base/_tuto/tuto_By
-          - file: base/_tuto/tuto_ExpGUI
+          - file: base/tuto_interact
+            sections:
+              - file: base/_tuto/tuto_FeplotInteract
+          - file: base/tuto_test
+            sections:
+              - file: base/_tuto/tuto_By
+          - file: base/tuto_correl
+            sections:
+              - file: base/_tuto/tuto_ExpGUI

@@ -18,9 +18,9 @@ The previous tutorial [](tutoEMA) has focused on the identification of
  identification for each block and finally post-treat the result 
  (pole tracking, clustering, main shape extraction,...)
  
- The following tutorial highlights the procedure through the parametric 
- identification of the `DemoGartBy` example in which each block of 
- transfers depends on the temperature.
+ The following tutorial highlights the procedure identify parametric 
+ transfers on the `DemoGartBy` example in which each block of transfers 
+ depends on the temperature.
 ## Step 1 : Load wireframe and parametric transfers
 
 :::{dropdown} <a href="matlab:gartid('tutoBy-s1;')"><img src="../../_images/run16.png" >Run step </a>. Expand to display source code.

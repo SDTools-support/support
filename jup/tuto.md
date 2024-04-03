@@ -3,7 +3,14 @@
 
 This chapter is a list of tutorials to explore the main functionalities of SDT.
 
-See the table of content below to get started.
+```{include} tuto_interact.md
+:start-line: 3
+```
 
-```{tableofcontents}
+```{include} tuto_test.md
+:start-line: 3
+```
+
+```{include} tuto_correl.md
+:start-line: 3
 ```
