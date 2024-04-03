@@ -1,0 +1,67 @@
+# Book settings
+# Learn more at https://jupyterbook.org/customize/config.html
+
+title: Structural Dynamics Toolbox
+author: SDTools team
+logo: ./_images/logoL.png
+only_build_toc_files: true
+# Define the name of the latex output file for PDF builds
+latex:
+  latex_documents:
+    targetname: sdt.tex
+
+# Add a bibtex file so that we can create citations
+bibtex_bibfiles:
+  - ..\tex\etienne.bib
+# Information about where the book exists on the web
+repository:
+  url: https://github.com/SDTools-support/support # Online location of your book
+  path_to_book: help  # Optional path to your book, relative to the repository root
+  branch: master 
+
+html: 
+    use_issues_button: true
+    use_repository_button: true
+    use_multitoc_numbering: false
+    
+sphinx:
+  recursive_update: true
+  config:
+    pygments_style: pygments.styles.xcode.XcodeStyle
+    highlight_language: matlab
+    latex_elements:
+        preamble:
+          \newcommand{\oft}{\left( t \right)}
+          \newcommand{\ofw}{\left( \omega \right)}
+          \newcommand{\ve}[1]{\left\{#1\right\}}
+          \newcommand{\ma}[1]{\left[#1\right]}
+          \newcommand{\pa}[1](\left[#1\right)}
+          \newcommand{\mam}[1]{\begin{bmatrix}#1 \end{bmatrix}}
+          \newcommand{\vem}[1]{\begin{Bmatrix}#1 \end{Bmatrix}}
+          \newcommand{\pam}[1]{\begin{pmatrix}#1 \end{pmatrix}}
+          \newcommand{\smma}[1]{\mbox{$[#1]$}} %not in macros_hevea.tex
+          \newcommand{\smve}[1]{\mbox{$\{#1\}$}} %not in macros_hevea.tex
+          \newcommand{\su}[1]{\underline{#1}} % single underbar %not in macros_hevea.tex
+          \newcommand{\du}[1]{\underline{\underline{#1}}} % double underbar %not in macros_hevea.tex
+          \newcommand{\diag}[1]{\left[^{\backslash} \mbox{$#1$} _{\backslash} \right]}
+          \newcommand{\norm}[1]{\left\Vert #1 \right\Vert} %not in macros_hevea.tex
+    mathjax3_config:
+      tex:
+        macros:
+          "oft": "\\left( t \\right)"
+          "ofw": "\\left( \\omega \\right)"
+          "ve": ["\\left\\{#1\\right\\}", 1]
+          "ma": ["\\left[#1\\right]", 1]
+          "pa": ["\\left(#1\\right)", 1]
+          "mam": ["\\begin{bmatrix}#1 \\end{bmatrix}", 1]
+          "vem": ["\\begin{Bmatrix}#1 \\end{Bmatrix}", 1]
+          "pam": ["\\begin{pmatrix}#1 \\end{pmatrix}", 1]
+          "smma": ["\\mbox{$[#1]$}", 1]
+          "smve": ["\\mbox{$\\{#1\\}$}", 1]
+          "su": ["\\underline{#1}", 1]
+          "du": ["\\underline{\\underline{#1}}", 1]
+          "diag": ["\\left[^{\\backslash} \\mbox{$#1$} _{\\backslash} \\right]", 1]
+          "norm": ["\\left\\Vert #1 \\right\\Vert", 1]
+parse:
+   myst_url_schemes: [mailto, http, https]
+   
