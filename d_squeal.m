@@ -390,7 +390,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
   
   % recover a model
   model=varargin{carg}; carg=carg+1;
-  [ob,u1,model]=sdth.GetData(model,'-mdl'); 
+  [model,ob]=sdth.GetData(model,'-mdl'); 
   if isfield(ob,'nmap')&&isfield(ob,'S');projM=ob.nmap;end % robust? 
   % recover modal resolution options
   if carg<=nargin; eigopt=varargin{carg}; carg=carg+1;
@@ -514,7 +514,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
   % xxx other fields ?
   if ~isempty(obj) % cb format: call with obj and evt
    % curModel 
-   [RO,u2,model]=sdth.GetData(obj,'-mdl'); % xxx nmap=expM and SolveTimeRed option
+   [model,RO]=sdth.GetData(obj,'-mdl'); % xxx nmap=expM and SolveTimeRed option
    if isKey(RO.nmap,'SolveTimeRed');nmap=RO.nmap;RO=RO.nmap('SolveTimeRed');
    else; nmap=RO.nmap; 
    end
@@ -723,18 +723,20 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
  elseif comstr(Cam,'mvr'); [CAM,Cam]=comstr(Cam,4);
   %% #SolveMVR: build reduced parametric studies with SDT/Param adapted to squeal setups
   
-  model=sdth.GetData(varargin{carg},'-mdl'); carg=carg+1;
+  [model,RT]=sdth.GetData(varargin{carg},'-mdl'); carg=carg+1;
   if carg<=nargin; RO=varargin{carg}; carg=carg+1; else; RO=struct; end
   RB=struct('matdes',[2 3 1 9 7],'enh',9,'RangeType','Grid');
   RO=sdth.sfield('AddMissing',RO,RB);
 
-  if ~isfield(model,'Elt')&&isfield(model,'nmap')
-   RO.nmap=model.nmap; [u1,u2,model]=sdth.GetData(model,'-mdl');
-  end
-  
   % Linearize coupling
-  if ~isempty(nl_spring('getpro',model))
-   model=nl_solve('TgtMdlBuild keepName -evalFNL',model,RO);
+  nlpro=nl_spring('getpro',model);
+  if ~isempty(nlpro)
+   if isfield(model,'nmap')&&isKey(model.nmap,'keepNL')
+    nlpro=setdiff(cellfun(@(x)x.il(1),nlpro(:,3)),model.nmap('keepNL'));
+   end
+   if ~isempty(nlpro)
+    model=nl_solve('TgtMdlBuild keepName -evalFNL',model,[],RO);
+   end
   end
   % Assemble with parameters
   if ~ischar(RO.matdes); RO.matdes=num2str(RO.matdes(:)'); end
@@ -811,7 +813,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    end
    out=MVR;
   end
-  sdtm.store(RO)
+  sdtm.store(RT)
   
  elseif comstr(Cam,'cmt')
  %% #SolveCMT: CMT reduction for squeal models
@@ -2572,7 +2574,7 @@ elseif comstr(Cam,'fixdiscrot')
   catch; if ~isfield(RO,'axis'); sdtw('_nb','motion handling problem'); else; r1=[]; end
   end
   % get disc nodes
-  mo1=sdth.GetData(model);
+  mo1=sdth.GetData(model,'-mdl');
   mo1.Elt=feutil(sprintf('selelt %s & selface',RO.discsel),mo1);
   mo1.Node=feutil('getnodegroupall',mo1);
   % get disc top surface based on motion normal
