@@ -580,7 +580,8 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
   end
 
   if RO.normE % xxx post renorm with elastic matrices only
-   % I guess this is needed for diagonal modal newmark
+   % I guess this is needed for diagonal modal newmark -> xxxeb move to
+   % hrRedNL
    TR=feutilb('placeindof',SE.DOF,TR);
    K=feutilb('tkt',TR.def,SE.K);
    d1=fe_eig({K{1},K{3},[]},2);
@@ -690,10 +691,45 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    co2=RT.nmap('LastContinue'); %mo2=RT.nmap('CurModel'); co2=mo2.nmap('LastContinue');
    [~,R2]=sdtm.urnPar(CAM,'{}{}');
    if ~any(co2.u)&&~any(co2.v)||any(strcmpi(R2.Failed,'randv'));
-       co2.v=rand(size(co2.v));
+       co2.v=rand(size(co2.v))*10;
    end
 
    [r3,d1]=nl_solve('fe_timeChandleContinue',co2,[],struct);
+   i1=sdtm.regContains(R2.Failed,'ctc');
+   if any(i1)
+      Cam=lower(R2.Failed{i1});v=[];
+     % Analyze the contact information EB24
+      C3=feval(nlutil('@FNL2curve'),d1,struct('urn','{squeal}'));
+      C3.X{2}(4:7,3)={struct('DispUnit','\mu m','coef',1e3)};
+       eval(iigui({'C3','d1'},'SetInBaseC')) 
+      if any(Cam=='f')  
+       figure(400);semilogy(squeeze(C3.Y(:,4,:)),squeeze(C3.Y(:,1,:))) % distribution along exp
+      end
+      if contains(Cam,'gsvd')
+       [u,s,v]=svd(squeeze(C3.Y(:,4,:)),'econ','vector');
+       i1=1:length(co2.u);s=s(i1);u=u(:,i1).*s';v=v(:,i1);
+       figure(401);plot(u); st1='PrincGap';
+      end
+      if contains(Cam,'psvd')
+       [u,s,v]=svd(squeeze(C3.Y(:,1,:)),'econ','vector');
+       i1=s>1e-5*s(1);s=s(i1);u=u(:,i1).*s';v=v(:,i1);
+       figure(402);plot(C3.X{1},u); st1='PrincPress';ylabel(st1);axis tight
+      end
+      if ~isempty(v)
+       NL= co2.clist{5}.data;
+       cg=feplot(20,';'); sel=co2.clist{5}.data.Sel;
+       if ~isequal(sel.mdl.Elt,cg.mdl.Elt);cg.mdl=sel.mdl;end
+       d1=struct('def',v,'DOF',sel.mdl.Node(:,1)+.19,'data',s,'name',st1);
+       d1.LabFcn='sprintf(''\\sigma_%i/\\sigma_1=%g'',ch,def.data(ch)/def.data(1));'
+
+       cg.def=d1; fecom(';colordata19;colorscaleone')
+       %h=sdtm.feutil.SelPatch(sel,cg.ga,'reset');
+       %set(h,'FaceVertexCData',v(:,2),'facecolor','interp')
+       cg.os_('CbTr{string,Pressure}');ii_plp('colormapband',parula(5),cg.ga)
+      end
+
+   end
+
    C3=feval(nlutil('@FNL2curve'),d1,struct('drop0',1));
    C3.Y(1,:)=C3.Y(2,:);'xxx'
    C3.X{1}(:,1)=C3.X{1}(:,1)-C3.X{1}(1);
