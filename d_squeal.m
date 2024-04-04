@@ -527,6 +527,20 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    def=varargin{carg}; carg=carg+1;
    if carg<=nargin; RO=varargin{carg}; carg=carg+1; else; RO=struct; end
   end
+  if ~isfield(SE,'K') % late assemble if not done before
+   % this a TimePre phase that could be done before to ease setup
+   'xxx stack info,RangeStatic with jPar'
+   Ra1=RO.nmap('CurDoE'); Ra1.jPar=RO.nmap('jPar');
+   % xxx missing q0, stored in nmap
+   if isempty(stack_get(SE,'curve','q0'))&&isKey(RO.nmap,'q0')
+    SE=stack_set(SE,'curve','q0',RO.nmap('q0'))
+   end
+   SE=fe_caseg('ParSet',SE,Ra1); % should already be set, need to be coherent with q0.Range,def.Range
+   [SE,Case,Load]=fe_case(nl_spring('AssembleCall'),SE); SE.Case=Case; SE.Load=Load;
+   def=fe_def('subdef',def,find(def.data(:,3)==Ra1.jPar)); % sub to jPar
+   % for q0, keep all in basis, need recompute current one on reduced model
+   % check steq to assess relevance
+  end
 
   [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
    '-minrio(#3#"strategy keep minimal damping and use real imaginary orth basis")' ...
@@ -594,7 +608,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    SEf=SE;
    SE=nlutil('HrRedNL',SE,TR,RO);
    % else; % we would call fe_reduc for a redefined assembly
-   while nnz(SE.K{end}==0); 
+   while nnz(SE.K{end})==0; 
     i1=length(SE.K);SE.K(i1)=[];SE.Klab(i1)=[];SE.Opt(:,i1)=[];
    end
   end
@@ -638,6 +652,21 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
   if RO.steq
    % reeval FNL, and set FcEq to balance static forces (from static to dynamic model)
    q0=stack_get(SE,'curve','q0','get'); q0.data=0; %q0.def(1:2)=0; 
+
+   if size(q0.def,2)>1
+    q1=stack_get(SE,'curve','dStat','get');
+    if isfield(q1,'Range')
+     % xxx multi par requires interp/surrogate estimate: fe_range getXFslice oInterp
+     % for fields, for matrices, check back fields of nl states
+     hh=struct('Xlab',{{'DOF','Stat','Range'}},'X',{{q0.DOF,1,q1.Range.val}},...
+      'Y',reshape(q0.def,length(q0.DOF),1,[]),'Stack',{{'info','Range',q1.Range}});
+     hi=feval(fe_range('@getXFslice'),'initinterp',hh);
+     hi.Stack{'info','Xinterp'}=struct('X',{{[Ra1.val(Ra1.jPar,:)]}},'Xlab',{{'Fz'}});
+     q0.def=hi.Y;
+
+    end
+   end
+
    [q01,r1]=nl_solve('deffnl-getRes',SE,q0)
    SE=stack_set(SE,'curve','q0',q01);
    if isempty(SE.Load.def)
@@ -657,8 +686,8 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    [dd.data(1,:) def.data(18,:)]
    % intial speed ?
    q0=stack_get(SE,'curve','q0','get');
-   q01.def(:,2)=[1e-7;0;0]; % that would be v0
-   SE=stack_set(SE,'curve','q0',q01)
+   q0.def(:,2)=[1e-7;0;0;0]; % that would be v0
+   SE=stack_set(SE,'curve','q0',q0)
 
    % check static equilibrium looks ok
 
@@ -672,6 +701,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    if ~isfield(SE,'nmap');SE.nmap=vhandle.nmap;end
    SE.nmap('LastContinue')='do';
    % now first run
+   SE.nmap('ModalNewmarkUseDiagDamp')=1;
    % figure(1);NL=SE.NL{end}; plot(sort(NL.vnl(2,:,2)))
    %SE.FNL=model.FNL+0; SE.FNLlab=model.FNLlab; SE.FNLDOF=model.FNLDOF
    [d2,mo3]=fe_time(SE); %iicom('curveinit','def',d2)
@@ -730,7 +760,8 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
 
    end
 
-   C3=feval(nlutil('@FNL2curve'),d1,struct('drop0',1));
+   C3=feval(nlutil('@FNL2curve'),d1,struct('drop0',1,'out','list'));
+   if iscell(C3); C3=stack_get(C3,'','squeal','get'); end
    C3.Y(1,:)=C3.Y(2,:);'xxx'
    C3.X{1}(:,1)=C3.X{1}(:,1)-C3.X{1}(1);
    c3=iiplot(3,';');iicom('curveinit','Time',C3)
@@ -742,6 +773,11 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
     d_squeal(RT.nmap('ViewSpec'));
     %RT.nmap('ViewSpec')='ViewSpec(BufTime .4 Overlap .8 tmin .5 -window hanning fmin 1300 1700)';
    end
+
+   if any(strcmpi(R2.Failed,'store'))
+    RT.nmap('LastContinue')=r3;
+   end
+
    if 1==2
     d_squeal('ViewInstFreq{dmBand100,harm1,do{ReEstY,f(t),a(t)},f 1500,ifBand100,aeBand100,clipBand500 3k,,tclip .01 .01}');
     c3=iiplot(3,';');nmap=c3.data.nmap.nmap;C4=nmap('SqShape');
