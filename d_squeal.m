@@ -527,6 +527,20 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    def=varargin{carg}; carg=carg+1;
    if carg<=nargin; RO=varargin{carg}; carg=carg+1; else; RO=struct; end
   end
+  if ~isfield(SE,'K') % late assemble if not done before
+   % this a TimePre phase that could be done before to ease setup
+   'xxx stack info,RangeStatic with jPar'
+   Ra1=RO.nmap('CurDoE'); Ra1.jPar=RO.nmap('jPar');
+   % xxx missing q0, stored in nmap
+   if isempty(stack_get(SE,'curve','q0'))&&isKey(RO.nmap,'q0')
+    SE=stack_set(SE,'curve','q0',RO.nmap('q0'))
+   end
+   SE=fe_caseg('ParSet',SE,Ra1); % should already be set, need to be coherent with q0.Range,def.Range
+   [SE,Case,Load]=fe_case(nl_spring('AssembleCall'),SE); SE.Case=Case; SE.Load=Load;
+   def=fe_def('subdef',def,find(def.data(:,3)==Ra1.jPar)); % sub to jPar
+   % for q0, keep all in basis, need recompute current one on reduced model
+   % check steq to assess relevance
+  end
 
   [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
    '-minrio(#3#"strategy keep minimal damping and use real imaginary orth basis")' ...
