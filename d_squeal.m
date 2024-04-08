@@ -530,7 +530,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
   if ~isfield(SE,'K') % late assemble if not done before
    % this a TimePre phase that could be done before to ease setup
    'xxx stack info,RangeStatic with jPar'
-   Ra1=RO.nmap('CurDoE'); Ra1.jPar=RO.nmap('jPar');
+   Ra1=RO.nmap('CurDoE'); Ra1.jPar=RO.nmap('jParR');
    % xxx missing q0, stored in nmap
    if isempty(stack_get(SE,'curve','q0'))&&isKey(RO.nmap,'q0')
     SE=stack_set(SE,'curve','q0',RO.nmap('q0'))
@@ -554,14 +554,6 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
   if RO.minrio
    %% #doMinRIO reduction basis generation as post -3
    [u1,i1]=min(def.data(:,2));
-   if 1==2 % #ToDo24/02_timesqueal -3
-     NL=model.NL{1,3}; li=model.NL{1,4} % list of implicit jacobian
-     % Z=
-     % Z\psi = 0 ? 
-     % CEA computation that should be consistent 
-     % sdtweb nl_solve SaveEig.Jacobian % GV Export state to allow verification 
-     % vhandle.uo.viewModel('txt',NL)
-   end
 
    if isfield(def,'TR') % expressed in real basis, orth and restit
     TR=orth([real(def.def(:,i1)) imag(def.def(:,i1))]);
@@ -661,7 +653,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
      hh=struct('Xlab',{{'DOF','Stat','Range'}},'X',{{q0.DOF,1,q1.Range.val}},...
       'Y',reshape(q0.def,length(q0.DOF),1,[]),'Stack',{{'info','Range',q1.Range}});
      hi=feval(fe_range('@getXFslice'),'initinterp',hh);
-     hi.Stack{'info','Xinterp'}=struct('X',{{[Ra1.val(Ra1.jPar,:)]}},'Xlab',{{'Fz'}});
+     hi.Stack{'info','Xinterp'}=struct('X',{{[Ra1.val(RO.nmap('jPar0'),:)]}},'Xlab',{{'Fz'}});
      q0.def=hi.Y;
 
     end
@@ -721,7 +713,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    co2=RT.nmap('LastContinue'); %mo2=RT.nmap('CurModel'); co2=mo2.nmap('LastContinue');
    [~,R2]=sdtm.urnPar(CAM,'{}{}');
    if ~any(co2.u)&&~any(co2.v)||any(strcmpi(R2.Failed,'randv'));
-       co2.v=rand(size(co2.v))*10;
+       co2.v=rand(size(co2.v))*10; % xxx factor too high when unstable
    end
 
    [r3,d1]=nl_solve('fe_timeChandleContinue',co2,[],struct);
@@ -750,7 +742,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
        cg=feplot(20,';'); sel=co2.clist{5}.data.Sel;
        if ~isequal(sel.mdl.Elt,cg.mdl.Elt);cg.mdl=sel.mdl;end
        d1=struct('def',v,'DOF',sel.mdl.Node(:,1)+.19,'data',s,'name',st1);
-       d1.LabFcn='sprintf(''\\sigma_%i/\\sigma_1=%g'',ch,def.data(ch)/def.data(1));'
+       d1.LabFcn='sprintf(''\\sigma_{%i}/\\sigma_1=%g'',ch,def.data(ch)/def.data(1));'
 
        cg.def=d1; fecom(';colordata19;colorscaleone')
        %h=sdtm.feutil.SelPatch(sel,cg.ga,'reset');
@@ -758,12 +750,15 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
        cg.os_('CbTr{string,Pressure}');ii_plp('colormapband',parula(5),cg.ga)
       end
 
-   end
+   else
 
    C3=feval(nlutil('@FNL2curve'),d1,struct('drop0',1,'out','list'));
    if iscell(C3); C3=stack_get(C3,'','squeal','get'); end
    C3.Y(1,:)=C3.Y(2,:);'xxx'
    C3.X{1}(:,1)=C3.X{1}(:,1)-C3.X{1}(1);
+
+   end
+
    c3=iiplot(3,';');iicom('curveinit','Time',C3)
 
    %i3=~any(C3.Y);C3.Y(:,i3)=[];C3.X{2}(i3,:)=[];
