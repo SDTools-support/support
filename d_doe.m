@@ -113,8 +113,8 @@ li={'MeshCfg{d_contact(cube),None{Traj{selSetNametop1,curveDownForward,o 1 0 0,s
      'SimuCfg{"Imp{100u,.1,chandle1,acall.}","EigOpt{5 5 0}"}', ...
      'RunCfg{SetM{CurModel/model},nl_solve(fe_timeBack),SetM{CurModel/out},nlutil(HRbuild{q0m1}),run}'}';
 t=(1:10)';
-RT.nmap('DownForward')=struct('X',{{t,{'x';'z'}}},'Y',t*[1 -.1], ...
-    'LabFcn','sprintf(''x%.4f z%.4f'',def.data(ch,1:2))');
+RT.nmap('DownForward')=struct('X',{{t,{'x';'z'}}},'Y',linspace(0,1,length(t))'*[1 -.1], ...
+    'LabFcn','sprintf(''x%.4f z%.4f'',def.data(ch,2:3))','fun',[0 4]);
 
 RT.nmap('CubeJ24')=li; % CtcCube.J24
 % xxx Forced Motion 
@@ -131,10 +131,22 @@ RT.nmap('CubeB')=li; % CtcCube.B
 %  RT.nmap('PostB')='d_contact@autoCycle{tclip50 20,dmBand1.2,ci3}';
 %  RT.nmap('PostInit')='d_squeal(LoadTime{ci[2 13]},$nmap)';
 
+%% #CtcCub.Sclda : large motion checks 
+  % sdtweb d_contact meshScldCube
 li={'MeshCfg{d_contact(ScldCube),None{TrajScld}}','SimBack','RunCfg{Time}'};
+% RT.nmap('StickMesh')={};
 RT.nmap('TrajScld')=[ ...
     'Traj{selSetNameWheel,curveDownForward,o 1 0 0,storemodel{DownForward/d2}}'];
 RT.nmap('ScLdA')=li; % ScLdA
+
+RS=struct('sel','ProId201','distFcn',[]);
+RS.distFcn=lsutil('gen',[],{struct('shape','sphere','rc',5,'xc',1.5,'yc',.5,'zc',5+1)});
+RT.nmap('CbStickWheel')={@lsutil,'SurfStick','$projM',RS};
+RT.nmap('ScldCS')={'MeshCfg{d_contact(ScldCube{Kc1e7}),None{TrajScld,CbStickWheel}}'
+    'SimuCfg{"Imp{100u,.1,chandle1}"}'
+    'RunCfg{feplot,Time}'};
+
+
 % CtcCube.C : exponential contact; static followed by, hyperreduction
 % xxx add static load and point load 
 if isKey(nmap,'n')&&isKey(RT.nmap,nmap('n')); RT.nmap('CurExp')=RT.nmap(nmap('n')); end
