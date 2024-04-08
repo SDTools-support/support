@@ -3,7 +3,7 @@
 
 title: Structural Dynamics Toolbox
 author: SDTools 
-logo: ./_images/logoL.png
+logo: ./_images/logoS.png
 only_build_toc_files: true
 # Define the name of the latex output file for PDF builds
 latex:
