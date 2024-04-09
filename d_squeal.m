@@ -824,6 +824,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
     RA=sdth.sfield('AddMissing',RO,RC);
     RA=fe2xf('BuildListRMinMax',model,RA);
    end
+   if isfield(RA,'allp')&&RA.allp;    RA.setjPar=1;   end % use a jPar in list as well
    if isempty(RO.enh)
     RA.NoT=0; MVR=fe2xf('Build',model,RA);
    else
