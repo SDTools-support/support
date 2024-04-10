@@ -60,9 +60,7 @@ class MatlabLexer(RegexLexer):
     # taken from MATLAB version'9.6.0.1092380 (R2019a) Update 1'
     #
     sdtfun = (
-         "Contents",
          "GM_utils",
-         "Readme",
          "SL",
          "SOFO_FBGS_example",
          "abaqus",
@@ -144,10 +142,6 @@ class MatlabLexer(RegexLexer):
          "dktp",
          "dm15",
          "elem0",
-         "emails",
-         "emails_contactlist",
-         "esa12",
-         "esa19",
          "esi2sdt",
          "esp17",
          "ex2sdt",
@@ -207,9 +201,6 @@ class MatlabLexer(RegexLexer):
          "flui4",
          "flui6",
          "flui8",
-         "fra",
-         "fra20",
-         "fra21",
          "fsc",
          "fsc3",
          "funref",

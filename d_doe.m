@@ -142,9 +142,11 @@ RT.nmap('ScLdA')=li; % ScLdA
 RS=struct('sel','ProId201','distFcn',[]);
 RS.distFcn=lsutil('gen',[],{struct('shape','sphere','rc',5,'xc',1.5,'yc',.5,'zc',5+1)});
 RT.nmap('CbStickWheel')={@lsutil,'SurfStick','$projM',RS};
-RT.nmap('ScldCS')={'MeshCfg{d_contact(ScldCube{Kc1e7}),None{TrajScld,CbStickWheel}}'
+% missing InitUnl0 
+RT.nmap('ScldCS')=struct('ToolTip','Two cubes, sphere', ...
+    'li',{{'MeshCfg{d_contact(ScldCube{Kc1e7}),None{TrajScld,CbStickWheel}}'
     'SimuCfg{"Imp{100u,.1,chandle1}"}'
-    'RunCfg{feplot,Time}'};
+    'RunCfg{feplot,Time}'}});
 
 
 % CtcCube.C : exponential contact; static followed by, hyperreduction

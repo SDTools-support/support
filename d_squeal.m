@@ -1714,6 +1714,7 @@ end
 %C2=spec.GetData; C2.X{1}=C2.X{1}-C2.X{1}(1);iicom(c2,'curveinit','spec',C2)
 %c2.ua.YFcn='r3=abs(r3);';iiplot
 
+if ~exist('hbmui','file');try;eval('sd _pnlsim');end;end
 iicom(c2,'initSqSig{Hbm.SqBase}'); 
 if ~isfield(RO,'ci');RO.ci=13;end
 new=~ishandle(RO.ci);
