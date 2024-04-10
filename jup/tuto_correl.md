@@ -1,3 +1,5 @@
+```{include} ../header.md
+```
 (tuto:correl)=
 # Test/simulation correlation methods
 
