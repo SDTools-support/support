@@ -860,7 +860,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
     zC=stack_get(MVR,'info','zCoef','get');
     i1=cellfun(@(x)any(~cellfun(@isempty,x)),...
      cellfun(@(x)strfind(zC(2:end,4),x),lab,'uni',0),  'uni',1);
-    if any(~i1) % some parameter has no effect on any matrix
+    if any(~i1)&&(~isfield(RA,'allp')||~RA.allp) % some parameter has no effect on any matrix
      cellfun(@(x)sdtw('_nb','Parameter %s does not have any effect, skipped',x),lab(~i1),'uni',0);
      Range(~i1)=[];
     end
