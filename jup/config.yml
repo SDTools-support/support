@@ -25,9 +25,11 @@ html:
     use_multitoc_numbering: false
     
 sphinx:
+  local_extensions:
+    sdtmacros: .
+  name: path
   recursive_update: true
   config:
-    pygments_style: pygments.styles.xcode.XcodeStyle
     highlight_language: matlab
     latex_elements:
         preamble:

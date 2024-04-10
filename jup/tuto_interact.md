@@ -1,3 +1,5 @@
+```{include} ../header.md
+```
 (tuto:interact)=
 # GUI interactivity
 
