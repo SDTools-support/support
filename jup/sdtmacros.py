@@ -11,9 +11,10 @@ class helloworlddirective(Directive):
 
 def helloworldrole(role, rawtext, text, lineno, inliner,
                        options=None, content=None):
-    paragraph_node = nodes.paragraph(text='Hello World Role : '+  text)
-    return [paragraph_node], []      
-
+    text='Hello World Role : <font color=”green”>' + text + '</font>'
+    node=nodes.Text(text)
+    return [node], []
+       
 def setup(app):
     app.add_directive('helloworlddirective', helloworlddirective)
     app.add_role('helloworldrole', helloworldrole)
