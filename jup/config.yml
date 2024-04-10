@@ -30,7 +30,6 @@ sphinx:
   name: path
   recursive_update: true
   config:
-    pygments_style: pygments.styles.igor.IgorStyle
     highlight_language: matlab
     latex_elements:
         preamble:
