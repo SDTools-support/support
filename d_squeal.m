@@ -573,6 +573,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
   if RO.q0 % add q0 reduction basis
    q0=stack_get(SE,'curve','q0','get');
    if ~isempty(q0)
+    if size(q0.def,2)>2; q0=fe_def('subdef',q0,[1 size(q0.def,2)]); end
     q0=feutilb('placeindof',TR.DOF,q0);
     TR.def=[TR.def q0.def]; TR.data(end+1:end+size(q0.def,2),1)=0;
    end
@@ -591,8 +592,10 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    TR=feutilb('placeindof',SE.DOF,TR);
    K=feutilb('tkt',TR.def,SE.K);
    d1=fe_eig({K{1},K{3},[]},2);
-   %[gg,wj]=fe_norm(TR.def,SE.K{1},SE.K{3});
    TR.def=TR.def*d1.def;
+   if max(max(abs(d1.def'*K{1}*d1.def-eye(size(d1.def,1)))))>1e-6
+    [TR.def,wj]=fe_norm(TR.def,SE.K{1},SE.K{3}); TR.data=wj/2/pi;
+   end
   end
 
   if isfield(SE,'K') % EB version (no using RedOpt)
@@ -713,7 +716,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    co2=RT.nmap('LastContinue'); %mo2=RT.nmap('CurModel'); co2=mo2.nmap('LastContinue');
    [~,R2]=sdtm.urnPar(CAM,'{}{}');
    if ~any(co2.u)&&~any(co2.v)||any(strcmpi(R2.Failed,'randv'));
-       co2.v=rand(size(co2.v))*10; % xxx factor too high when unstable
+       co2.v=rand(size(co2.v))*.00001; % xxx factor too high when unstable
    end
 
    [r3,d1]=nl_solve('fe_timeChandleContinue',co2,[],struct);
