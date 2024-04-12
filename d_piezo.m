@@ -28,7 +28,7 @@ if comstr(Cam,'tutopatch')
 %% #TutoPatch : Piezoelectric extension patch - Statics -2
 % see sdtweb pz_basics#pz_patch_num_ext 
 
-%% BeginSource sdtweb('_example','pz_theory.tex#tutopzpatchext')
+%% BeginSource sdtweb('_example','pz_fe.tex#tutopzpatchext')
 
 % Init working directory for figure generation
 d_piezo('SetPlotwd');
@@ -116,7 +116,7 @@ elseif comstr(Cam,'tutoshearpatch')
 
 % see sdtweb pz_basics#pz_patch_num_shear 
 %
-%% BeginSource sdtweb('_example','pz_theory.tex#tutopzpatchshear')
+%% BeginSource sdtweb('_example','pz_fe.tex#tutopzpatchshear')
 
 % Init working directory for figure generation
 d_piezo('SetPlotwd');
@@ -201,7 +201,7 @@ elseif comstr(Cam,'tutodiskimpedance')
 %% #TutoDiskImpedance : Piezoelectric Disk impedance -2
 % see sdtweb eq_dyn#pz_disk_impedance
 
-%% BeginSource sdtweb('_example','pz_theory.tex#tutopzdiskimpedance')
+%% BeginSource sdtweb('_example','pz_fe.tex#tutopzdiskimpedance')
 
 % Init working directory for figure generation
 d_piezo('SetPlotWd')
