@@ -21,4 +21,7 @@ parts:
           - file: base/tuto_correl
             sections:
               - file: base/_tuto/tuto_ExpGUI
-      - file: base/SdtMarkdownExamples
+      - file: base/collab
+        sections: 
+          - file: base/SdtMarkdownExamples
+ 
