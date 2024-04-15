@@ -139,12 +139,16 @@ RT.nmap('TrajScld')=[ ...
     'Traj{selSetNameWheel,curveDownForward,o 1 0 0,storemodel{DownForward/d2}}'];
 RT.nmap('ScLdA')=li; % ScLdA
 
+RT.nmap('CbRefCtc')={@fe_shapeoptim,'RefineHexaMesh','$projM','withnode{setname Wheel}&withnode{z<1.2}'};
+
 RS=struct('sel','ProId201','distFcn',[]);
-RS.distFcn=lsutil('gen',[],{struct('shape','sphere','rc',5,'xc',1.5,'yc',.5,'zc',5+1)});
+l=0.0750;
+RS.distFcn=lsutil('gen',[],{struct('shape','sphere','rc',l*5,'xc',l*1.5,'yc',l*.5,'zc',(5+1)*l)});
 RT.nmap('CbStickWheel')={@lsutil,'SurfStick','$projM',RS};
+
 % missing InitUnl0 
 RT.nmap('ScldCS')=struct('ToolTip','Two cubes, sphere', ...
-    'li',{{'MeshCfg{d_contact(ScldCube{Kc1e7}),None{TrajScld,CbStickWheel}}'
+    'li',{{'MeshCfg{d_contact(ScldCube{Kc1e7,lxyz 0.075 0.075 0.075}),None{TrajScld,CbRefCtc,CbStickWheel}}'
     'SimuCfg{"Imp{100u,.1,chandle1}"}'
     'RunCfg{feplot,Time}'}});
 
