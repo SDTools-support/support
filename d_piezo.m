@@ -5,7 +5,7 @@ function [out,out1,out2]=d_piezo(varargin); %#ok<*STOUT>
 % Arnaud Deraemaeker, ULB and Etienne Balmes, SDTools
 
 
-%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2024 by SDTools, All Rights Reserved.
 %       For revision information use d_piezo('cvs')
 
 if nargin==0
@@ -1661,7 +1661,7 @@ else
           'rc'});
      end
      if isfield(RB,'Electrode')&&~isempty(RB.Electrode)
-      RO.Electrode(end+(1:size(RB.Electrode)),1:2)=RB.Electrode;
+      RO.Electrode(end+(1:size(RB.Electrode,1)),1:2)=RB.Electrode;
      end
      
      switch lower(RB.shape)
