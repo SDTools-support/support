@@ -2848,10 +2848,9 @@ end
 
 elseif comstr(Cam,'setplotwd');[CAM,Cam]=comstr(CAM,7);
 %% #SetPlotWD : defines default dir for figures -2
- sdtroot('setproject',struct('PlotWd', ...
-   fullfile(fileparts(which('d_piezo')),'../piezo/figures'),'Report',''));
-
- % xxxAD for SDTools the expected directory is project/plots or tex/plots OK for you ?
+ wd=fullfile(fileparts(which('d_piezo')),'../piezo/figures');
+ if ~exist(wd,'dir');wd=fullfile(sdtdef('tempdir'),'plots');sdtkey('mkdir',wd);end
+ sdtroot('setproject',struct('PlotWd',wd,'Report','')); % non empty report would open word
 
 elseif comstr(Cam,'definestyles');[CAM,Cam]=comstr(CAM,11);
     %% #DefineStyles: defines default styles for feplot and iiplot figures -2
@@ -2862,8 +2861,8 @@ sdtroot('SetOsDic',{
     'cms_tw',{'Position',[NaN NaN 800 800]}
     'cms_f14' ,{'@axes',{'fontsize',14},'@title',{'fontsize',14},'@ii_legend',{'fontsize',14}}
     'cms_grid',{'@axes',{'xgrid','on','ygrid','on','zgrid','on'}}});
-li=sdtroot('cbosdicget',[],'cms_grid')
-sdtm.toString(sdtroot('cbosdicget',[],'ImSw80'))
+li=sdtroot('cbosdicget',[],'cms_grid');
+disp(sdtm.toString(sdtroot('cbosdicget',[],'ImSw80')));
 % d_piezo('reset') ProjectWd='@tempdir/sdtdemos/piezo' 
 % To change transparency
 sdtroot('setosdic',{'FiAlpha',{'@PlotInfo',{'sel-linface','','showpatch','','coloredgealpha.5','','colorfacealpha.1',''}}})
