@@ -2849,7 +2849,7 @@ end
 elseif comstr(Cam,'setplotwd');[CAM,Cam]=comstr(CAM,7);
 %% #SetPlotWD : defines default dir for figures -2
  sdtroot('setproject',struct('PlotWd', ...
-   fullfile(fileparts(which('d_piezo')),'../figures'),'Report',''));
+   fullfile(fileparts(which('d_piezo')),'../piezo/figures'),'Report',''));
 
  % xxxAD for SDTools the expected directory is project/plots or tex/plots OK for you ?
 
