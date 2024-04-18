@@ -130,31 +130,42 @@ RT.nmap('CubeB')=li; % CtcCube.B
 %  RT.nmap('PostA')='d_squeal(ViewSpec{BufTime 50 Tmin 50 Overlap .90 Fmax 20 -window hanning},nameHoffKmuV)';
 %  RT.nmap('PostB')='d_contact@autoCycle{tclip50 20,dmBand1.2,ci3}';
 %  RT.nmap('PostInit')='d_squeal(LoadTime{ci[2 13]},$nmap)';
+% CtcCube.C : exponential contact; static followed by, hyperreduction
+% xxx add static load and point load 
 
-%% #CtcCub.Sclda : large motion checks 
+%% #CtcCub.Sclda : large motion checks -3
   % sdtweb d_contact meshScldCube
 li={'MeshCfg{d_contact(ScldCube),None{TrajScld}}','SimBack','RunCfg{Time}'};
 % RT.nmap('StickMesh')={};
-RT.nmap('TrajScld')=[ ...
-    'Traj{selSetNameWheel,curveDownForward,o 1 0 0,storemodel{DownForward/d2}}'];
+RT.nmap('TrajScld')={ ... % sdtweb _bp d_contact caseTraj 
+    'Traj{selSetNameWheel,curveDownForward,o 1 0 0,storemodel{DownForward/d2}}'
+    'CbRefine';'CbStickWheel';'CbCtcGen'
+    };
+RT.nmap('TrajScldB')={ ...
+    'Case{reset}'
+    'Case{FixDof,Base,"inelt{proid111&selface&facing> .9 0 0 -1000}"}'
+    'Case{DofSet,Top,"rb{inelt{proid8&selface&facing> .9 0 0 1000},dir 1 3,curveDownForward,KeepDof}"}'
+    'Case{Pcond,Scld,p_contact(''PcondScld'')}'
+    'CbRefine';'CbStickWheel';'CbCtcGen'
+    };
 RT.nmap('ScLdA')=li; % ScLdA
 
-RT.nmap('CbRefCtc')={@fe_shapeoptim,'RefineHexaMesh','$projM','withnode{setname Wheel}&withnode{z<1.2}'};
-
-RS=struct('sel','ProId201','distFcn',[]);
 l=0.0750;
+RT.nmap('CbRefine')={@fe_shapeoptim,'RefineHexaMesh','$projM', ...
+    sprintf('withnode{setname Wheel}&withnode{z<%g}',1.2*l)};
+
+RS=struct('sel','inElt{matid8 & selface&facing >.9 0 0 -5000}','distFcn',[]);
 RS.distFcn=lsutil('gen',[],{struct('shape','sphere','rc',l*5,'xc',l*1.5,'yc',l*.5,'zc',(5+1)*l)});
 RT.nmap('CbStickWheel')={@lsutil,'SurfStick','$projM',RS};
 
 % missing InitUnl0 
-RT.nmap('ScldCS')=struct('ToolTip','Two cubes, sphere', ...
-    'li',{{'MeshCfg{d_contact(ScldCube{Kc1e7,lxyz 0.075 0.075 0.075}),None{TrajScld,CbRefCtc,CbStickWheel}}'
-    'SimuCfg{"Imp{100u,.1,chandle1}"}'
-    'RunCfg{feplot,Time}'}});
+RT.nmap('ScldCS')=struct('ToolTip','Sphere/cube contact', ...
+    'li',{{['MeshCfg{d_contact(ScldCube{Kc1e9,Integ2}),' ...
+      'None{TrajScld}}']
+    'SimuCfg{"Imp{100u,.1,chandle1,BetaR7e-6}"}'
+    'RunCfg{Time}'}});
 
-
-% CtcCube.C : exponential contact; static followed by, hyperreduction
-% xxx add static load and point load 
+% select current experiment base on n field 
 if isKey(nmap,'n')&&isKey(RT.nmap,nmap('n')); RT.nmap('CurExp')=RT.nmap(nmap('n')); end
 nmap('Ctc')=RT;
 
@@ -341,7 +352,8 @@ nmap('TV.Hoff')=RT; % d_doe('nmap','TV.Hoff{n,Texp.MN}')
  elseif nargout>1;[out,out1,out2]=sdtm.stdNmapOut(nmap,key,nargout,CAM);
  else; sdtm.stdNmapOut(nmap,key,nargout,CAM);
  end
-  
+ %% #Nmap.End
+
 elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
 %% Solve : parametric study  ---------------------------------------
 if carg>nargin;RO=struct('info',1);else;RO=varargin{carg};carg=carg+1;end

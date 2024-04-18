@@ -502,7 +502,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    out=d_squeal('ModeLab',out); % add specific LabFcn
   end
 
-  if ~isempty(projM);sdtm.store(projM);end % mapped output options uses NextStore key
+  sdtm.store(projM); % mapped output options uses NextStore key
   
  elseif comstr(Cam,'time'); [CAM,Cam]=comstr(CAM,5);
   %% #SolveTime: procedures for transient simualtions
@@ -884,7 +884,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    end
    out=MVR;
   end
-  sdtm.store(RT)
+  sdtm.store(RT) % Uses NextStore {CurModel/out} if RT is not empty
   
  elseif comstr(Cam,'cmt')
  %% #SolveCMT: CMT reduction for squeal models

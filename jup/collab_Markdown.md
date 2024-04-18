@@ -1,7 +1,7 @@
 ```{include} ../header.md
 ```
 (markdown)=
-# Markdown examples
+# Markdown examples (as used in documentation)
 
 ```{tableofcontents}
 ```
@@ -43,6 +43,34 @@ model=feutil('Extrude 0  1.0 0.0 0.0',model,...
 
 <img src="_images/run16.png" >Run step xxx link </a>
 
+
+
+## Tables 
+
+Using pipes and - 
+
+ | a | b | c |
+ | ---: | :--- | :---: |
+ | $+-$ right | left | center |
+ | $ -$ right | left | center |
+
+Using jupyter :::
+
+xxx need documentation
+
+
+(markdown:VS)=
+## VS code shortcuts 
+
+ Preview side-by-side (Ctrl+K V) 
+ Install jupyter notbook support
+
+
+ python3 
+
+!"C:\Program Files (x86)\Microsoft Visual Studio\Shared\Python39_64\python.exe" -m pip install jupyter-book
+   
+
 (markdown:Math)=
 ## Math
 :::{list-table} SDT math macros
@@ -81,19 +109,11 @@ model=feutil('Extrude 0  1.0 0.0 0.0',model,...
 
 $$
   w_{t+1} = (1 + r_{t+1}) s(w_t) + y_{t+1}
-$$ (my_other_label)
+$$
+`$$(my_other_label)` for jupyter
 
 
-Ref to equation {eq}`my_other_label`
+Ref to equation {eq}`my_other_label`. Has failed;
 
-(markdown:VS)=
-## VS code shortcuts 
+Next 
 
- Preview side-by-side (Ctrl+K V) 
- Install jupyter notbook support
-
-
- python3 
-
-!"C:\Program Files (x86)\Microsoft Visual Studio\Shared\Python39_64\python.exe" -m pip install jupyter-book
-   

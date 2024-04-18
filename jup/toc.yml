@@ -23,5 +23,6 @@ parts:
               - file: base/_tuto/tuto_ExpGUI
       - file: base/collab
         sections: 
-          - file: base/SdtMarkdownExamples
+          - file: base/collab_Intall
+          - file: base/collab_Markdown
  
