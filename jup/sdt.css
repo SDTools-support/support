@@ -1,1 +1,17 @@
 .s {COLOR: #0000FF; FONT-FAMILY: Courier New,Arial,Helvetica,sans-serif}
+span.keyword {color: #0000FF}
+span.sdt {color: #0077FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+pre.codeinput {
+  color: #0000AA;
+  background: #EEEEEE;
+  padding: 10px;
+}
+blockquote.figure {
+    display: inline-block;
+    background-color: #ffffff;
+    border-left: #ffffff;
+}
