@@ -97,7 +97,7 @@ elseif comstr(Cam,'nmap');
 
  if ~isKey(nmap,'AcqTime');nmap('AcqTime')=.3;end
 
-%% #SDT-contact test cases -2
+%% #SDT-contact CTC test cases -2
 
 RT=struct('nmap',vhandle.nmap);
 RT.nmap('SimBack')='SimuCfg{back{.2m,50,chandle1}}';
@@ -164,6 +164,7 @@ RT.nmap('ScldCS')=struct('ToolTip','Sphere/cube contact', ...
       'None{TrajScld}}']
     'SimuCfg{"Imp{100u,.1,chandle1,BetaR7e-6}"}'
     'RunCfg{Time}'}});
+RT.nmap('RangeLoopOpt')=struct('RangeLoopResKeys',{{'CurModel','CurTime'}});
 
 % select current experiment base on n field 
 if isKey(nmap,'n')&&isKey(RT.nmap,nmap('n')); RT.nmap('CurExp')=RT.nmap(nmap('n')); end

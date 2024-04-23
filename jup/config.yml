@@ -3,6 +3,7 @@
 
 title: Structural Dynamics Toolbox
 author: SDTools 
+copyright: "2023-2024 by SDTools"
 logo: ./_images/logoS.png
 only_build_toc_files: true
 # Define the name of the latex output file for PDF builds
@@ -65,5 +66,5 @@ sphinx:
           "diag": ["\\left[^{\\backslash} \\mbox{$#1$} _{\\backslash} \\right]", 1]
           "norm": ["\\left\\Vert #1 \\right\\Vert", 1]
 parse:
-   myst_url_schemes: [mailto, http, https]
+   myst_url_schemes: [mailto, https]
    

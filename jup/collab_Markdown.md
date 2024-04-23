@@ -43,6 +43,10 @@ model=feutil('Extrude 0  1.0 0.0 0.0',model,...
 
 <img src="_images/run16.png" >Run step xxx link </a>
 
+(collab.cross)=
+## Cross references
+
+https://myst-parser.readthedocs.io/en/latest/syntax/cross-referencing.html
 
 
 ## Tables 

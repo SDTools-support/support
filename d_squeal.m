@@ -2085,7 +2085,7 @@ if carg>nargin||comstr(Cam,'instfreq{')
  Time=c2.Stack{'Time'};% (SqLastSpec).Time is preemptive 
  projM=sdth.urn(sprintf('iiplot(%i).nmap',c2.opt(1))); 
  RO=useOrDefault(projM,'InstFreq');
- if isempty(RO);RO=sdtm.pcin('gr.IFreq','uo');end
+ if isempty(RO);RO=sdtm.pcin('gr:IFreq','uo');end
 
 else
  Time=varargin{carg};carg=carg+1;projM=[];
