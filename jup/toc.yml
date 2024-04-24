@@ -10,19 +10,19 @@ parts:
 - caption: SDT-base
   numbered: 3
   chapters:
-      - file: base/tuto
+      - file: tuto
         sections:
-          - file: base/tuto_interact
+          - file: tuto_interact
             sections:
-              - file: base/_tuto/tuto_FeplotInteract
-          - file: base/tuto_test
+              - file: _tuto/tuto_FeplotInteract
+          - file: tuto_test
             sections:
-              - file: base/_tuto/tuto_By
-          - file: base/tuto_correl
+              - file: _tuto/tuto_By
+          - file: tuto_correl
             sections:
-              - file: base/_tuto/tuto_ExpGUI
-      - file: base/collab
+              - file: _tuto/tuto_ExpGUI
+      - file: collab
         sections: 
-          - file: base/collab_Intall
-          - file: base/collab_Markdown
+          - file: collab_Intall
+          - file: collab_Markdown
  
