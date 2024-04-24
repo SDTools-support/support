@@ -716,7 +716,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    co2=RT.nmap('LastContinue'); %mo2=RT.nmap('CurModel'); co2=mo2.nmap('LastContinue');
    [~,R2]=sdtm.urnPar(CAM,'{}{}');
    if ~any(co2.u)&&~any(co2.v)||any(strcmpi(R2.Failed,'randv'));
-       co2.v=rand(size(co2.v))*.00001; % xxx factor too high when unstable
+       co2.v=rand(size(co2.v))*.001; % xxx factor too high when unstable
    end
 
    [r3,d1]=nl_solve('fe_timeChandleContinue',co2,[],struct);
