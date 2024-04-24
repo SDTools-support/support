@@ -1,7 +1,7 @@
 # Book settings
 # Learn more at https://jupyterbook.org/customize/config.html
 
-title: Structural Dynamics Toolbox
+title: ""# Empty title because added to each page title (tabs in browser) + replaced by the logo
 author: SDTools 
 copyright: "2023-2024 by SDTools"
 logo: ./_images/logoS.png
@@ -13,7 +13,7 @@ latex:
 
 # Add a bibtex file so that we can create citations
 bibtex_bibfiles:
-  - ..\tex\etienne.bib
+  - etienne.bib
 # Information about where the book exists on the web
 repository:
   url: https://github.com/SDTools-support/support # Online location of your book
