@@ -602,6 +602,10 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    TR.adof=(1:size(TR.def,2))'+.99; RO.K=1; % Reduce matrices
    SEf=SE;
    SE=nlutil('HrRedNL',SE,TR,RO);
+   'xxx the frequencies are close to 15 kHz and you have not modal damping'
+   wj=sqrt(diag(SE.K{3}))/2/pi
+   SE.K{2}=diag(2*pi*wj.*[.001;.001;.1]);  
+   SE.K{1}=diag(diag(SE.K{1}));'xxx identity'
    % else; % we would call fe_reduc for a redefined assembly
    while nnz(SE.K{end})==0; 
     i1=length(SE.K);SE.K(i1)=[];SE.Klab(i1)=[];SE.Opt(:,i1)=[];
@@ -718,10 +722,17 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    if ~any(co2.u)&&~any(co2.v)||any(strcmpi(R2.Failed,'randv'));
        co2.v=rand(size(co2.v))*.001; % xxx factor too high when unstable
    end
-
+   if    any(strcmpi(R2.Failed,'randf'));
+     ca=co2.clist{1}.data; r1=ca.tft(2,:);
+     ca.r(:,4)=[1e1;0;0];ca.r=ca.r(:,[1 2 4 3]);
+     %ca.tft(3,:)=sin(5000*2*pi*ca.tft(1,:));%rand(size(r1));
+     ca.tft(3,:)=rand(size(r1))*1e-3;
+     co2.clist{1}.data=ca;
+     %co2.clist{1}.data.tft(2,:)=r1.*(1+rand(size(r1))*1e-2);
+   end
    [r3,d1]=nl_solve('fe_timeChandleContinue',co2,[],struct);
    i1=sdtm.regContains(R2.Failed,'ctc');
-   if any(i1)
+   if any(i1) % CtC display contact fields 
       Cam=lower(R2.Failed{i1});v=[];
      % Analyze the contact information EB24
       C3=feval(nlutil('@FNL2curve'),d1,struct('urn','{squeal}'));
@@ -752,17 +763,23 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
        %set(h,'FaceVertexCData',v(:,2),'facecolor','interp')
        cg.os_('CbTr{string,Pressure}');ii_plp('colormapband',parula(5),cg.ga)
       end
-
-   else
-
-   C3=feval(nlutil('@FNL2curve'),d1,struct('drop0',1,'out','list'));
-   if iscell(C3); C3=stack_get(C3,'','squeal','get'); end
-   C3.Y(1,:)=C3.Y(2,:);'xxx'
-   C3.X{1}(:,1)=C3.X{1}(:,1)-C3.X{1}(1);
-
+   end
+   i1=sdtm.regContains(R2.Failed,'snl');
+   if any(i1)
+    %% Default display forces 
+    C3=feval(nlutil('@FNL2curve'),d1,struct('drop0',1,'out','list'));
+    if iscell(C3); C3=stack_get(C3,'','squeal','get'); end
+    C3.Y(1,:)=C3.Y(2,:);'xxx no demod for all stresses'
+    C3.X{1}(:,1)=C3.X{1}(:,1)-C3.X{1}(1);
+    c3=iiplot(3,';');iicom('curveinit','Time',C3)
+   end
+   i1=sdtm.regContains(R2.Failed,'def');
+   if any(i1)
+    %% Default display displacement
+    C3=fe_def('def2curve',d1);
+    c3=iiplot(3,';');iicom('curveinit','Time',C3)
    end
 
-   c3=iiplot(3,';');iicom('curveinit','Time',C3)
 
    %i3=~any(C3.Y);C3.Y(:,i3)=[];C3.X{2}(i3,:)=[];
    %C3=fe_def('def2curve',d1);C3.X{1}(:,1)=C3.X{1}(:,1)-C3.X{1}(1);C3.X{2}=fe_c(d1.DOF);
