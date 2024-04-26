@@ -3125,6 +3125,7 @@ ga=get(gf,'currentaxes');
      st2(end+1,1:2)={r2.Label,'CLim'};
  end
  for j1=1:size(st2,1)
+  if ~ishandle(st2{j1,1});continue;end
   st1=st2{j1,1}.String;
   if strncmpi(st1,'ifreq',4)&&~contains(st1,'rg')
    r1=ga.(st2{j1,2});
