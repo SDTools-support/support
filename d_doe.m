@@ -164,7 +164,8 @@ RT.nmap('ScldCS')=struct('ToolTip','Sphere/cube contact', ...
       'None{TrajScld}}']
     'SimuCfg{"Imp{100u,.1,chandle1,BetaR7e-6}"}'
     'RunCfg{Time}'}});
-RT.nmap('RangeLoopOpt')=struct('RangeLoopResKeys',{{'CurModel','CurTime'}});
+RT.nmap('RangeLoopOpt')= struct('RangeLoopResKeys',{{'CurModel','CurTime'}}, ...
+    'ifFail','error');
 
 % select current experiment base on n field 
 if isKey(nmap,'n')&&isKey(RT.nmap,nmap('n')); RT.nmap('CurExp')=RT.nmap(nmap('n')); end
