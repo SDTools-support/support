@@ -16,7 +16,7 @@ function [out,out1,out2]=d_squeal(varargin)
 %
 
 %       Guillaume Vermot des Roches, Etienne Balmes
-%       Copyright (c) 1990-2023 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2024 by SDTools, All Rights Reserved.
 %       For revision information use d_squeal('cvs')
 
 if nargin==0
@@ -604,7 +604,8 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    SE=nlutil('HrRedNL',SE,TR,RO);
    'xxx the frequencies are close to 15 kHz and you have not modal damping'
    wj=sqrt(diag(SE.K{3}))/2/pi
-   SE.K{2}=diag(2*pi*wj.*[.001;.001;.1]);  
+   %SE.K{2}=diag(2*pi*wj.*[.001;.001;.1]);  
+   %SE.K{2}=diag(diag(SE.K{2})); SE.K{2}(end)=.1*2*pi*wj(end);
    SE.K{1}=diag(diag(SE.K{1}));'xxx identity'
    % else; % we would call fe_reduc for a redefined assembly
    while nnz(SE.K{end})==0; 
@@ -720,13 +721,13 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    co2=RT.nmap('LastContinue'); %mo2=RT.nmap('CurModel'); co2=mo2.nmap('LastContinue');
    [~,R2]=sdtm.urnPar(CAM,'{}{}');
    if ~any(co2.u)&&~any(co2.v)||any(strcmpi(R2.Failed,'randv'));
-       co2.v=rand(size(co2.v))*.001; % xxx factor too high when unstable
+       co2.v=rand(size(co2.v))*.1; % xxx factor too high when unstable
    end
    if    any(strcmpi(R2.Failed,'randf'));
      ca=co2.clist{1}.data; r1=ca.tft(2,:);
-     ca.r(:,4)=[1e1;0;0];ca.r=ca.r(:,[1 2 4 3]);
+   %  ca.r(:,4)=[1e1;0;0];ca.r=ca.r(:,[1 2 4 3]);
      %ca.tft(3,:)=sin(5000*2*pi*ca.tft(1,:));%rand(size(r1));
-     ca.tft(3,:)=rand(size(r1))*1e-3;
+     ca.tft(2,:)=1+(rand(size(r1))-.5)*1e-4;
      co2.clist{1}.data=ca;
      %co2.clist{1}.data.tft(2,:)=r1.*(1+rand(size(r1))*1e-2);
    end
