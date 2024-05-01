@@ -139,26 +139,40 @@ li={'MeshCfg{d_contact(ScldCube),None{TrajScld}}','SimBack','RunCfg{Time}'};
 % RT.nmap('StickMesh')={};
 RT.nmap('TrajScld')={ ... % sdtweb _bp d_contact caseTraj 
     'Traj{selSetNameWheel,curveDownForward,o 1 0 0,storemodel{DownForward/d2}}'
-    'CbRefine';'CbStickWheel';'CbCtcGen'
+    'CbRefWheel';'CbRefRail';'CbStickWheel';'CbCtcGen'
     };
 RT.nmap('TrajScldB')={ ...
     'Case{reset}'
     'Case{FixDof,Base,"inelt{proid111&selface&facing> .9 0 0 -1000}"}'
     'Case{DofSet,Top,"rb{inelt{proid8&selface&facing> .9 0 0 1000},dir 1 3,curveDownForward,KeepDof}"}'
     'Case{Pcond,Scld,p_contact(''PcondScld'')}'
-    'CbRefine';'CbStickWheel';'CbCtcGen'
+    'CbRefWheel';'CbRefRail';'CbStickWheel';'CbCtcGen'
     };
 RT.nmap('ScLdA')=li; % ScLdA
 
-l=0.0750;
-RT.nmap('CbRefine')={@fe_shapeoptim,'RefineHexaMesh','$projM', ...
-    sprintf('withnode{setname Wheel}&withnode{z<%g}',1.2*l)};
-
+l=0.0750; 
+%% Wheel refinement selection
+RT.nmap('CbRefWheel')={@fe_shapeoptim,'RefineHexaMesh','$projM', ...
+   sprintf('withnode{setname Wheel}&withnode {distfcn"{sphere{%.15g %.15g %.15g, .03}}"}',...
+     l*[1.5 .5 1])};
+%    sprintf('withnode{setname Wheel}&withnode{z<%g}',1.2*l)};
+% Wheel surface sticking 
 RS=struct('sel','inElt{matid8 & selface&facing >.9 0 0 -5000}','distFcn',[]);
 RS.distFcn=lsutil('gen',[],{struct('shape','sphere','rc',l*5,'xc',l*1.5,'yc',l*.5,'zc',(5+1)*l)});
 RT.nmap('CbStickWheel')={@lsutil,'SurfStick','$projM',RS};
 
-% missing InitUnl0 
+%% rail Refinement
+RT.nmap('CbRefRail')={@fe_shapeoptim,'RefineHexaMesh','$projM', ...
+   sprintf('withnode{setname Rail}&withnode {distfcn"{sphere{%.15g %.15g %.15g, .03}}"}',l*[1.5 .5 1])};
+ % sprintf('withnode{setname Rail}&withnode{z<%g}',1.2*l)};
+
+RT.nmap('CbCtcGen')={@ctc_utils,'generatecontactpair','$projM$', ...
+     struct('slave','matid 100 & selface & facing >.9 0 0 1e4', ...
+     'master',['withnode{matid8}&selface&innode', ...
+      sprintf('{distfcn"{sphere{%.15g %.15g %.15g, .015}}"}',l*[1.5 .5 1])], ...
+     'ProId',201)};
+
+% xxx Missing InitUnl0 
 RT.nmap('ScldCS')=struct('ToolTip','Sphere/cube contact', ...
     'li',{{['MeshCfg{d_contact(ScldCube{Kc1e9,Integ2}),' ...
       'None{TrajScld}}']
