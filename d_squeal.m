@@ -602,8 +602,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    TR.adof=(1:size(TR.def,2))'+.99; RO.K=1; % Reduce matrices
    SEf=SE;
    SE=nlutil('HrRedNL',SE,TR,RO);
-   'xxx the frequencies are close to 15 kHz and you have not modal damping'
-   wj=sqrt(diag(SE.K{3}))/2/pi
+   %wj=sqrt(diag(SE.K{3}))/2/pi
    %SE.K{2}=diag(2*pi*wj.*[.001;.001;.1]);  
    %SE.K{2}=diag(diag(SE.K{2})); SE.K{2}(end)=.1*2*pi*wj(end);
    SE.K{1}=diag(diag(SE.K{1}));'xxx identity'
@@ -719,15 +718,15 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    %% #SolveTimeContinue transient continuation and display
    if carg<=nargin;RT=varargin{carg};carg=carg+1;else;RT=evalin('caller','RO');end
    co2=RT.nmap('LastContinue'); %mo2=RT.nmap('CurModel'); co2=mo2.nmap('LastContinue');
-   [~,R2]=sdtm.urnPar(CAM,'{}{}');
+   [~,R2]=sdtm.urnPar(CAM,'{}{RandF%ug}');
    if ~any(co2.u)&&~any(co2.v)||any(strcmpi(R2.Failed,'randv'));
        co2.v=rand(size(co2.v))*.1; % xxx factor too high when unstable
    end
-   if    any(strcmpi(R2.Failed,'randf'));
+   if isfield(R2,'RandF');
      ca=co2.clist{1}.data; r1=ca.tft(2,:);
    %  ca.r(:,4)=[1e1;0;0];ca.r=ca.r(:,[1 2 4 3]);
      %ca.tft(3,:)=sin(5000*2*pi*ca.tft(1,:));%rand(size(r1));
-     ca.tft(2,:)=1+(rand(size(r1))-.5)*1e-4;
+     ca.tft(2,:)=1+(rand(size(r1))-.5)*R2.RandF;
      co2.clist{1}.data=ca;
      %co2.clist{1}.data.tft(2,:)=r1.*(1+rand(size(r1))*1e-2);
    end
@@ -1787,6 +1786,7 @@ if carg<=nargin;RO=sdth.sfield('addmissing',varargin{carg},RO);end
 if isfield(RO,'it')% d_squeal('viewpar{a(f,p),cuSqShape,it4 7}')
    Time=fe_def('subdef',Time,@(x)x(:,1)>RO.it(1)&x(:,1)<RO.it(2));
 end
+if ~isfield(Time,'name');Time.name='Time';end
 omethod=sdth.eMethods.omethod;
 
 %% #build needed quantities -3
@@ -3070,14 +3070,17 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
     C0.Amax(j1,1:2)={max(abs(Time.Y(:,i2==j1,1)),[],2) sprintf('Amax [%s]',st2{j1})};
    end
   end
+  if any(strncmpi(RO.Failed,'dr(',3))&&~isfield(RO,'MinAmpRatio')
+      RO.MinAmpRatio=1e-3;
+  end
   if isfield(RO,'MinAmpRatio');
-     ze=@(x)gradient(log(x))./diff(Time.X{1}(1:2))./double(C0.iFreq)*100;
+     ze=@(x)gradient(log(x))./diff(Time.X{1}(1:2))./double(C0.iFreq)*-100;
      for j1=1:size(C0.Amean,1)
       r2=C0.Amean{j1,1};
       r2(r2/norm(r2,'inf')<RO.MinAmpRatio,1)=NaN;C0.Amean{j1,1}=r2;
       r3=C0.Amax{j1,1};
       r3(r3/norm(r3,'inf')<RO.MinAmpRatio,1)=NaN;C0.Amax{j1,1}=r3;
-      if contains(C0.Amax{j1,2},'[g]') % Growth estimation
+      if sdtm.regContains(C0.Amax{j1,2},'([g]|Amax)') % Growth estimation
        % figure(1); plot(gradient(log(C0.Amean{1}))./C0.iFreq{1}/diff(Time.X{1}(1:2))*100)
        coef=1; if contains(C0.iFreq.label,'kHz');coef=1e-3;end
        C0.dr=cdm({[ze(r2) ]*coef,'Decay rate [%]'},Time.name);
