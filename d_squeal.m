@@ -726,6 +726,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
      ca=co2.clist{1}.data; r1=ca.tft(2,:);
    %  ca.r(:,4)=[1e1;0;0];ca.r=ca.r(:,[1 2 4 3]);
      %ca.tft(3,:)=sin(5000*2*pi*ca.tft(1,:));%rand(size(r1));
+     if isempty(R2.RandF); R2.RandF=1e-4; end
      ca.tft(2,:)=1+(rand(size(r1))-.5)*R2.RandF;
      co2.clist{1}.data=ca;
      %co2.clist{1}.data.tft(2,:)=r1.*(1+rand(size(r1))*1e-2);
