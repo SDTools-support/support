@@ -16,7 +16,7 @@ function [out,out1,out2]=d_squeal(varargin)
 %
 
 %       Guillaume Vermot des Roches, Etienne Balmes
-%       Copyright (c) 1990-2023 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2024 by SDTools, All Rights Reserved.
 %       For revision information use d_squeal('cvs')
 
 if nargin==0
@@ -602,6 +602,10 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    TR.adof=(1:size(TR.def,2))'+.99; RO.K=1; % Reduce matrices
    SEf=SE;
    SE=nlutil('HrRedNL',SE,TR,RO);
+   %wj=sqrt(diag(SE.K{3}))/2/pi
+   %SE.K{2}=diag(2*pi*wj.*[.001;.001;.1]);  
+   %SE.K{2}=diag(diag(SE.K{2})); SE.K{2}(end)=.1*2*pi*wj(end);
+   SE.K{1}=diag(diag(SE.K{1}));'xxx identity'
    % else; % we would call fe_reduc for a redefined assembly
    while nnz(SE.K{end})==0; 
     i1=length(SE.K);SE.K(i1)=[];SE.Klab(i1)=[];SE.Opt(:,i1)=[];
@@ -714,14 +718,22 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    %% #SolveTimeContinue transient continuation and display
    if carg<=nargin;RT=varargin{carg};carg=carg+1;else;RT=evalin('caller','RO');end
    co2=RT.nmap('LastContinue'); %mo2=RT.nmap('CurModel'); co2=mo2.nmap('LastContinue');
-   [~,R2]=sdtm.urnPar(CAM,'{}{}');
+   [~,R2]=sdtm.urnPar(CAM,'{}{RandF%ug}');
    if ~any(co2.u)&&~any(co2.v)||any(strcmpi(R2.Failed,'randv'));
-       co2.v=rand(size(co2.v))*.00001; % xxx factor too high when unstable
+       co2.v=rand(size(co2.v))*.1; % xxx factor too high when unstable
    end
-
+   if isfield(R2,'RandF');
+     ca=co2.clist{1}.data; r1=ca.tft(2,:);
+   %  ca.r(:,4)=[1e1;0;0];ca.r=ca.r(:,[1 2 4 3]);
+     %ca.tft(3,:)=sin(5000*2*pi*ca.tft(1,:));%rand(size(r1));
+     if isempty(R2.RandF); R2.RandF=1e-4; end
+     ca.tft(2,:)=1+(rand(size(r1))-.5)*R2.RandF;
+     co2.clist{1}.data=ca;
+     %co2.clist{1}.data.tft(2,:)=r1.*(1+rand(size(r1))*1e-2);
+   end
    [r3,d1]=nl_solve('fe_timeChandleContinue',co2,[],struct);
    i1=sdtm.regContains(R2.Failed,'ctc');
-   if any(i1)
+   if any(i1) % CtC display contact fields 
       Cam=lower(R2.Failed{i1});v=[];
      % Analyze the contact information EB24
       C3=feval(nlutil('@FNL2curve'),d1,struct('urn','{squeal}'));
@@ -752,17 +764,23 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
        %set(h,'FaceVertexCData',v(:,2),'facecolor','interp')
        cg.os_('CbTr{string,Pressure}');ii_plp('colormapband',parula(5),cg.ga)
       end
-
-   else
-
-   C3=feval(nlutil('@FNL2curve'),d1,struct('drop0',1,'out','list'));
-   if iscell(C3); C3=stack_get(C3,'','squeal','get'); end
-   C3.Y(1,:)=C3.Y(2,:);'xxx'
-   C3.X{1}(:,1)=C3.X{1}(:,1)-C3.X{1}(1);
-
+   end
+   i1=sdtm.regContains(R2.Failed,'snl');
+   if any(i1)
+    %% Default display forces 
+    C3=feval(nlutil('@FNL2curve'),d1,struct('drop0',1,'out','list'));
+    if iscell(C3); C3=stack_get(C3,'','squeal','get'); end
+    C3.Y(1,:)=C3.Y(2,:);'xxx no demod for all stresses'
+    C3.X{1}(:,1)=C3.X{1}(:,1)-C3.X{1}(1);
+    c3=iiplot(3,';');iicom('curveinit','Time',C3)
+   end
+   i1=sdtm.regContains(R2.Failed,'def');
+   if any(i1)
+    %% Default display displacement
+    C3=fe_def('def2curve',d1);
+    c3=iiplot(3,';');iicom('curveinit','Time',C3)
    end
 
-   c3=iiplot(3,';');iicom('curveinit','Time',C3)
 
    %i3=~any(C3.Y);C3.Y(:,i3)=[];C3.X{2}(i3,:)=[];
    %C3=fe_def('def2curve',d1);C3.X{1}(:,1)=C3.X{1}(:,1)-C3.X{1}(1);C3.X{2}=fe_c(d1.DOF);
@@ -1769,6 +1787,7 @@ if carg<=nargin;RO=sdth.sfield('addmissing',varargin{carg},RO);end
 if isfield(RO,'it')% d_squeal('viewpar{a(f,p),cuSqShape,it4 7}')
    Time=fe_def('subdef',Time,@(x)x(:,1)>RO.it(1)&x(:,1)<RO.it(2));
 end
+if ~isfield(Time,'name');Time.name='Time';end
 omethod=sdth.eMethods.omethod;
 
 %% #build needed quantities -3
@@ -3052,14 +3071,17 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
     C0.Amax(j1,1:2)={max(abs(Time.Y(:,i2==j1,1)),[],2) sprintf('Amax [%s]',st2{j1})};
    end
   end
+  if any(strncmpi(RO.Failed,'dr(',3))&&~isfield(RO,'MinAmpRatio')
+      RO.MinAmpRatio=1e-3;
+  end
   if isfield(RO,'MinAmpRatio');
-     ze=@(x)gradient(log(x))./diff(Time.X{1}(1:2))./double(C0.iFreq)*100;
+     ze=@(x)gradient(log(x))./diff(Time.X{1}(1:2))./double(C0.iFreq)*-100;
      for j1=1:size(C0.Amean,1)
       r2=C0.Amean{j1,1};
       r2(r2/norm(r2,'inf')<RO.MinAmpRatio,1)=NaN;C0.Amean{j1,1}=r2;
       r3=C0.Amax{j1,1};
       r3(r3/norm(r3,'inf')<RO.MinAmpRatio,1)=NaN;C0.Amax{j1,1}=r3;
-      if contains(C0.Amax{j1,2},'[g]') % Growth estimation
+      if sdtm.regContains(C0.Amax{j1,2},'([g]|Amax)') % Growth estimation
        % figure(1); plot(gradient(log(C0.Amean{1}))./C0.iFreq{1}/diff(Time.X{1}(1:2))*100)
        coef=1; if contains(C0.iFreq.label,'kHz');coef=1e-3;end
        C0.dr=cdm({[ze(r2) ]*coef,'Decay rate [%]'},Time.name);
@@ -3108,6 +3130,7 @@ ga=get(gf,'currentaxes');
      st2(end+1,1:2)={r2.Label,'CLim'};
  end
  for j1=1:size(st2,1)
+  if ~ishandle(st2{j1,1});continue;end
   st1=st2{j1,1}.String;
   if strncmpi(st1,'ifreq',4)&&~contains(st1,'rg')
    r1=ga.(st2{j1,2});
