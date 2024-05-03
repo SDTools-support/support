@@ -31,6 +31,7 @@ sphinx:
   name: path
   recursive_update: true
   config:
+    smartquotes: false # Keep straight apostrophe in MATLAB code
     highlight_language: matlab
     latex_elements:
         preamble:

@@ -15,3 +15,8 @@ blockquote.figure {
     background-color: #ffffff;
     border-left: #ffffff;
 }
+blockquote.table {
+    display: inline-block;
+    background-color: #ffffff;
+    border-left: #ffffff;
+}
