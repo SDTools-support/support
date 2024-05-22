@@ -68,4 +68,14 @@ sphinx:
           "norm": ["\\left\\Vert #1 \\right\\Vert", 1]
 parse:
    myst_url_schemes: [mailto, https]
-   
+   myst_enable_extensions:
+    - "substitution"
+   myst_substitutions:
+     fig: |
+       ````{figure} ../_images/%s
+       ---
+       width: auto
+       name: fig-%s
+       ---
+       %s
+       ````

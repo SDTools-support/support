@@ -6,7 +6,7 @@
 ```{tableofcontents}
 ```
 
-(markdown:SDT)=
+(markdown-SDT)=
 ## SDT 
 
 - MATLAB code generated with ``{m}`function('hello','python')`:``
@@ -41,13 +41,27 @@ model=feutil('Extrude 0  1.0 0.0 0.0',model,...
 ```
 {bluecolor}`<font color="blue">BlueColor custom role</font>`
 
-<img src="_images/run16.png" >Run step xxx link </a>
-
-(collab.cross)=
+(collab-cross)=
 ## Cross references
 
 https://myst-parser.readthedocs.io/en/latest/syntax/cross-referencing.html
 
+````{list-table} SDT math macros
+:widths: auto
+:header-rows: 1
+
+* - Insert command
+  - Insert result
+  - Reference command
+  - Reference result
+* - `{{fig % ("id.png","FigID","caption")}}`
+  - {{fig % ("id.png","FigID","caption")}}
+  - `{refnum}`FigID``  
+  `{ref}`FigID``
+  - {refnum}`FigID`  
+  {ref}`FigID`
+
+````
 
 ## Tables 
 
@@ -63,7 +77,7 @@ Using jupyter :::
 xxx need documentation
 
 
-(markdown:VS)=
+(markdown-VS)=
 ## VS code shortcuts 
 
  Preview side-by-side (Ctrl+K V) 
@@ -75,41 +89,42 @@ xxx need documentation
 !"C:\Program Files (x86)\Microsoft Visual Studio\Shared\Python39_64\python.exe" -m pip install jupyter-book
    
 
-(markdown:Math)=
+(markdown-Math)=
 ## Math
-:::{list-table} SDT math macros
+
+````{list-table} SDT math macros
 :widths: auto
 :header-rows: 1
 
-*   - Command
-    - Mathjax rendering	
-*   - `\ma{A}`
-    - $\ma{A}$
-*   - `\mam{a & b \\ c & d}`
-    - $\mam{a & b \\ c & d}$
-*   - `\vem{a & b \\\\ c & d}`
-    - $\vem{a & b\\c & d}$
-*   - `\pam{a & b \\\\ c & d}`
-    - $\pam{a & b\\c & d}$	
-*   - `\ve{A}`
-    - $\ve{A}$	
-*   - `\pa{A}`
-    - $\pa{A}$		
-*   - `\pa{-\omega^2\ma{M}+j\omega\ma{C}+\ma{K}}\ve{x}=0`
-    - $\pa{-\omega^2\ma{M}+j\omega\ma{C}+\ma{K}}\ve{x}=0$
-*   - `\diag{A}`
-    - $\diag{A}$
-*   - `\norm{A}`
-    - $\norm{A}$
-*   - `\su{A}`
-    - $\su{A}$
-*   - `\du{A}`
-    - $\du{A}$	
-*   - `\oft`
-    - $\oft$
-*   - `\ofw`
-    - $\ofw$
-:::
+* - Command
+  - Mathjax rendering	
+* - `\ma{A}`
+  - $\ma{A}$
+* - `\mam{a & b \\ c & d}`
+  - $\mam{a & b \\ c & d}$
+* - `\vem{a & b \\\\ c & d}`
+  - $\vem{a & b\\c & d}$
+* - `\pam{a & b \\\\ c & d}`
+  - $\pam{a & b\\c & d}$	
+* - `\ve{A}`
+  - $\ve{A}$	
+* - `\pa{A}`
+  - $\pa{A}$		
+* - `\pa{-\omega^2\ma{M}+j\omega\ma{C}+\ma{K}}\ve{x}=0`
+  - $\pa{-\omega^2\ma{M}+j\omega\ma{C}+\ma{K}}\ve{x}=0$
+* - `\diag{A}`
+  - $\diag{A}$
+* - `\norm{A}`
+  - $\norm{A}$
+* - `\su{A}`
+  - $\su{A}$
+* - `\du{A}`
+  - $\du{A}$	
+* - `\oft`
+  - $\oft$
+* - `\ofw`
+  - $\ofw$
+````
 
 $$
   w_{t+1} = (1 + r_{t+1}) s(w_t) + y_{t+1}
