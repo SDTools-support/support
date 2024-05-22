@@ -19,10 +19,17 @@ if carg>nargin||~isstruct(varargin{2});RO=struct('info',1);
 else;RO=varargin{carg};carg=carg+1;
 end
 
+if comstr(Cam,'buildc1');
+     C1.X{1}=varargin{2}; C1.X{2}={varargin{4}}; C1.X{3}={varargin{5}}; % Freq - Output Label - Input Label
+     C1.Xlab{1}={'Frequency','Hz',[18 0 0 0 -1]};
+     C1.Xlab{2}='Outputs'; C1.Xlab{3}='In';
+     C1.Y=varargin{3}; C1.Ylab=2; C1.name='DFRF';
+     C1=sdsetprop(C1,'PlotInfo','sub','magpha','scale','xlin;ylog');
+out=C1;
 
 
 %% #Script -------------------------------------------------------------------
-if comstr(Cam,'script');[CAM,Cam]=comstr(CAM,7);
+elseif comstr(Cam,'script');[CAM,Cam]=comstr(CAM,7);
 
 if comstr(Cam,'tutopatch')
 %% #TutoPatch : Piezoelectric extension patch - Statics -2
@@ -1896,7 +1903,45 @@ if nargout==0; feplot(model);fecom colordatamat
 else; out=model;
 end
 
+elseif comstr(Cam,'tower')
+%% #MeshTower: High-rise concrete building (central core)
+% Data for the tower
+L = 140 ;   % Height Tower
+W = 20 ;    % Diameter Tower
+th = 0.3 ;  % Thickness wall Tower
 
+A = (W^2-(W-2*th)^2) ; MTOT = A*2200*L ;
+I1 = W^4/12-(W-2*th)^4/12; I2 = I1 ;
+
+%Create mesh
+model=struct('Node',[1 0 0 0 0 0 0],'Elt',[]);
+model=feutil('addelt',model,'mass1',1);
+dz=feutil(sprintf('refineline %f',L/20),[0 L]);
+model=feutil('extrude 0 0 1 0',model,dz);
+model.unit='SI'; % go to m
+
+%% Add properties
+% Thick beam so k1 and k2 are important (shear correction factors). EB hyp
+model.il=p_beam(sprintf('dbval 1 box %f %f %f %f',W,W,th,th));
+model.pl=[1 fe_mat('m_elastic','SI',1) 30e9 0.2 2200 0 0.02 ];
+
+% Keep only 2D vrtical DOFs (y, thetaxy) , clamp node 1,
+model = fe_case(model,'FixDOF','Clamped',[1.01 1.02 1.06],'FixDOF','2-D motion',[.02 .03 .04 .05]);
+
+% Assemble M and K matrices in model.K{1} and model.K{2}
+model = fe_mk(model);
+
+% Build Case to get Case.T...
+[Case,model.DOF]=fe_mknl('init',model);
+
+% Define excitation
+nd=feutil('find node y==140',model);
+model=fe_case(model,'DofLoad','F-top',nd+.01,1);
+
+% Define sensor
+model=fe_case(model,'SensDOF','d-top',{[num2str(nd) ':x']});
+model.mdof=Case.DOF;
+out=model;
 
 elseif comstr(Cam,'langevin')
 %% #MeshLangevin: Mesh a Langevin type transducer 

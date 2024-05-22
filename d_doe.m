@@ -246,7 +246,7 @@ RT.nmap('PostA')={'ExitFcn','Tip', ...
       struct('FinalCleanup',{{'nl_solve','PostCdof'}},'DOF',2.03,'DoFreq',RB)
       };
 RT.nmap('ShowSpectro')='fe_simul(''fe_timeCleanup'')';
-RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE)';
+RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE,$RO)';
 RT.nmap('Transient')='nmap(''CurTime'')=fe_time(nmap(''CurModel''));';
 RT.nmap('SetCI')='ci=iiplot;cingui(''plotwd'',ci,''@OsDic(SDT Root)'',{''FnI'',''ImSw80'',''WrW49c''});;';
 li={'MeshCfg{d_fetime(1DOF),MaxwellA{Z.01,Fds},Duff}', ...
@@ -262,13 +262,14 @@ RT=struct('nmap',vhandle.nmap);
 RT.nmap('PostA')={'ExitFcn','Tip', ...
       struct('FinalCleanup',{{'nl_solve','PostCdof'}},'DOF',2.03,'DoFreq',RB)
       };
-RT.nmap('ShowSpectro')='fe_simul(''fe_timeCleanup'')';
-RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE)';
-RT.nmap('Transient')='nmap(''CurTime'')=fe_time(nmap(''CurModel''));';
+RT.nmap('ShowSpectro')='fe_simul(fe_timeCleanup)';
+RT.nmap('Reduce')='nl_solve(ReducFree 2 10 0 -float2 -SE,$RO)';
+%RT.nmap('Transient')='nmap(''CurTime'')=fe_time($RO);';
+RT.nmap('Transient')={'fe_time','CurModel'};
 RT.nmap('SetCI')='ci=iiplot;cingui(''plotwd'',ci,''@OsDic(SDT Root)'',{''FnI'',''ImSw80'',''WrW49c''});;';
 li={'MeshCfg{d_fetime(1DOF),MaxwellA{Z0},FuA}'
       'SimuCfg{ModalNewmark{1m,100,sPostA,fcShowSpectro}}'
-      'RunCfg{Reduce,Transient,SetCI}'};
+      'RunCfg{Step{CurTime},Reduce,change{nmap(LastContinue):LastContinue},Transient,SetCI}'};
 RT.nmap('CurExp')=li;
 RT.ToolTip='Single mass with gap contact'; 
 nmap('Hbm.Fu')=RT;
@@ -290,7 +291,7 @@ RT.nmap('PostA')='nl_solve@doFreq{spec{BufTime 2 Overlap .90 Fmax 500 -window ha
 %      struct('Cb',{{'nl_solve','PostCdof',struct('DOF',2.03,'DoFreq',RB,'name','AR')}})
 %      };
 li={'MeshCfg{d_fetime(1DOF),ARTV{z.01}}';
-     'SimuCfg{ModalNewmark{.2m,50}}';'RunCfg{run,PostA}'};
+     'SimuCfg{ModalNewmark{.2m,50}}';'RunCfg{Step{CurTime},change{nmap(LastContinue):LastContinue},run,PostA}'};
 %     'SimuCfg{ModalNewmark{.2m,50,sPostA}}';;'RunCfg{run}'};
 RT.nmap('CurExp')=li;RT.ToolTip='Auto-resonance+time variation example'; 
 nmap('TV.AR')=RT;

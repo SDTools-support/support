@@ -743,12 +743,12 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
        figure(400);semilogy(squeeze(C3.Y(:,4,:)),squeeze(C3.Y(:,1,:))) % distribution along exp
       end
       if contains(Cam,'gsvd')
-       [u,s,v]=svd(squeeze(C3.Y(:,4,:)),'econ','vector');
+       [u,s,v]=svd(squeeze(C3.Y(:,4,:)),'econ'); s=diag(s);%,'vector');
        i1=1:length(co2.u);s=s(i1);u=u(:,i1).*s';v=v(:,i1);
        figure(401);plot(u); st1='PrincGap';
       end
       if contains(Cam,'psvd')
-       [u,s,v]=svd(squeeze(C3.Y(:,1,:)),'econ','vector');
+       [u,s,v]=svd(squeeze(C3.Y(:,1,:)),'econ'); s=diag(s);%,'vector');
        i1=s>1e-5*s(1);s=s(i1);u=u(:,i1).*s';v=v(:,i1);
        figure(402);plot(C3.X{1},u); st1='PrincPress';ylabel(st1);axis tight
       end
