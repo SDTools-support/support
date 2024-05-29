@@ -5,10 +5,10 @@
 
 **Section [](tuto:correl)** lists tutorials that deal with topology correlation, shape correlation, model updating...
 
-::::{grid}
+````{grid}
 :gutter: 3
 
-:::{grid-item-card} 
+```{grid-item-card} 
 :columns: 4
 :link: tuto:ExpGUI
 :link-type: any
@@ -17,16 +17,16 @@
 Need expansion illustration here
 +++
 This tutorial aims at illustrating how to implement and analyze expansion technique using GUI in SDT.
-:::
+```
 
-:::{grid-item-card}
+```{grid-item-card}
 :columns: 4
 More to come ...
-:::
+```
 
-:::{grid-item-card}
+```{grid-item-card}
 :columns: 4
 More to come ...
-:::
+```
 
-::::
+````
