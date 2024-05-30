@@ -177,7 +177,7 @@ RB=struct('RefRail', ...
 %% rail Refinement
 RB.RefRail=sprintf('ProNameRail & withnode {distFcn"{box{%.15g %.15g %.15g, %.15g %.15g %.15g ,1 0 0,0 1 0, 0 0 -1}}"}',...
  l*[1.5 0.5 1 .25 .25 .1]) ;
-RT.nmap('CbRefRail')={@fe_shapeoptim,'RefineHexaMesh','$projM',RB.RefRail}; 
+RT.nmap('CbRefRail')={@fe_shapeoptim,'RefineHexaMesh-interMPC','$projM',RB.RefRail}; 
 % -interMPC problem with slaves in slave surface
  % sprintf('withnode{setname Rail}&withnode{z<%g}',1.2*l)};
 % fecom('shownodemark','distFcn{sphere{0 0 0, .05}}')
