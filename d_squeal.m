@@ -1671,7 +1671,7 @@ if isempty(Cam)
   feval(Cb{:});
   return
 else
-  [st,RO]=sdtm.urnPar(CAM,'{Spec%s}:{ci%g,jframe%g,ChSel%s,name%s,jPar%g}');  
+  [st,RO]=sdtm.urnPar(CAM,'{Spec%s}:{ci%g,jframe%g,ChSel%s,name%s,jPar%g,fi%s}');  
 end
   if ~isfield(RO,'Failed');RO.Failed={};end
   i1=~cellfun(@isempty,regexpi(RO.Failed,'[ft](min|max)'));
@@ -1704,8 +1704,8 @@ spec=ii_signal(['spectro',RO.Spec],Time,struct,RO);
 %C2=spec.GetData; 
 r3=fe_def('cleanentry',spec.Source.Edit);
 spec.Source.X{1}=spec.Source.X{1}+r3.BufTime/2;
-%spec.Source.PlotInfo=ii_plp('PlotInfo2D -type "surface"',spec.Source); % To allow horz shift
-spec.Source.PlotInfo=ii_plp('PlotInfo2D -type "image"',spec.Source); % To allow horz shift
+if ~isfield(RO,'fi'); RO.fi='-type "image"';end
+spec.Source.PlotInfo=ii_plp(['PlotInfo2D ' RO.fi],spec.Source); % To allow horz shift
 C2=spec.Source;
 if isequal(C2.Xlab{2},'DOF'); RO.type='fft'; C2.PlotInfo={};C2.name='FFT'; 
 else; RO.type='spec';
@@ -2101,11 +2101,14 @@ if RO.back; return;end
 
 if carg>nargin||comstr(Cam,'instfreq{') 
  c2=sdth.urn('Dock.Id.ci'); 
- Time=c2.Stack{'Time'};% (SqLastSpec).Time is preemptive 
+ if carg<=nargin&&isfield(varargin{carg},'Y');Time=varargin{carg};carg=carg+1;
+ else
+  Time=c2.Stack{'Time'};% (SqLastSpec).Time is preemptive 
+ end
  projM=sdth.urn(sprintf('iiplot(%i).nmap',c2.opt(1))); 
  RO=useOrDefault(projM,'InstFreq');
  if isempty(RO);RO=sdtm.pcin('gr:IFreq','uo');end
-
+ if carg<=nargin; RB=varargin{carg};carg=carg+1;RO=sdth.sfield('addselected',RO,RB);end
 else
  Time=varargin{carg};carg=carg+1;projM=[];
  RO=varargin{carg};carg=carg+1;
