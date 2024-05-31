@@ -805,6 +805,8 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
     set(h,'linewidth',2);ii_plp('ColorMapBand',parula(6));colorbar
    end
 
+   if nargout>0; out=r3; end
+
    %% EndSolveTime
   end
 
