@@ -148,13 +148,14 @@ RT.nmap('TrajScldB')={ ...
     'Case{Pcond,Scld,p_contact(''PcondScld'')}'
     'CbRefWheel';'CbRefRail';'CbStickWheel';'CbCtcGen'
     };
-RT.nmap('TrajScldC')={ ...
+RT.nmap('TrajScldC')=struct('ToolTip','Cube with target Lc', ...
+    'li',{{ ...
     'Case{reset}'
     'Case{FixDof,Base,"inelt{innode{setname"Rail"}&selface&facing> .9 0 0 -1000}"}'
     'Case{DofSet,Top,"rb{inelt{proid8&selface&facing> .9 0 0 1000},dir 1 3,curveDownForward,KeepDof}"}'
     'Case{Pcond,Scld,p_contact(''PcondScld'')}'
     'CbRefWheelLC';'CbRefRailLC';'CbStickWheel';'CbCtcGen'
-    };
+    }});
 RT.nmap('ScLdA')=li; % ScLdA
 
 l=0.0750; 

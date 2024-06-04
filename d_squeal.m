@@ -1838,7 +1838,7 @@ if isfield(C0,'Time')
   for st=fieldnames(C0);C0.(st{1}).Source.data(ind)=NaN;end
  end
 end
-
+if isscalar(fieldnames(C0));return;end 
 if isfield(C0,'Pressure');C0.Pressure=C0.Pressure/{1e5,'Pressure [bar]'};end
 st1(end,:)=[]; st1(1,end+1:4)={''};RO.list=st1;
 
@@ -1914,7 +1914,7 @@ for j1=1:size(RO.list,1)
    RO.list{j1}='';iimouse('on');
 end
 
-if isfield(RO,'ciStoreName')
+if isfield(RO,'ciStoreName')&&size(Time.X{1},2)>1
   %% display parameters
  %[~,r2]=sdtm.urnPar('a{polar,fs2}','{}{fs%ug,u%s}');
  C1=struct('X',{{Time.X{1}(:,1),Time.Xlab{1}(2:end,:)}},...
@@ -2381,9 +2381,9 @@ end
        end
    else; ci=sdth.urn(sprintf('Dock.Id.ci.Clone{%i}',RO.ci(j1)));
    end
-   ci=iiplot(RO.ci(j1),';');
+   if isa(RO.ci,'sdth');ci=RO.ci;else;ci=iiplot(RO.ci(j1),';');end
    ci.os_('p.','ImToFigN','ImSw80','WrW49c');
-   eval(sprintf('c%i=ci;',RO.ci(j1)));RO.out{end+1}=sprintf('c%i',RO.ci(j1));
+   eval(sprintf('c%i=ci;',ci.opt(1)));RO.out{end+1}=sprintf('c%i',ci.opt(1));
   end  
  if nargout==0;  eval(iigui(RO.out,'SetInBaseC'));end
 
@@ -3003,7 +3003,10 @@ if ~isfield(RO,'forInfo')
     };
 end
 dt=diff(Time.X{1}([1 end],1))/(size(Time.X{1},1)-1);
-if isfield(RO,'ClipPres')
+if isfield(Time,'By') % Actually a time scan
+  Time.meta=struct('Type','TimeScan');out=Time;return;
+
+elseif isfield(RO,'ClipPres')
    r1=cdm.urnVec(Time,'{x,#Pres}');
    if RO.ClipPres(1)<1&&isscalar(RO.ClipPres)
     [r2,r3]=histcounts(r1{1}/1e5,1:ceil(max(r1{1})/1e5));
