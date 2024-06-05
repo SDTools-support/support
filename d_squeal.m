@@ -1611,6 +1611,39 @@ elseif comstr(Cam,'time')
   stack_set(c2,'curve','Time',Time);
 
 
+elseif comstr(Cam,'specrem')
+%% #ViewSpecRem : show different remaining singal bands in spectrogram
+
+[~,RO]=sdtm.urnPar(CAM,'{}{coef%g}');
+if ~isfield(RO,'coef');RO.coef=[.6 .8];end
+c13=iiplot(13,';');
+iicom(c13,'iixonly','spec')
+
+C2=c13.Stack{'SpecRem'};
+r3=C2(:,:,c13.ua.ch).';go=handle(c13.ua.ob(1));ga=ancestor(go,'axes');
+eval(c13.ua.YFcn);
+it=round(size(r3,2)*RO.coef(1)):round(size(r3,2)*RO.coef(2));
+go.CData(:,it)=r3(:,it);
+delete(findobj(ga,'tag','now'))
+
+RO.tlim=[mean(go.XData(it(1)+[-1 0])) mean(go.XData(it(end)+[1 0]))];
+line(RO.tlim(1)*[1 1],get(ga,'YLim'),'color','k','linewidth',2,'tag','now')
+line(RO.tlim(2)*[1 1],get(ga,'YLim'),'color','k','linewidth',2,'tag','now')
+text(RO.tlim*[.9;.1],ga.YLim*[.95;.05],'y_{Broad}');
+
+c2=sdth.urn('Dock.Id.ci'); projM=sdtroot('param.nmap',c2); C1=projM('SqShape');
+[C0,st2,st1]=cdm.xvec(C1,{'iFreq(t),Amp(t)'},struct);
+t=double(C0.Time)-C2.Source.Edit.tmin;
+RO.fcoef=.001;
+it=t>RO.tlim(2);RO.harm=cellfun(@(x)str2double(x(2:end)),C1.X{3});
+iFreq=C0.iFreq(it)*RO.fcoef;
+set(ga,'yscale','linear')
+h=line(t(it),iFreq*RO.harm(:)','color','k','tag','now');
+r1=t(it);r1=[.9 .1]*r1([1 end]);r1=r1*ones(size(RO.harm));
+r2=mean(iFreq)*(RO.harm(:)+.05);
+st=cellfun(@(x)sprintf('h%i %.1f kHz',x,x*mean(iFreq)),num2cell(RO.harm),'uni',0);
+text(r1,r2,st);
+
 elseif comstr(Cam,'specevt')
 %% #ViewSpecEvt : extract frequency from peaks
  c13=iiplot(13,';');
@@ -1701,8 +1734,10 @@ if isa(Time,'curvemodel');
     end
 end
 
-Time.X{1}=Time.X{1}-Time.X{1}(1);
-spec=ii_signal(['spectro',RO.Spec],Time,struct,RO);
+t0=Time.X{1}(1); Time.X{1}=Time.X{1}-Time.X{1}(1);
+if ischar(Time.Xlab{1});Time.Xlab{1}={Time.Xlab{1},'s',[]};end
+if t0~=0&&strcmp(Time.Xlab{1}{1},'Time');Time.Xlab{1}{1}=sprintf('Time -%.1f s',t0);end
+spec=ii_signal(['spectro',RO.Spec],Time,struct,RO);spec.Source.Edit.tmin=t0;
 %C2=spec.GetData; 
 r3=fe_def('cleanentry',spec.Source.Edit);
 spec.Source.X{1}=spec.Source.X{1}+r3.BufTime/2;
@@ -1903,7 +1938,11 @@ for j1=1:size(RO.list,1)
    r2={C0.(RO.list{j1,2}) C0.(RO.list{j1,1}) C0.(RO.list{j1,3})};
    h=cdm.pline(r2{:},'parent',ga,'linewidth',2);
    ii_plp('colormapband',parula(7));axis tight; 
-  else % Just a line
+  else 
+   % Just a line
+   if ~isfield(C0,RO.list{j1,2})||~isfield(C0,RO.list{j1,1})
+       continue;
+   end
    h=cdm.plot(C0.(RO.list{j1,2}),C0.(RO.list{j1,1}),'parent',ga,'linewidth',2);
    axis tight; 
   
