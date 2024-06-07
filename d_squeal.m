@@ -2119,7 +2119,7 @@ if ~isempty(projM) % Store in standard map
  projM('SqLastSpec')=RO;
  projM('SqShape')=out;% Store result 
 end
-st=regexprep(RO.do,'ReEstY[,]?',''); %'{ReEstY}'
+st=regexprep(RO.do,'(ReEstY[,]?|outy[,]?)',''); %'{ReEstY}'
 if isequal(st,'{}');st='';end
 if ~isempty(st);st=strrep(st,'}',',cuSqShape}');end
 if ~isempty(st); d_squeal(['viewpar' st]);end
