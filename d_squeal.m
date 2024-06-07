@@ -718,7 +718,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    %% #SolveTimeContinue transient continuation and display
    if carg<=nargin;RT=varargin{carg};carg=carg+1;else;RT=evalin('caller','RO');end
    co2=RT.nmap('LastContinue'); %mo2=RT.nmap('CurModel'); co2=mo2.nmap('LastContinue');
-   [~,R2]=sdtm.urnPar(CAM,'{}{RandF%ug}');
+   [~,R2]=sdtm.urnPar(CAM,'{}{RandF%ug}');if ~isfield(R2,'Failed');R2.Failed={''};end
    if ~any(co2.u)&&~any(co2.v)||any(strcmpi(R2.Failed,'randv'));
        co2.v=rand(size(co2.v))*.1; % xxx factor too high when unstable
    end
@@ -732,80 +732,8 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
      %co2.clist{1}.data.tft(2,:)=r1.*(1+rand(size(r1))*1e-2);
    end
    [r3,d1]=nl_solve('fe_timeChandleContinue',co2,[],struct);
-   i1=sdtm.regContains(R2.Failed,'ctc');
-   if any(i1) % CtC display contact fields 
-      Cam=lower(R2.Failed{i1});v=[];
-     % Analyze the contact information EB24
-      C3=feval(nlutil('@FNL2curve'),d1,struct('urn','{squeal}'));
-      C3.X{2}(4:7,3)={struct('DispUnit','\mu m','coef',1e3)};
-       eval(iigui({'C3','d1'},'SetInBaseC')) 
-      if any(Cam=='f')  
-       figure(400);semilogy(squeeze(C3.Y(:,4,:)),squeeze(C3.Y(:,1,:))) % distribution along exp
-      end
-      if contains(Cam,'gsvd')
-       [u,s,v]=svd(squeeze(C3.Y(:,4,:)),'econ'); s=diag(s);%,'vector');
-       i1=1:length(co2.u);s=s(i1);u=u(:,i1).*s';v=v(:,i1);
-       figure(401);plot(u); st1='PrincGap';
-      end
-      if contains(Cam,'psvd')
-       [u,s,v]=svd(squeeze(C3.Y(:,1,:)),'econ'); s=diag(s);%,'vector');
-       i1=s>1e-5*s(1);s=s(i1);u=u(:,i1).*s';v=v(:,i1);
-       figure(402);plot(C3.X{1},u); st1='PrincPress';ylabel(st1);axis tight
-      end
-      if ~isempty(v)
-       NL= co2.clist{5}.data;
-       cg=feplot(20,';'); sel=co2.clist{5}.data.Sel;
-       if ~isequal(sel.mdl.Elt,cg.mdl.Elt);cg.mdl=sel.mdl;end
-       d1=struct('def',v,'DOF',sel.mdl.Node(:,1)+.19,'data',s,'name',st1);
-       d1.LabFcn='sprintf(''\\sigma_{%i}/\\sigma_1=%g'',ch,def.data(ch)/def.data(1));'
 
-       cg.def=d1; fecom(';colordata19;colorscaleone')
-       %h=sdtm.feutil.SelPatch(sel,cg.ga,'reset');
-       %set(h,'FaceVertexCData',v(:,2),'facecolor','interp')
-       cg.os_('CbTr{string,Pressure}');ii_plp('colormapband',parula(5),cg.ga)
-      end
-   end
-   i1=sdtm.regContains(R2.Failed,'snl');
-   if any(i1)
-    %% Default display forces 
-    C3=feval(nlutil('@FNL2curve'),d1,struct('drop0',1,'out','list'));
-    if iscell(C3); C3=stack_get(C3,'','squeal','get'); end
-    C3.Y(1,:)=C3.Y(2,:);'xxx no demod for all stresses'
-    C3.X{1}(:,1)=C3.X{1}(:,1)-C3.X{1}(1);
-    c3=iiplot(3,';');iicom('curveinit','Time',C3)
-   end
-   i1=sdtm.regContains(R2.Failed,'def');
-   if any(i1)
-    %% Default display displacement
-    C3=fe_def('def2curve',d1);
-    c3=iiplot(3,';');iicom('curveinit','Time',C3)
-   end
-
-
-   %i3=~any(C3.Y);C3.Y(:,i3)=[];C3.X{2}(i3,:)=[];
-   %C3=fe_def('def2curve',d1);C3.X{1}(:,1)=C3.X{1}(:,1)-C3.X{1}(1);C3.X{2}=fe_c(d1.DOF);
-   %    C3.Xlab{1}={'Time','s';'Fc0',''};
-   if isKey(RT.nmap,'ViewSpec')
-    d_squeal(RT.nmap('ViewSpec'));
-    %RT.nmap('ViewSpec')='ViewSpec(BufTime .4 Overlap .8 tmin .5 -window hanning fmin 1300 1700)';
-   end
-
-   if any(strcmpi(R2.Failed,'store'))
-    RT.nmap('LastContinue')=r3;
-   end
-
-   if 1==2
-    d_squeal('ViewInstFreq{dmBand100,harm1,do{ReEstY,f(t),a(t)},f 1500,ifBand100,aeBand100,clipBand500 3k,,tclip .01 .01}');
-    c3=iiplot(3,';');nmap=c3.data.nmap.nmap;C4=nmap('SqShape');
-    c14=sdth.urn('iiplot(3).clone(14)');iicom(c14,'curveinit','A1',C4);
-    iicom(c3,'polarx2');
-    %cdm.urnVec(C4,'{tlim1 100}{x,2}{y,l1,abs}{gf404,tight}');
-    figure(403);clf;
-    h=cdm.urnVec(C4,'{tlim1 100}{x,2}{y,l1,abs}{x,1,col}{gf403,tight,os{imgrid,ImSw80},pd{WrW49c,FnY}}');
-    set(h,'linewidth',2);ii_plp('ColorMapBand',parula(6));colorbar
-   end
-
-   if nargout>0; out=r3; end
+   if nargout>0; out=r3; out1=d1; end
 
    %% EndSolveTime
   end
@@ -2238,7 +2166,7 @@ if ~isempty(st); d_squeal(['viewpar' st]);end
   c2=sdth.urn('Dock.Id.ci');projM=c2.data.nmap.nmap;
   Time=c2.Stack{'Time'};
  end
- r1=cdm.urnVec(Time,'{x,Time}{x,#RPM}');
+ try;r1=cdm.urnVec(Time,'{x,Time}{x,#RPM}');catch; out=Time;return;end
  
  dt=diff(r1{1}([1 end]))/(size(r1{1},1)-1);
  r2=r1{2,1};r2(r2<=0)=1e-15;
@@ -2378,6 +2306,42 @@ cingui('objset',13,{'@OsDic','ImSw80{@line,""}'})
 end
 
 %ylim([0 1]);xlim([25 280]);grid on
+ elseif comstr(Cam,'mkv')
+ %% #viewMkv : sample capture using OBS studio
+
+if comstr(Cam,'mkva')
+ c20=feplot(20,';');fecom(c20,'ch1');fecom colorscaleinstanttight
+ c21=feplot(21,';');fecom(c21,'ch1');fecom colorscaleinstanttight
+ c13=get(13,'userdata');ci=get(22,'userdata');
+ i3=sdtm.indNearest(c20.def.data(:,1),[.14;.18]);
+ c2=sdth.urn('dock.Id.ci'); projM=c2.data.nmap.nmap;
+ C3=projM('SqShape');
+
+ RO.tOff=c13.Stack{'spec'}.Source.Edit.tmin;
+
+ cinguj('robotobsStart');
+ for j1=i3(1):4:i3(end);
+   fecom(c20,sprintf('ch%i',j1));fecom(c21,sprintf('ch%i',j1));
+   r2=c20.def.data(j1,:);
+   delete(findobj(13,'tag','now'));
+   line(r2(1)-RO.tOff,r2(2)/1000,'marker','o','color','r','tag','now','parent',c13.ga)
+   go=handle(ci.ua.ob(1));
+   delete(findobj(ci.opt(1),'tag','now'));
+   it=sdtm.indNearest(go.XData,r2(1))+(1:1000);t=go.XData(it);
+   h=line(t,go.YData(it),'linestyle','-','color','r','tag','now','parent',ci.ga);
+   h.ZData=ones(size(it))*1000;
+
+   it=sdtm.indNearest(C3.X{1}(:,1),t([1 end]));it=(it(1):it(end))';
+   h=line(C3.X{1}(it,1)*[1 1],abs(C3.Y(it,ci.ua.ch))*[-1 1], ...
+       ones(size(it))*1000*[1 1], ...
+       'linestyle','-', ...
+        'color','g','tag','now','parent',ci.ga,'linewidth',3);
+
+ end
+ cinguj('robotobsStop',struct('fname','@PlotWd/Squeal1.mkv'));
+else; error('Not an implemented example')
+end
+
  elseif comstr(Cam,'summary')
  %% #viewSummary : 
 
@@ -2407,6 +2371,123 @@ end
  xlabel('Wheel Turn');ylabel('Pressure [Bar]');
  yyaxis('right');
  plot(1:length(C0.Pressure),C0.TempPad,'.');ylabel('TempPad [C]');
+ elseif comstr(Cam,'pt')
+ %% #viewPT : post-processing of time simulations
+
+ co2=varargin{carg};carg=carg+1; 
+ d1=varargin{carg};carg=carg+1; 
+ RT=varargin{carg};carg=carg+1; 
+ [~,R2]=sdtm.urnPar(CAM,'{}{}');
+   i1=sdtm.regContains(R2.Failed,'ctc');
+   if any(i1) % CtC display contact fields 
+      Cam=lower(R2.Failed{i1});
+      v=[];
+     % Analyze the contact information EB24
+      C3=feval(nlutil('@FNL2curve'),d1,struct('urn','{squeal}'));
+      C3.X{2}(4:7,3)={struct('DispUnit','\mu m','coef',1e3)};
+       eval(iigui({'C3','d1'},'SetInBaseC')) 
+      if any(Cam=='f')  
+       figure(400);semilogy(squeeze(C3.Y(:,4,:)),squeeze(C3.Y(:,1,:))) % distribution along exp
+      end
+      if contains(Cam,'gsvd')
+       [u,s,v]=svd(squeeze(C3.Y(:,4,:)),'econ'); s=diag(s);%,'vector');
+       i1=1:length(co2.u);s=s(i1);u=u(:,i1).*s';v=v(:,i1);
+       figure(401);plot(u); st1='PrincGap';
+      end
+      if contains(Cam,'psvd')
+       [u,s,v]=svd(squeeze(C3.Y(:,1,:)),'econ'); s=diag(s);%,'vector');
+       i1=s>1e-5*s(1);s=s(i1);u=u(:,i1).*s';v=v(:,i1);
+       figure(402);plot(C3.X{1},u); st1='PrincPress';ylabel(st1);axis tight
+      end
+      if ~isempty(v)
+       cg=initPres(20,co2,5);
+       d2=struct('def',v,'DOF',sel.mdl.Node(:,1)+.19,'data',s,'name',st1);
+       d2.LabFcn='sprintf(''\\sigma_{%i}/\\sigma_1=%g'',ch,def.data(ch)/def.data(1));';
+       cg.def=d2; fecom(';colordata19;colorscaleone')
+       %h=sdtm.feutil.SelPatch(sel,cg.ga,'reset');
+       %set(h,'FaceVertexCData',v(:,2),'facecolor','interp')
+      end
+   end
+   i1=sdtm.regContains(R2.Failed,'snl');
+   if any(i1)
+    %% Default display forces 
+    C3=feval(nlutil('@FNL2curve'),d1,struct('drop0',1,'out','list'));
+    if iscell(C3); C3=stack_get(C3,'','squeal','get'); end
+    C3.Y(1,:)=C3.Y(2,:);'xxx no demod for all stresses'
+    C3.X{1}(:,1)=C3.X{1}(:,1)-C3.X{1}(1);
+    c3=iiplot(3,';');iicom('curveinit','Time',C3)
+   end
+   i1=sdtm.regContains(R2.Failed,'def');
+   if any(i1)
+    %% Default display displacement
+    Time=fe_def('def2curve',d1);
+    c3=iiplot(3,';');iicom('curveinit','Time',Time)
+   end
+
+
+   %i3=~any(C3.Y);C3.Y(:,i3)=[];C3.X{2}(i3,:)=[];
+   %C3=fe_def('def2curve',d1);C3.X{1}(:,1)=C3.X{1}(:,1)-C3.X{1}(1);C3.X{2}=fe_c(d1.DOF);
+   %    C3.Xlab{1}={'Time','s';'Fc0',''};
+   i1=sdtm.regContains(R2.Failed,'viewspec','i');
+   %RT.nmap('ViewSpec')='ViewSpec(BufTime .4 Overlap .8 tmin .5 -window hanning fmin 1300 1700)';
+   if ~any(i1);elseif ~isKey(RT.nmap,'ViewSpec');error('Missing ViewSpec key')
+   else;  d_squeal(RT.nmap('ViewSpec'));
+   end
+   i1=sdtm.regContains(R2.Failed,'viewInstFreq','i');
+   %RT.nmap('ViewSpec')='ViewSpec(BufTime .4 Overlap .8 tmin .5 -window hanning fmin 1300 1700)';
+   if ~any(i1);elseif ~isKey(RT.nmap,'ViewInstFreq');error('Missing ViewInstFreq key')
+   else;  d_squeal(RT.nmap('ViewInstFreq'));
+   end
+   i1 =1;
+   while any(i1)
+    i1=sdtm.regContains(R2.Failed,'dem{','i'); if ~any(i1);break;end
+    i1=find(i1,1);CAM=R2.Failed{i1};R2.Failed(i1)=[]; [~,R3]=sdtm.urnPar(CAM,'{}{o%s,cf%i}');
+    if ~isfield(R3,'cf');R3.cf=20;end
+    C3=feval(nlutil('@FNL2curve'),d1,struct('urn','{squeal}'));
+    i2=strcmpi(C3.X{2}(:,1),R3.o); 
+    C3.Y=squeeze(C3.Y(:,i2,:));C3.X(2)=[];C3.Xlab(2)=[];
+    c2=sdth.urn('Dock.Id.ci');projM=c2.data.nmap.nmap;RD=projM('SqLastSpec');
+    demod=ii_signal('@demod');
+    [RD,C4]=demod(RD,C3);
+    if ismember(R3.o,{'gn'});C4.Y=C4.Y*1000;C4.Ylab={R3.o,'\mu m'};
+    elseif  ismember(R3.o,{'pn'});
+      C4.Ylab={R3.o,'MPa'};
+    end
+
+    cg=initPres(R3.cf,co2,5);
+    d3=struct('def',abs(C4.Y).','DOF',cg.mdl.DOF,'data',C4.X{1}, ...
+        'Xlab',{{'DOF',C4.Xlab{1}}},'name',R3.o,'fun',[0 4]);
+    d3.LabFcn='sprintf(''%.1f ms %.3f kHz'',def.data(ch,1:2).*[1e3 1e-3]);';
+    cg.def=d3; fecom(cg,';colordata19;colorscaleone')
+    cg.os_(sprintf('CbTr{string,%s:%s [%s]}','h1',R3.o,C4.Ylab{2}));
+    fecom(cg,'colormap',parula(5));fecom coloredgealpha.1
+    if isKey(RT.nmap,'FeplotCv');iimouse('view',cg.ga,RT.nmap('FeplotCv'));end
+   end
+
+  if any(sdtm.regContains(R2.Failed,'tilea','i')) % Prepare dock
+   c22=sdth.urn('Dock.Id.ci.Clone{22}');iicom(c22,'iixonly','Time');
+   comgui('objset',[22 20 13 21],{'@dock',{'name','Pres', ...
+    'arrangement',[1 2;3 4], 'position',[0 0 1280 800],...
+    'dockgroup',false, 'tileWidth',[.5 .5],'tileHeight',[.5 .4]}})
+   comgui('objset',[22 13],{'@axes',{'Position',[NaN .15 NaN .8]}})
+  end
+
+
+   if any(strcmpi(R2.Failed,'store'))
+    RT.nmap('LastContinue')=r3;
+   end
+
+   if 1==2
+    d_squeal('ViewInstFreq{dmBand100,harm1,do{ReEstY,f(t),a(t)},f 1500,ifBand100,aeBand100,clipBand500 3k,,tclip .01 .01}');
+    c3=iiplot(3,';');nmap=c3.data.nmap.nmap;C4=nmap('SqShape');
+    c14=sdth.urn('iiplot(3).clone(14)');iicom(c14,'curveinit','A1',C4);
+    iicom(c3,'polarx2');
+    %cdm.urnVec(C4,'{tlim1 100}{x,2}{y,l1,abs}{gf404,tight}');
+    figure(403);clf;
+    h=cdm.urnVec(C4,'{tlim1 100}{x,2}{y,l1,abs}{x,1,col}{gf403,tight,os{imgrid,ImSw80},pd{WrW49c,FnY}}');
+    set(h,'linewidth',2);ii_plp('ColorMapBand',parula(6));colorbar
+   end
+ 
 
  elseif comstr(Cam,'ci')
  %% #viewCi : dock init
@@ -2840,7 +2921,7 @@ elseif comstr(Cam,'tuto');
  eval(sdtweb('_tuto',struct('file','d_squeal','CAM',CAM)));
  if nargout==0; clear out; end
 elseif comstr(Cam,'cvs')
- out='$Revision: 1.165 $  $Date: 2024/01/16 15:47:25 $';
+  out=sdtcheck('revision','$Revision: cf99d9b $  $Date: 2024-06-05 14:54:56 +0200 $ ');
 elseif comstr(Cam,'@');out=eval(CAM);else; error('%s unknown.',CAM)
 end
 end
@@ -3192,4 +3273,14 @@ end
 cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImToFigN','ImSw80{@line,""}','WrW49c'});
 wheelPosLines(c2);
  
+end
+
+function cg=initPres(cf,co2,i5)
+       NL= co2.clist{i5}.data;
+       cg=comgui('guifeplot;',cf);sel=co2.clist{i5}.data.Sel;
+       if ~isequal(sel.mdl.Elt,cg.mdl.Elt);
+           cg.mdl=sel.mdl;
+       end
+       cg.mdl.DOF=sel.mdl.Node(:,1)+.19;
+
 end

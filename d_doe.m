@@ -154,6 +154,16 @@ RT.nmap('TrajScldC')=struct('ToolTip','Cube with target Lc', ...
     'Case{FixDof,Base,"inelt{innode{setname"Rail"}&selface&facing> .9 0 0 -1000}"}'
     'Case{DofSet,Top,"rb{inelt{proid8&selface&facing> .9 0 0 1000},dir 1 3,curveDownForward,KeepDof}"}'
     'Case{Pcond,Scld,p_contact(''PcondScld'')}'
+    'InitQ0{elem0(vect{x0,y0,z-.01,"selwithnode{setNameWheel}"})}'
+    'CbRefWheelLC';'CbRefRailLC';'CbStickWheel';'CbCtcGen'
+    }});
+RT.nmap('TrajScldD')=struct('ToolTip','Cube with target Lc and force', ...
+    'li',{{ ...
+    'Case{reset}'
+    'Case{FixDof,Base,"inelt{innode{setname"Rail"}&selface&facing> .9 0 0 -1000}"}'
+    'Case{FixDof,TOP,"inelt{innode{setname"Wheel"}&selface&facing> .9 0 0 1000} -DOF2"}'
+    'Case{DofLoad,Top,"rb{inelt{proid8&selface&facing> .9 0 0 1000},dir 1 3,curveDownForward,KeepDof}"}'
+    'Case{Pcond,Scld,p_contact(''PcondScld'')}'
     'CbRefWheelLC';'CbRefRailLC';'CbStickWheel';'CbCtcGen'
     }});
 RT.nmap('ScLdA')=li; % ScLdA
