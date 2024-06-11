@@ -3056,7 +3056,7 @@ end
 end
 
 function  [C0,st]=getAmp(C0,Time,st,RO);
-  %% #getAmp
+  %% #getAmp: callback for cdm.xvec posts curve generation
   if nargin==3;RO=struct;end
   if length(Time.Xlab)>3&&isequal(Time.Xlab{3},'hdof')
     Time.Y=Time.Y(:,:,:,1); Time.X(4)=[];Time.Xlab(4)=[]; 
@@ -3080,7 +3080,7 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
       RO.MinAmpRatio=1e-3;
   end
   if isfield(RO,'MinAmpRatio');
-     ze=@(x)gradient(log(x))./diff(Time.X{1}(1:2))./double(C0.iFreq)*-100;
+     ze=@(x)gradient(log(x))./diff(Time.X{1}(1:2))./double(C0.iFreq)*-100/2/pi; % xxx2pi for omega not freq
      for j1=1:size(C0.Amean,1)
       r2=C0.Amean{j1,1};
       r2(r2/norm(r2,'inf')<RO.MinAmpRatio,1)=NaN;C0.Amean{j1,1}=r2;
