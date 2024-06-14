@@ -2443,26 +2443,90 @@ end
     i1=sdtm.regContains(R2.Failed,'dem{','i'); if ~any(i1);break;end
     i1=find(i1,1);CAM=R2.Failed{i1};R2.Failed(i1)=[]; [~,R3]=sdtm.urnPar(CAM,'{}{o%s,cf%i}');
     if ~isfield(R3,'cf');R3.cf=20;end
-    C3=feval(nlutil('@FNL2curve'),d1,struct('urn','{squeal}'));
-    i2=strcmpi(C3.X{2}(:,1),R3.o); 
-    C3.Y=squeeze(C3.Y(:,i2,:));C3.X(2)=[];C3.Xlab(2)=[];
     c2=sdth.urn('Dock.Id.ci');projM=c2.data.nmap.nmap;RD=projM('SqLastSpec');
+    
+    if strcmpi(R3.o,'k1'); R3.o={'gn','pn'};RD.harm=1;
+    elseif strcmpi(R3.o,'gn');  % keep harmonic 0 for gn
+    end
+    C3=feval(nlutil('@FNL2curve'),d1,struct('urn','{squeal}'));
+    i2=ismember(lower(C3.X{2}(:,1)),lower(R3.o)); 
+    C3.Y=(C3.Y(:,i2,:));C3.X{2}=C3.X{2}(i2,:);
     demod=ii_signal('@demod');
     [RD,C4]=demod(RD,C3);
-    if ismember(R3.o,{'gn'});C4.Y=C4.Y*1000;C4.Ylab={R3.o,'\mu m'};
+    if size(C4.Y,2)==2; 
+      % 2d histograms
+      C5=cdm.urnVec(C4,'{y,s{1,:},abs}{y,s{2,:},abs}');
+      it=round(size(C4.Y,1)*([.8 1]-.6));
+      figure(1);h=cdm.hist2('hist{xs.01,ys.01,zlog}',reshape(C5{1}(it,:),[],1),reshape(C5{2}(it,:),[],1)*1000);
+        C4.Y=C4.Y(:,1,:)./C4.Y(:,2,:);
+        C4.X{2}={'k1'};R3.o='k1';C4.Ylab={R3.o,'MPa/mm',struct('coef',1e-3,'DispUnit','MPa/\mu m')};
+    elseif ismember(R3.o,{'gn'});C4.Ylab={R3.o,'mm',struct('coef',1e3,'DispUnit','\mu m')};
     elseif  ismember(R3.o,{'pn'});
       C4.Ylab={R3.o,'MPa'};
     end
 
     cg=initPres(R3.cf,co2,5);
-    d3=struct('def',abs(C4.Y).','DOF',cg.mdl.DOF,'data',C4.X{1}, ...
+    RO.([R3.o '1'])=C4; % Store for RL processing 
+    d3=struct('def',abs(squeeze(C4.Y)).','DOF',cg.mdl.DOF,'data',C4.X{1}, ...
         'Xlab',{{'DOF',C4.Xlab{1}}},'name',R3.o,'fun',[0 4]);
     d3.LabFcn='sprintf(''%.1f ms %.3f kHz'',def.data(ch,1:2).*[1e3 1e-3]);';
-    cg.def=d3; fecom(cg,';colordata19;colorscaleone')
-    cg.os_(sprintf('CbTr{string,%s:%s [%s]}','h1',R3.o,C4.Ylab{2}));
-    fecom(cg,'colormap',parula(5));fecom coloredgealpha.1
+    if strcmpi(R3.o,'k1')
+     % display harmonic 1 stifness
+     d4=d3;d4.def=log10(d3.def);cg.def=d4;cg.ua.axProp={'clim',round(max(d4.def(:))*100)/100+[-2 0]};
+     cg.mdl.name=sprintf('log10(%s [%s])',R3.o,C4.Ylab{2});
+     feplot(cg)
+     fecom(cg,';colordata19;colorscaleone;colorscaleinstanttight')
+     cg.os_('LgML');cg.os_('p.','ImToFigN','ImSw80','WrW49c');
+     cg.os_(sprintf('CbTr{string, }','h1',R3.o,C4.Ylab{2}));
+    else
+     cg.def=d3; fecom(cg,';colordata19;colorscaleone;colorscaleinstanttight')
+     cg.os_(sprintf('CbTr{string,%s:%s [%s]}','h1',R3.o,C4.Ylab{2}));
+    end
+    %fecom(cg,'colormap',parula(5));
+    ii_plp('colormapbandw3',cg.ga,jet(8))
+    fecom coloredgealpha.1
     if isKey(RT.nmap,'FeplotCv');iimouse('view',cg.ga,RT.nmap('FeplotCv'));end
    end
+  if any(sdtm.regContains(R2.Failed,'rla','i')) 
+     %% #ViewPt{RLa} Prepare root locus
+    SE=co2.model; 
+    
+    
+    JacAdd=nl_spring('@JacAdd'); % SE contains elastic part of components
+    NLl=SE.NL; mu=.6; 
+    kng=@(gi)500.*.01.*exp(500.*gi);
+    ld=zeros(size(RO.k11.Y,1),size(d1.DOF,1));
+    for ty=1%[0 1];
+    for jt=1:size(RO.k11.Y,1)
+     if ty==1;ki=(squeeze(RO.k11.Y(jt,1,:)));
+     elseif ty==0
+      ki=kng(squeeze(C3.Y(sdtm.indNearest(C3.X{1}(:,1),RO.k11.X{1}(jt,1)),2,:)));
+     end
+     NLl{1,4}{1,3}=ki; % Update modulus, SE.K{5},ktan
+     %NLl{1,4}{2,3}=r1h(1,1:3:end)'./q0.FNL.def(1:3:3*832).*NL0{1,4}{2,3};  ctan
+     NLl{1,4}{3,3}=-mu*ki; %otan_9=kmu 
+     SE2=JacAdd(SE,NLl,'sumcat');
+     A=[zeros(3), eye(3); -(SE2.K{3}+SE2.K{4}+SE2.K{5}) -(SE2.K{2}+SE2.K{6})];
+     ldc=eig(A).'/2/pi;ldc=ldc(imag(ldc)>0);[~,i2]=sort(real(ldc),'descend');
+     ld(jt,1:length(i2))=ldc(i2);
+    end
+    %ld=ld(:,2:3);
+    figure(106); ip=1;h=line(abs(ld(:,ip)),-real(ld(:,ip))./abs(ld(:,ip))*100,'tag','now','linestyle','none','marker','.');
+    %figure(102); h=line(RO.k11.X{1}(:,1),abs(ld(:,1)),'tag','now','linestyle','none','marker','.');
+    if ty==1;set(h,'markersize',10,'color','k');end
+    end
+    
+    xlim([5700 7000])
+    eval(iigui({'RO','SE'},'SetInBaseC'))
+
+         %d3.def(:,1); % h0, gaps in microns ~= 1e-3
+     % ki=squeeze(RO.k11.Y(jt,1,:));[ki kng(squeeze(C3.Y(1e4,2,:)))];figure(1);plot(sortrows(real(ans)))
+     % ki=500.*.01.*exp(500.*gi);
+
+    % add to 106 :  dr(f,a)
+    %ddr=d_squeal('SolveModes',stack_set(SE2,'SE','MVR',SE2));
+
+  end
 
   if any(sdtm.regContains(R2.Failed,'tilea','i')) % Prepare dock
    c22=sdth.urn('Dock.Id.ci.Clone{22}');iicom(c22,'iixonly','Time');
@@ -3209,7 +3273,8 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
       r2(r2/norm(r2,'inf')<RO.MinAmpRatio,1)=NaN;C0.Amean{j1,1}=r2;
       r3=C0.Amax{j1,1};
       r3(r3/norm(r3,'inf')<RO.MinAmpRatio,1)=NaN;C0.Amax{j1,1}=r3;
-      if sdtm.regContains(C0.Amax{j1,2},'([g]|Amax)') % Growth estimation
+      if sdtm.regContains(C0.Amax{j1,2},'([g]|Amax)') 
+       % Growth estimation / decay rate estimation
        % figure(1); plot(gradient(log(C0.Amean{1}))./C0.iFreq{1}/diff(Time.X{1}(1:2))*100)
        coef=1; if contains(C0.iFreq.label,'kHz');coef=1e-3;end
        C0.dr=cdm({[ze(r2) ]*coef,'Decay rate [%]'},Time.name);

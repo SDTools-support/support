@@ -144,7 +144,7 @@ RT.nmap('TrajScld')={ ... % sdtweb _bp d_contact caseTraj
 RT.nmap('TrajScldB')={ ...
     'Case{reset}'
     'Case{FixDof,Base,"inelt{innode{setname"Rail"}&selface&facing> .9 0 0 -1000}"}'
-    'Case{DofSet,Top,"rb{inelt{proid8&selface&facing> .9 0 0 1000},dir 1 3,curveDownForward,KeepDof}"}'
+    'Case{DofSet,Top,"rb{inelt{proid8&selface&innode{z>.14}&facing> .9 0 0 1000},dir 1 3,curveDownForward,KeepDof}"}'
     'Case{Pcond,Scld,p_contact(''PcondScld'')}'
     'CbRefWheel';'CbRefRail';'CbStickWheel';'CbCtcGen'
     };
@@ -152,7 +152,7 @@ RT.nmap('TrajScldC')=struct('ToolTip','Cube with target Lc', ...
     'li',{{ ...
     'Case{reset}'
     'Case{FixDof,Base,"inelt{innode{setname"Rail"}&selface&facing> .9 0 0 -1000}"}'
-    'Case{DofSet,Top,"rb{inelt{proid8&selface&facing> .9 0 0 1000},dir 1 3,curveDownForward,KeepDof}"}'
+    'Case{DofSet,Top,"rb{inelt{proid8&selface&innode{z>.14}&facing> .9 0 0 1000},dir 1 3,curveDownForward,KeepDof}"}'
     'Case{Pcond,Scld,p_contact(''PcondScld'')}'
     'InitQ0{elem0(vect{x0,y0,z-.01,"selwithnode{setNameWheel}"})}'
     'CbRefWheelLC';'CbRefRailLC';'CbStickWheel';'CbCtcGen'
@@ -160,8 +160,8 @@ RT.nmap('TrajScldC')=struct('ToolTip','Cube with target Lc', ...
 RT.nmap('TrajScldD')=struct('ToolTip','Cube with target Lc and force', ...
     'li',{{ ...
     'Case{reset}'
-    'Case{FixDof,Base,"inelt{innode{setname"Rail"}&selface&facing> .9 0 0 -1000}"}'
-    'Case{FixDof,TOP,"inelt{innode{setname"Wheel"}&selface&facing> .9 0 0 1000} -DOF2"}'
+    'Case{FixDof,Base,"inelt{innode{setname"Rail"}&selface&innode{z<.01}&facing> .9 0 0 -1000}"}'
+    'Case{FixDof,TOP,"inelt{innode{setname"Wheel"}&selface&innode{z>.14}&facing> .9 0 0 1000} -DOF2"}'
     'Case{DofLoad,Top,"rb{inelt{proid8&selface&facing> .9 0 0 1000},dir 1 3,curveDownForward,KeepDof}"}'
     'Case{Pcond,Scld,p_contact(''PcondScld'')}'
     'CbRefWheelLC';'CbRefRailLC';'CbStickWheel';'CbCtcGen'
@@ -182,7 +182,7 @@ RT.nmap('CbRefWheelLC')={@fe_shapeoptim,'RefineHexaMesh -lc3e-3 -lcmin2e-3','$pr
     % l*[1.5 .5 1])};
 %    sprintf('withnode{setname Wheel}&withnode{z<%g}',1.2*l)};
 % Wheel surface sticking 
-RS=struct('sel','inElt{ProNameWheel & selface&facing >.9 0 0 -5000}','distFcn',[]);
+RS=struct('sel',[ 'inElt{ProNameWheel & selface&innode{z<' sprintf('%.5g',1.02*l) '}&facing >.9 0 0 -5000}'],'distFcn',[]);
 RS.distFcn=lsutil('gen',[],{struct('shape','sphere','rc',l*5,'xc',l*1.5,'yc',l*.5,'zc',(5+1)*l)});
 RT.nmap('CbStickWheel')={@lsutil,'SurfStick','$projM',RS};
 RB=struct(...'RefRail', ...
@@ -197,10 +197,10 @@ RB=struct(...'RefRail', ...
      l*[0 .5 1,4 .4 .05],[ 1 0 0,0 1 0,0 0 1]), ...
    'CtcWheel',['ProNameWheel&selface&withnode', ...
       sprintf('{distfcn"{sphere{%.15g %.15g %.15g, .015}}"}',l*[1.5 .5 1])]);
-
+RB.top=[.6 2.5]*l; 
 %% rail Refinement
 RB.RefRail=sprintf('ProNameRail & innode {distFcn"{box{%.15g %.15g %.15g, %.15g %.15g %.15g ,1 0 0,0 1 0, 0 0 -1}}"}',...
- l*[1.5 0.5 1, .34 .3 .34]) ;
+ [mean(RB.top) 0.5*l 1*l, diff(RB.top)/2 .3*l .3*l]) ;
 RT.nmap('CbRefRail')={@fe_shapeoptim,'RefineHexaMesh','$projM',RB.RefRail}; 
 RT.nmap('CbRefRailLC')={@fe_shapeoptim,'RefineHexaMesh -lc3e-3 -lcmin2e-3','$projM',RB.RefRail}; 
 % -interMPC problem with slaves in slave surface
@@ -208,7 +208,8 @@ RT.nmap('CbRefRailLC')={@fe_shapeoptim,'RefineHexaMesh -lc3e-3 -lcmin2e-3','$pro
 % fecom('shownodemark','distFcn{sphere{0 0 0, .05}}')
 
 RT.nmap('CbCtcGen')={@ctc_utils,'generatecontactpair','$projM$', ...
-     struct('slave',RB.CtcRail,'master',RB.CtcWheel,'ProId',201)};
+     struct('slave',RB.CtcRail,'master',RB.CtcWheel,'ProId',201, ...
+      'InitCqFcn','d_contact@surfStick(CbStickWheel)')};
 
 % xxx Missing InitUnl0 
 RT.nmap('ScldCS')=struct('ToolTip','Sphere/cube contact', ...
