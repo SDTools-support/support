@@ -2498,7 +2498,7 @@ end
     ld=zeros(size(RO.k11.Y,1),size(d1.DOF,1));
     for ty=1%[0 1];
     for jt=1:size(RO.k11.Y,1)
-     if ty==1;ki=(squeeze(RO.k11.Y(jt,1,:)));
+     if ty==1;ki=real(squeeze(RO.k11.Y(jt,1,:)));
      elseif ty==0
       ki=kng(squeeze(C3.Y(sdtm.indNearest(C3.X{1}(:,1),RO.k11.X{1}(jt,1)),2,:)));
      end
@@ -2509,14 +2509,20 @@ end
      A=[zeros(3), eye(3); -(SE2.K{3}+SE2.K{4}+SE2.K{5}) -(SE2.K{2}+SE2.K{6})];
      ldc=eig(A).'/2/pi;ldc=ldc(imag(ldc)>0);[~,i2]=sort(real(ldc),'descend');
      ld(jt,1:length(i2))=ldc(i2);
+     if jt==1; 
+         [x,ldc]=eig(A,'vector');i2=real(ldc)>0&imag(ldc)>0;
+         RO.uv=reshape(x(:,i2),[],2);
+     end
     end
     %ld=ld(:,2:3);
     figure(106); ip=1;h=line(abs(ld(:,ip)),-real(ld(:,ip))./abs(ld(:,ip))*100,'tag','now','linestyle','none','marker','.');
     %figure(102); h=line(RO.k11.X{1}(:,1),abs(ld(:,1)),'tag','now','linestyle','none','marker','.');
     if ty==1;set(h,'markersize',10,'color','k');end
     end
-    
-    xlim([5700 7000])
+    dc=RT.nmap('CurCEA');i1=sdtm.indNearest(dc.data(:,1),5900);
+    line(dc.data(i1,1),dc.data(i1,2)*100,'marker','o','color','r','DisplayName','Nominal CEA');
+    'xxx gv redo consistent tangent state'
+    xlim([5700 6100])
     eval(iigui({'RO','SE'},'SetInBaseC'))
 
          %d3.def(:,1); % h0, gaps in microns ~= 1e-3
