@@ -246,7 +246,7 @@ d_piezo('setstyle',cf)
 cf.osd_('cbtr{string,E(V/m)}')
 %% Step 3: Compute q/V as a function of the frequency
 sens=fe_case(model,'sens');
-C1=fe_case('SensObserve −DimPos 2 3 1',sens,def);
+C1=fe_case('SensObserve -DimPos 2 3 1',sens,def);
 C1=sdsetprop(C1,'PlotInfo','sub','magpha','scale','xlin;ylog');
 ci=iiplot; 
 iicom(ci,'curveInit',C1.name,C1); iicom('submagpha');
