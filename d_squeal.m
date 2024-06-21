@@ -2339,6 +2339,59 @@ if comstr(Cam,'mkva')
 
  end
  cinguj('robotobsStop',struct('fname','@PlotWd/Squeal1.mkv'));
+
+elseif comstr(Cam,'mkvb')
+ % time | pres
+ % spec | stab est.
+
+ % pressures
+  c20=feplot(20,';');fecom(c20,'ch1');fecom colorscaleinstant
+% xxx ColorBar tuning
+% place dr(f,a)
+% place spectro
+ c13=get(13,'userdata');ci=get(22,'userdata');
+ i3=sdtm.indNearest(c20.def.data(:,1),[.14;.18]);
+ c2=sdth.urn('dock.Id.ci'); projM=c2.data.nmap.nmap;
+ C3=projM('SqShape');
+
+ RO.tOff=c13.Stack{'spec'}.Source.Edit.tmin;
+ c106=figure(106); ga106=get(c106,'currentaxes'); axis tight
+ set(ga106,'xlim',[min(C0.iFreq.data) max(C0.iFreq.data)])
+ %x6=[get(ga106,'xdata');get(ga106,'ydata')]
+load('C0.mat','C0') % xxx
+
+ cinguj('robotobsStart');
+ for j1=i3(1):4:i3(end);
+  fecom(c20,sprintf('ch%i',j1));fecom(c21,sprintf('ch%i',j1));
+  r2=c20.def.data(j1,:);
+  delete(findobj(13,'tag','now'));
+  line(r2(1)-RO.tOff,r2(2)/1000,'marker','o','color','r','tag','now','parent',c13.ga)
+  go=handle(ci.ua.ob(1));
+  delete(findobj(ci.opt(1),'tag','now'));
+  it=sdtm.indNearest(go.XData,r2(1))+(1:1000);t=go.XData(it);
+  h=line(t,go.YData(it),'linestyle','-','color','r','tag','now','parent',ci.ga);
+  h.ZData=ones(size(it))*1000;
+
+  it=sdtm.indNearest(C3.X{1}(:,1),t([1 end]));it=(it(1):it(end))';
+  h=line(C3.X{1}(it,1)*[1 1],abs(C3.Y(it,ci.ua.ch))*[-1 1], ...
+   ones(size(it))*1000*[1 1], ...
+   'linestyle','-', ...
+   'color','g','tag','now','parent',ci.ga,'linewidth',3);
+
+ h=line(C3.X{1}(it,1)*[1 1],abs(C3.Y(it,ci.ua.ch))*[-1 1], ...
+   ones(size(it))*1000*[1 1], ...
+   'linestyle','-', ...
+   'color','g','tag','now','parent',ga106,'linewidth',3);
+try; delete(h6); end
+it6=sdtm.indNearest(C0.Time.data,C3.X{1}(j1,1));
+h6=line(C0.iFreq.data(it6),C0.dr.data(it6),10,...
+'linewidth',1,'marker','o','color','g','markerfacecolor','r','tag','now','parent',ga106);
+cinguj('robotcapture',struct('FigTag',106,'fname',sprintf('/n/vermot/scratch/squeal/ttb/ttb_%.6i.png',j1),'Java',3))
+ end
+ cinguj('robotobsStop',struct('fname','@PlotWd/Squeal2.mkv'));
+%convert -delay 20 -loop 20 ttb*.png ttb_Anim.gif
+
+
 else; error('Not an implemented example')
 end
 
