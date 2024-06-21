@@ -7,7 +7,7 @@ options:
   numbered: 2
 parts:
 
-- caption: SDT-base
+- caption: SDT-tuto
   numbered: 3
   chapters:
       - file: tuto
