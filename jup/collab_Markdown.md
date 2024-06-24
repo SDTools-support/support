@@ -87,10 +87,12 @@ xxx need documentation
  python3 
 
 !"C:\Program Files (x86)\Microsoft Visual Studio\Shared\Python39_64\python.exe" -m pip install jupyter-book
-   
+
+Note that VSCode uses https://katex.org/docs/supported  for default Math preview which is not yet compatible with SDT math macros. 
 
 (markdown-Math)=
 ## Math
+
 
 ````{list-table} SDT math macros
 :widths: auto
