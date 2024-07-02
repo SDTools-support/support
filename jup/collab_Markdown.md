@@ -9,13 +9,12 @@
 (markdown-SDT)=
 ## SDT 
 
-- MATLAB code generated with ``{m}`function('hello','python')`:``
+- ``{m}`function('hello','python')`:`` or 
+{m}`function('hello','python')` : the `{m}` gives a [role](https://www.sphinx-doc.org/en/master/usage/restructuredtext/roles.html) that is a python function, defined here on the fly in the `header.md`, where Sphinx generates a directive  a code block is then generated that allow pygments calling)
+A role generates a directive ` ``` :language: matlab ``` ` which is then interpreted as usual. 
 
-{m}`function('hello','python')`
 
-- MATLAB command **S**tring generated with ``{s}`MATLAB` ``+ `_static\sdt.css` 
-
-{s}`MATLAB`
+- ``{s}`MATLAB` ``  forces usage of class `s` (string command for SDT) in the HTML for coloring in the  `_static\sdt.css`  : for example {s}`MATLAB`. 
 
 - Code block
 ``` matlab
