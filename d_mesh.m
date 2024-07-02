@@ -1922,7 +1922,7 @@ elseif comstr(Cam,'naca')
  %% #MeshNaca
 
  if carg>nargin
-  RO=struct('Profile',...
+  RO=struct('Profile',... % (angle, xpos ypos)
    [[0; acos(.9); pi/2+asin(.3); pi; 3*pi/2; pi+acos(-.9); 2*pi] ...
    [1 0;.9 .003; .3 .05;0 0;.5 -.02;.9 -.001;1 0]],...
    'EndSlope',[0 0]);
@@ -1932,8 +1932,8 @@ elseif comstr(Cam,'naca')
  [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
   'xn(20#%i#"refinement in long side")' ...
   'yn(2#%i#"refinement in thickness")' ...
-  'zs(.1#%g#"refinement step length in transverse")' ...
-  'sRef(100#%i#"profile curve refinement factor")' ...
+  'zs(.1#%g#"refinement step length in transverse")' ... % xxx ug 
+  'sRef(400#%i#"profile curve refinement factor")' ...
   'extr(5#%i#extrude in length")' ...
   ],{RO,CAM}); Cam=lower(CAM);
 
@@ -1953,11 +1953,15 @@ node=[0 y1(1) 0;1 y1(1) 0;1 y1(2) 0;0 y1(2) 0];
 mo1=feutil('objectquad 1 1',node,RO.xn,1);
 
 % select edge, identify closest node on curve and move
+% Surfstick xxxeb  
 el1=feutil('selelt seledge',mo1);
 mo2=mo1; mo2.Elt=el1; mo2.Node=feutil('getnodegroupall',mo2);
 [n2,i2]=feutil('addnode-nearest epsl10',n0,mo2.Node(:,5:7));
 NNode=sparse(mo1.Node(:,1),1,1:size(mo1.Node,1));
 mo1.Node(NNode(mo2.Node(:,1)),5:7)=n2(i2,5:7);
+
+% xxxGV more vertical 
+% EdgeN [bottom up] for verticals 
 
 % refine in thickness
 if RO.yn>1; mo1=feutil(sprintf('divideelt %i 1 ',RO.yn),mo1); end
