@@ -1912,6 +1912,59 @@ if nargout==0; feplot(model);fecom showpatch
 else; out=model;
 end 
 
+elseif comstr(Cam,'naca')
+ %% #MeshNaca
+
+ if carg>nargin
+  RO=struct('Profile',...
+   [[0; acos(.9); pi/2+asin(.3); pi; 3*pi/2; pi+acos(-.9); 2*pi] ...
+   [1 0;.9 .003; .3 .05;0 0;.5 -.02;.9 -.001;1 0]],...
+   'EndSlope',[0 0]);
+ else
+  RO=varargin{carg}; carg=carg+1;
+ end
+ [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
+  'xn(20#%i#"refinement in long side")' ...
+  'yn(2#%i#"refinement in thickness")' ...
+  'zs(.1#%g#"refinement step length in transverse")' ...
+  'sRef(100#%i#"profile curve refinement factor")' ...
+  'extr(5#%i#extrude in length")' ...
+  ],{RO,CAM}); Cam=lower(CAM);
+
+ % Generate profile curve (angle, xpos ypos), provide
+ r1 = spline(RO.Profile(:,1)',[RO.EndSlope;RO.Profile(:,2:3);RO.EndSlope]');
+ s1=linspace(0,2*pi,RO.sRef*2*round(RO.xn/2)); % angle refinement
+ r2=ppval(r1,s1); % interpolated curve
+ %figure(11); plot(r2(1,:),r2(2,:),'-b',RO.Profile(:,2),RO.Profile(:,3),'or'),axis equal
+
+% prepare contour model, with closed line
+n0=[(1:size(r2,2)-1)' zeros(size(r2,2)-1,3) r2(:,1:end-1)' zeros(size(r2,2)-1,1)];
+
+% prepare a grid to morph
+x1=linspace(0,1,RO.xn); x1=x1(:);
+y1=[min(r2(2,:)) max(r2(2,:))];
+node=[0 y1(1) 0;1 y1(1) 0;1 y1(2) 0;0 y1(2) 0];
+mo1=feutil('objectquad 1 1',node,RO.xn,1);
+
+% select edge, identify closest node on curve and move
+el1=feutil('selelt seledge',mo1);
+mo2=mo1; mo2.Elt=el1; mo2.Node=feutil('getnodegroupall',mo2);
+[n2,i2]=feutil('addnode-nearest epsl10',n0,mo2.Node(:,5:7));
+NNode=sparse(mo1.Node(:,1),1,1:size(mo1.Node,1));
+mo1.Node(NNode(mo2.Node(:,1)),5:7)=n2(i2,5:7);
+
+% refine in thickness
+if RO.yn>1; mo1=feutil(sprintf('divideelt %i 1 ',RO.yn),mo1); end
+% allow extrusion
+if RO.extr
+ mo1=feutil(sprintf('extrude %i 0 0 %g',RO.extr,RO.zs),mo1);
+end
+
+mo1=stack_set(mo1,'info','MeshOpt',RO);
+out=mo1;
+
+
+
 elseif comstr(Cam,'cfg'); [CAM,Cam]=comstr(CAM,4);
 %% #MeshCfg : obtain/generate mesh  ---------------------------------------
 error('Moved to sdtsys StepMesh')
