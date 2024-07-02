@@ -1801,19 +1801,25 @@ else;error('MatRve%s',CAM);
  end
 else; error('Mat%s unknown',CAM);
 end
+elseif comstr(Cam,'case'); [CAM,Cam]=comstr(CAM,5);
+ %% #Case : step case (called by sdtsys StepMesh)
+ if isfield(RO,'Elt');model=RO;end
+ RO=varargin{carg};carg=carg+1;
 
-elseif comstr(Cam,'stepmesh'); [CAM,Cam]=comstr(CAM,8);
-%% #stepMesh : default meshing step  ---------------------------------------
-sdtw('_ewt','obsolete ? report eb')
-Range=varargin{2};carg=2;
-evt=varargin{carg};carg=carg+1;
-model=evt.data;
+ [CAM,Cam]=comstr(RO.Case,1);
+ if comstr(Cam,'compa')
+  %% #CaseCompA
+  % Use lsutil to get material orientation map
+  RO.nmap('InitMatOrient')
+  dbstack; keyboard;
 
-assignin('caller','Res',model);
+ else; error('Case%s unknown',CAM)
+ end
+
 
 elseif comstr(Cam,'mesh'); [CAM,Cam]=comstr(CAM,5);
  %% if not found edit MeshCmd to Cmd
-%% #Mesh 
+%% #Mesh : MeshCfg mesh command implementations (called by sdtsys StepMesh)
 if comstr(Cam,'plate')
 %% #MeshPlate {div,o%s,i%s}
  [st,RO]=sdtm.urnPar(CAM,'{div%g}:{o%s,i%s}');
