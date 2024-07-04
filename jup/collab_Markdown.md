@@ -77,7 +77,9 @@ xxx need documentation
 
 
 (markdown-VS)=
-## VS code shortcuts 
+## VScode shortcuts 
+
+VSCode is now the preferred xxx 
 
  Preview side-by-side (Ctrl+K V) 
  Install jupyter notbook support

@@ -51,7 +51,7 @@ Other Python installs of interest
 
 - VSCode (Visual Studio Code) is a modern open source code editor
 - `Ctrl+k  v` opens the preview editor side by side 
-- The explorer allows nice navigation with multiple files if you define a workspace. For example sdt.code-workspace contains
+- The explorer allows nice navigation with multiple files if you define a workspace. For example `sdt.code-workspace` contains
 
 ```
 {"folders": [
@@ -59,8 +59,21 @@ Other Python installs of interest
 	]}
 ```
 
+- Suggested extensions 
+  - LTEX for spelling / grammar compatible with both LaTeX and Markdown.
+    - Note that add to dictionary is in Quick fix:Add to dictionary 
+    - In settings search for ltex
+    - Change item=dictionary to value=userExternal file
+    - Change ltex:Dictionary (opens the `settings.json`) where you should have 
+
+```
+    "ltex.enabled": true,
+    "ltex.dictionary": {
+          "en-US": [":path_to_be_edited/sdt.cur/tex/en-US.usr"]
+            },
+```
 (collab-install-GitHub)=
 ## GitHub desktop as git interface
 
-- Github desktop is an intuitive interface for Git access. It is the choice used by SDTools to explain git to users that are not familiar with this versioning system.   
+- GitHub desktop is an intuitive interface for Git access. It is the choice used by SDTools to explain git to users that are not familiar with this versioning system.   
 
