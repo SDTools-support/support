@@ -1932,7 +1932,7 @@ elseif comstr(Cam,'naca')
  [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
   'xn(20#%i#"refinement in long side")' ...
   'yn(2#%i#"refinement in thickness")' ...
-  'zs(.1#%g#"refinement step length in transverse")' ... % xxx ug 
+  'zs(.1#%g#"refinement step length in transverse")' ... % xxx ug
   'sRef(400#%i#"profile curve refinement factor")' ...
   'extr(5#%i#extrude in length")' ...
   ],{RO,CAM}); Cam=lower(CAM);
@@ -1943,35 +1943,64 @@ elseif comstr(Cam,'naca')
  r2=ppval(r1,s1); % interpolated curve
  %figure(11); plot(r2(1,:),r2(2,:),'-b',RO.Profile(:,2),RO.Profile(:,3),'or'),axis equal
 
-% prepare contour model, with closed line
-n0=[(1:size(r2,2)-1)' zeros(size(r2,2)-1,3) r2(:,1:end-1)' zeros(size(r2,2)-1,1)];
+ % prepare contour model, with closed line
+ n0=[(1:size(r2,2)-1)' zeros(size(r2,2)-1,3) r2(:,1:end-1)' zeros(size(r2,2)-1,1)];
 
-% prepare a grid to morph
-x1=linspace(0,1,RO.xn); x1=x1(:);
-y1=[min(r2(2,:)) max(r2(2,:))];
-node=[0 y1(1) 0;1 y1(1) 0;1 y1(2) 0;0 y1(2) 0];
-mo1=feutil('objectquad 1 1',node,RO.xn,1);
+ % prepare a grid to morph
+ x1=linspace(min(RO.Profile(:,2)),max(RO.Profile(:,2)),RO.xn); x1=x1(:); % xxx should be max of profile
+ y1=[min(r2(2,:)) max(r2(2,:))];
+ node=[0 y1(1) 0;1 y1(1) 0;1 y1(2) 0;0 y1(2) 0];
+ mo1=feutil('objectquad 1 1',node,RO.xn,1);
 
-% select edge, identify closest node on curve and move
-% Surfstick xxxeb  
-el1=feutil('selelt seledge',mo1);
-mo2=mo1; mo2.Elt=el1; mo2.Node=feutil('getnodegroupall',mo2);
-[n2,i2]=feutil('addnode-nearest epsl10',n0,mo2.Node(:,5:7));
-NNode=sparse(mo1.Node(:,1),1,1:size(mo1.Node,1));
-mo1.Node(NNode(mo2.Node(:,1)),5:7)=n2(i2,5:7);
+ NNode=sparse(mo1.Node(:,1),1,1:size(mo1.Node,1));
+ % prepare vertical top to bottom edges info
+ el1=feutil('selelt seledge',mo1); r1=sort(el1(isfinite(el1(:,1)),1:2),2);
+ el2=feutil('selelt seledgeAll',mo1); r2=sort(el2(isfinite(el2(:,1)),1:2),2);
+ el2=setdiff(r2,r1,'rows');
+ % then sort top to bottom
+ [~,i2]=sort(reshape(mo1.Node(NNode(el2),6),[],2),2,'descend'); i2=i2(:,1)~=1;
+ el2(i2,:)=el2(i2,[2 1]);
+ RO.EdgeN=el2;
 
-% xxxGV more vertical 
-% EdgeN [bottom up] for verticals 
+ % select edge, identify closest node on curve and move
+ % Surfstick xxxeb
+ mo2=mo1; mo2.Elt=el1; mo2.Node=feutil('getnodegroupall',mo2);
+ %[n2,i2]=feutil('addnode-nearest epsl10',n0,mo2.Node(:,5:7));
+ % Keep verticals
+ % look for closest abscissa and choose point with minimal height correciton
+ n2=mo2.Node;
+ for j1=1:size(n2,1)
+  r2=abs(n2(j1,5:6)-n0(:,5:6)); [r3,in2]=sort(abs(r2(:,1)),'ascend');
+  [r4,in3]=min(r2(in2(1:10),2));
+  n2(j1,5:6)=n0(in2(in3),5:6);
+ end
 
-% refine in thickness
-if RO.yn>1; mo1=feutil(sprintf('divideelt %i 1 ',RO.yn),mo1); end
-% allow extrusion
-if RO.extr
- mo1=feutil(sprintf('extrude %i 0 0 %g',RO.extr,RO.zs),mo1);
-end
+ NNode=sparse(mo1.Node(:,1),1,1:size(mo1.Node,1));
+ %mo1.Node(NNode(mo2.Node(:,1)),5:7)=n2(i2,5:7);
+ mo1.Node(NNode(mo2.Node(:,1)),5:7)=n2(:,5:7);
 
-mo1=stack_set(mo1,'info','MeshOpt',RO);
-out=mo1;
+ % cleanup: coalesce exit tip
+ [r1,i1]=sort(abs(mo1.Node(:,5)-max(RO.Profile(:,2))),'ascend');
+ n1=mo1.Node(:,[1 1]); n1(i1(2),2)=n1(i1(1),1);
+ % check height of front tip
+ [r1,i1]=sort(abs(mo1.Node(:,5)-min(RO.Profile(:,2))),'ascend');
+ %if abs(diff(mo1.Node(i1(1:2),6)))<abs(diff(y1))/20 % xxx should always be the case
+  n1(i1(2),2)=n1(i1(1),1);
+ %end
+ mo1=feutil('renumber-noori',mo1,n1);
+ n1=sparse(n1(:,1),1,n1(:,2)); RO.EdgeN=full(n1(RO.EdgeN));
+
+ % EdgeN [bottom up] for verticals
+
+ % refine in thickness
+ if RO.yn>1; mo1=feutil(sprintf('divideelt %i 1 ',RO.yn),mo1); end
+ % allow extrusion
+ if RO.extr
+  mo1=feutil(sprintf('extrude %i 0 0 %g',RO.extr,RO.zs),mo1);
+ end
+
+ mo1=stack_set(mo1,'info','MeshOpt',RO);
+ out=mo1;
 
 
 
