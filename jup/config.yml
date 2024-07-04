@@ -70,6 +70,8 @@ parse:
    myst_url_schemes: [mailto, https]
    myst_enable_extensions:
     - "substitution"
+    - amsmath
+    - dollarmath
    myst_substitutions:
      fig: |
        ````{figure} ../_images/%s

@@ -71,10 +71,12 @@ Using pipes and -
  | $+-$ right | left | center |
  | $ -$ right | left | center |
 
-Using jupyter :::
+Using Jupyter :::
 
 xxx need documentation
 
+
+<img src="../images/fun-fish.png" alt="fishy" width="200px">
 
 (markdown-VS)=
 ## VScode shortcuts 
