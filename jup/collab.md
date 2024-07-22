@@ -6,3 +6,5 @@
 ```{tableofcontents}
 ```
 
+These notes are meant to ease standard processes used to collaborate with SDTools. 
+

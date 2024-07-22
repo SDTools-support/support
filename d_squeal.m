@@ -1709,7 +1709,21 @@ if RO.ci==13; setappdata(13,'SdtName','Spec');end
 if new % Place in same tile as iiplot 
  cingui('objset',c13,{'@Dock',{'Name','Id','tile',c2.opt(1)}})
 end
-iicom(c13,'curveinit','spec',spec);set(c13.ga,'yscale','linear');
+if any(strcmpi(RO.Failed,'suma'))
+  %% xxxSuma
+  C1=struct('X',{[spec.Source.X(1:2)]}, ...
+      'Xlab',{spec.Source.Xlab(1:2)},'Y',[],'Ylab','SumA');
+  C1.Y=abs(spec(:,:,1));
+  for j1=2:size(spec,3)
+   C1.Y=C1.Y+abs(spec(:,:,j1));
+  end
+  C1.PlotInfo=spec.Source.PlotInfo;
+  C1.name=sprintf('SumSpec(%s)',Time.name);
+  iicom(c13,'curveinit','SumSpec',C1);set(c13.ga,'yscale','linear');
+else
+  iicom(c13,'curveinit','spec',spec);set(c13.ga,'yscale','linear');
+end
+
 if strcmpi(RO.type,'fft') % #guess_cycle_freq -3
  r2=sum(abs(C2.Y),2);if C2.X{1}(1)==0; r2(1:2)=0;end
  [~,i2]=max(r2);RO.f=C2.X{1}(i2); out=RO; 
@@ -1740,7 +1754,7 @@ if nargout==0; clear out;end
 elseif comstr(Cam,'par')
 %% #ViewPar{fs2,f(p),xxx,cuName}
 c2=sdth.urn('Dock.Id.ci'); nmap=c2.data.nmap.nmap;
-[~,RO]=sdtm.urnPar(CAM,'{}{fs%ug,u%s,cu%s,ciStoreName%s,ci%i,it%g,MinAmpRatio%ug}');
+[~,RO]=sdtm.urnPar(CAM,'{}{fs%ug,u%s,cu%s,ciStoreName%s,ci%i,it%g,MinAmpRatio%ug,hold%s}');
 if ~isfield(RO,'Failed');RO.Failed={};end
 if ~isfield(RO,'cu');RO.cu='Time';end
 if isKey(nmap,RO.cu);Time=nmap(RO.cu); else; Time=c2.Stack{RO.cu};end;
@@ -1802,7 +1816,9 @@ if isfield(C0,'Time')
  end
 end
 if isscalar(fieldnames(C0));return;end 
-if isfield(C0,'Pressure');C0.Pressure=C0.Pressure/{1e5,'Pressure [bar]'};end
+if isfield(C0,'Pressure')&&~sdtm.regContains(C0.Pressure.label,'bar','i')
+    C0.Pressure=C0.Pressure/{1e5,'Pressure [bar]'};
+end
 st1(end,:)=[]; st1(1,end+1:4)={''};RO.list=st1;
 
 for j1=1:size(RO.list,1)
@@ -1819,7 +1835,7 @@ for j1=1:size(RO.list,1)
   end
   gf=RO.typ{iTyp,3};
   gf=sdth.urn(sprintf('figure(%i).os{@Dock,{name,SqSig},name,%i %s,NumberTitle,off}',gf,gf,RO.typ{iTyp,2}));
-  figure(gf);
+  figure(gf);if isfield(RO,'hold');hold(RO.hold);end
   if gf==300;hold on;
   end
   ga=get(gf,'CurrentAxes'); if isempty(ga);ga=axes('parent',gf);end
@@ -1882,7 +1898,7 @@ for j1=1:size(RO.list,1)
 end
 
 if isfield(RO,'ciStoreName')&&size(Time.X{1},2)>1
-  %% display parameters
+ %% standard display parameters (initial version)
  %[~,r2]=sdtm.urnPar('a{polar,fs2}','{}{fs%ug,u%s}');
  C1=struct('X',{{Time.X{1}(:,1),Time.Xlab{1}(2:end,:)}},...
     'Xlab',{{Time.Xlab{1}(1,:),'Comp'}},'Y',Time.X{1}(:,2:end),'Ylab',2);
@@ -3326,12 +3342,13 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
       RO.MinAmpRatio=1e-3;
   end
   if isfield(RO,'MinAmpRatio');
+     %% Deal with amplitude estimation and elimination of areas < MinAmpRatio
      ze=@(x)gradient(log(x))./diff(Time.X{1}(1:2))./double(C0.iFreq)*-100/2/pi; % xxx2pi for omega not freq
      for j1=1:size(C0.Amean,1)
       r2=C0.Amean{j1,1};
       r2(r2/norm(r2,'inf')<RO.MinAmpRatio,1)=NaN;C0.Amean{j1,1}=r2;
       r3=C0.Amax{j1,1};
-      r3(r3/norm(r3,'inf')<RO.MinAmpRatio,1)=NaN;C0.Amax{j1,1}=r3;
+      r3(r3/norm(r3,'inf')<RO.MinAmpRatio,1)=NaN;C0.Amax{j1,1}=r3;% hide certain areas
       if sdtm.regContains(C0.Amax{j1,2},'([g]|Amax)') 
        % Growth estimation / decay rate estimation
        % figure(1); plot(gradient(log(C0.Amean{1}))./C0.iFreq{1}/diff(Time.X{1}(1:2))*100)

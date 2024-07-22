@@ -17,12 +17,16 @@ With MATLAB you need
 (collab-install-Python+MATLAB)=
 ## Python/MATLAB integration for use with SDT
 - Install a Python compatible with MATLAB  https://www.mathworks.com/support/requirements/python-compatibility.html,  {m}`doc 'configure your system to use python'`  
-Latest windows binary compatible with MATLAB (Python 3.9) is found here : [Python Release Python 3.9.13 | Python.org](https://www.python.org/downloads/release/python-3913/)  
-Assign which python executable MATALB should use with command  
+Latest windows binary compatible strongly depends on MATLAB revision.Assign which python executable MATLAB should use with command  
 ```MATLAB
 pyenv('Version','_full_path_to_python.exe_')
 ```
 
+Other Python installs of interest
+- {m}`sdtpy.install('scipy')` , shows the system commands needed for this installation. You must execute those manually. 
+- {m}`sdtpy.install('scipy')` lists command to install SciPy. Verify `import scipy; scipy.signal.butter(1,.1,"lowpass")`
+- {m}`sdtpy.install('gmsh')` lists command to install GMSH. Verify using `import gmsh; gmsh.initialize(); gmsh.fltk.run(); gmsh.finalize()`
+	
 (collab-install-JupyterBook)=
 ## Build Jupyter book documentation
 
@@ -41,15 +45,13 @@ Use command {m}`sdtm.jup('sdtlexer')`
  `mklink /d _icons ..\tex\icons`  if appropriate
 
 
-Other Python installs of interest
-
-- {m}`sdtpy.install('scipy')` lists command to install SciPy. Verify `import scipy; scipy.signal.butter(1,.1,"lowpass")`
-- {m}`sdtpy.install('gmsh')` lists command to install GMSH. Verify using `import gmsh; gmsh.initialize(); gmsh.fltk.run(); gmsh.finalize()`
-	
 (collab-install-VSCode)=
 ## VSCode as Markdown editor
 
 - VSCode (Visual Studio Code) is a modern open source code editor
+- It integrates with {m}`sdtweb` if you set it as the editor for markdown
+  {m}`sdtdef('SDTools.MdEdt-setpref',{'VScode','c:\Users\$USER$\AppData\Local\Programs\Microsoft VS Code\Code.exe'})`
+- You can possibly define this as text editor instead of the SDTools standard NotePad++ sdtdef('SDTools.TxtEdt-setpref',{'notepad++','D:\APP\win64\npp\notepad++.exe'})
 - `Ctrl+k  v` opens the preview editor side by side 
 - The explorer allows nice navigation with multiple files if you define a workspace. For example `sdt.code-workspace` contains
 
@@ -75,5 +77,5 @@ Other Python installs of interest
 (collab-install-GitHub)=
 ## GitHub desktop as git interface
 
-- GitHub desktop is an intuitive interface for Git access. It is the choice used by SDTools to explain git to users that are not familiar with this versioning system.   
+- [GitHub desktop](https://github.com/apps/desktop) is an intuitive interface for Git access. It is the choice used by SDTools to explain git to users that are not familiar with this versioning system.   
 
