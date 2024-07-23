@@ -1709,16 +1709,28 @@ if RO.ci==13; setappdata(13,'SdtName','Spec');end
 if new % Place in same tile as iiplot 
  cingui('objset',c13,{'@Dock',{'Name','Id','tile',c2.opt(1)}})
 end
-if any(strcmpi(RO.Failed,'suma'))
-  %% xxxSuma
+if any(strncmpi(RO.Failed,'suma',4))
+  %% Suma : Sum Time freq amplitudes
+  % suma : sum all channels
+  % suma[unit] : sum only channel with asked unit
+  i2=find(strncmpi(RO.Failed,'suma',4));
+  name=RO.Failed{i2};
+  unit=regexp(name,'suma\[(.*)\]','tokens','ignorecase');
+  if ~isempty(unit); 
+   unit=unit{1}{1};
+   % Select only channels with corresponding unit
+   indch=find(strcmpi(spec.Source.X{3}(:,2),unit));
+  else; % Keep all channels
+   indch=1:length(spec.Source.X{3});
+  end
+
   C1=struct('X',{[spec.Source.X(1:2)]}, ...
-      'Xlab',{spec.Source.Xlab(1:2)},'Y',[],'Ylab','SumA');
-  C1.Y=abs(spec(:,:,1));
-  for j1=2:size(spec,3)
-   C1.Y=C1.Y+abs(spec(:,:,j1));
+      'Xlab',{spec.Source.Xlab(1:2)},'Y',zeros(size(spec,1:2)),'Ylab','SumA');
+  for j1=1:length(indch)
+   C1.Y=C1.Y+abs(spec(:,:,indch(j1)));
   end
   C1.PlotInfo=spec.Source.PlotInfo;
-  C1.name=sprintf('SumSpec(%s)',Time.name);
+  C1.name=sprintf('%s(%s)',name,Time.name);
   iicom(c13,'curveinit','SumSpec',C1);set(c13.ga,'yscale','linear');
 else
   iicom(c13,'curveinit','spec',spec);set(c13.ga,'yscale','linear');
@@ -1740,7 +1752,7 @@ else;% If spectro
  RO.f=C2.X{2}(i2); out=RO; 
 end 
 
-c2.os_('p.','ImToFigN','ImSw80','WrW49c');c13.os_('p.','ImToFigN','ImSw80','WrW49c');
+c2.os_('p.','ImToFigN','ImLw50','WrW49c');c13.os_('p.','ImToFigN','ImSw50','WrW49c');
 
 iimouse('interacturn',13,menu_generation('interact.surf3d'));
 nmap=sdth.urn(sprintf('iiplot(%i).nmap',c2.opt(1)));
@@ -1835,10 +1847,11 @@ for j1=1:size(RO.list,1)
   end
   gf=RO.typ{iTyp,3};
   gf=sdth.urn(sprintf('figure(%i).os{@Dock,{name,SqSig},name,%i %s,NumberTitle,off}',gf,gf,RO.typ{iTyp,2}));
-  figure(gf);if isfield(RO,'hold');hold(RO.hold);end
+  figure(gf);
   if gf==300;hold on;
   end
   ga=get(gf,'CurrentAxes'); if isempty(ga);ga=axes('parent',gf);end
+  if isfield(RO,'hold');hold(ga,RO.hold);end
   if strcmpi(RO.list{j1,4},'radial')
    r2={C0.(RO.list{j1,2}) C0.(RO.list{j1,1}) C0.(RO.list{j1,3})};
    h=cdm.radialpline(r2{:},'parent',ga,'linewidth',2);
@@ -3145,7 +3158,7 @@ function out=specMax(RO)
   f=ob.YData;t=ob.XData;
 
   r2=[max(Z,[],2) mean(abs(Z),2)]; 
-  r3=mean(r2);r2(:,2)=r2(:,2)*r3(1)/r3(2);
+  r3=mean(r2);r2(:,2)=r2(:,2)*r3(1)/r3(2); % Scale mean to have mean(SMean) = mean(Max)
   %% remove 50 Hz 
   i5=find(rem(f,50*RO.fCoef)==0);i5=[i5 i5-1 i5+1];i5(i5==0)=1;i5(i5>length(f))=length(f);
   r2(i5(:,1),2)=(r2(i5(:,2),2)+r2(i5(:,3),2))/2; 
@@ -3156,7 +3169,7 @@ function out=specMax(RO)
   h=plot(ob.YData,r2);set(h,'linewidth',1,'marker','.');
   xlabel(sprintf('Frequency [%s]',RO.fUnit));
   ylabel(sprintf('Spectro [%.1f - %.1f s]',min(t),max(t)))
-  ga=get(h(1),'parent');set(ga,'yscale','log');legend(h,'Max','SMean');
+  ga=get(h(1),'parent');set(ga,'yscale','log');legend(h,'Max','ScaledMean');
 
   ii_plp('legend',ga,{'set','-corner .01 .99', ...
       'string',{c13.Stack{c13.ua.sList{1}}.name},'fontsize',12});
