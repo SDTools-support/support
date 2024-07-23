@@ -12,6 +12,11 @@
 
 Each user should place (either physically or through symbolic links)
  - {m}`sdt.daily` xxx . {m}`sdtcheck patchupgrade` 
+ - {m}`sdtcheck patchmkl` xxx / sdtdef problem if exist
+ -  clone by url https://github.com/SDTools-support/support
+
+xxx clone_Support.png
+
  - For internal SDTools processes this is {m}`sdt.cur`
  - {m}`sdt.git` contains all the project directories. For example 
    - {m}`sdt.git\support`  should be a clone from https://github.com/SDTools-support/support

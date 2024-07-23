@@ -11,7 +11,8 @@
 ## MATLAB+SDT
 With MATLAB you need 
 - SDT : www.sdtools.com/sdtcur
-- {m}`sdtcheck 'patchupgrade ../download/daily/sdtdaily_dis.p'` is used to update your installation based on the daily post of SDT. Use this if you are running a project with SDTools only. 
+- {m}`sdtcheck 'patchupgrade ../download/daily/sdtdaily_dis.p'` is used to update your installation based on the daily post of SDT. Use this if you are running a project with SDTools only (since daily versions may have issues). 
+- {m}`sdtcheck 'patchupgrade ../download/daily/nlsimdaily_dis.p'` may be used if you also have an SDT-nlsim license.  
 - {m}`sdtcheck 'patchupgrade'` update from the latest beta release located at https://www.sdtools.com/distrib/beta/sdtcur.zip  
 
 (collab-install-Python+MATLAB)=
