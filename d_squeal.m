@@ -1752,7 +1752,7 @@ else;% If spectro
  RO.f=C2.X{2}(i2); out=RO; 
 end 
 
-c2.os_('p.','ImToFigN','ImLw50','WrW49c');c13.os_('p.','ImToFigN','ImSw50','WrW49c');
+c2.os_('p.','ImToFigN','ImLw50','WrW49c');c13.os_('p.','ImToFigN','ImLw50','WrW49c');
 
 iimouse('interacturn',13,menu_generation('interact.surf3d'));
 nmap=sdth.urn(sprintf('iiplot(%i).nmap',c2.opt(1)));
@@ -1852,6 +1852,7 @@ for j1=1:size(RO.list,1)
   end
   ga=get(gf,'CurrentAxes'); if isempty(ga);ga=axes('parent',gf);end
   if isfield(RO,'hold');hold(ga,RO.hold);end
+  if isfield(RO,'reset')&&j1==1; cla(ga); end
   if strcmpi(RO.list{j1,4},'radial')
    r2={C0.(RO.list{j1,2}) C0.(RO.list{j1,1}) C0.(RO.list{j1,3})};
    h=cdm.radialpline(r2{:},'parent',ga,'linewidth',2);
