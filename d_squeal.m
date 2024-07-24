@@ -1634,7 +1634,7 @@ if isempty(Cam)
   feval(Cb{:});
   return
 else
-  [st,RO]=sdtm.urnPar(CAM,'{Spec%s}:{ci%g,jframe%g,ChSel%s,name%s,jPar%g,fi%s}');  
+  [st,RO]=sdtm.urnPar(CAM,'{Spec%s}:{ci%g,jframe%g,ChSel%s,name%s,jPar%g,fi%s,cleanFig%s,cm%s}');  
 end
   if ~isfield(RO,'Failed');RO.Failed={};end
   i1=~cellfun(@isempty,regexpi(RO.Failed,'[ft](min|max)'));
@@ -1664,7 +1664,9 @@ end
 
 t0=Time.X{1}(1); Time.X{1}=Time.X{1}-Time.X{1}(1);
 if ischar(Time.Xlab{1});Time.Xlab{1}={Time.Xlab{1},'s',[]};end
-if t0~=0&&strcmp(Time.Xlab{1}{1},'Time');Time.Xlab{1}{1}=sprintf('Time -%.1f s',t0);end
+if t0>=0.10&&strcmp(Time.Xlab{1}{1},'Time')
+ Time.Xlab{1}{1}=sprintf('Time -%.1f s',t0);
+end
 spec=ii_signal(['spectro',RO.Spec],Time,struct,RO);spec.Source.Edit.tmin=t0;
 %C2=spec.GetData; 
 r3=fe_def('cleanentry',spec.Source.Edit);
@@ -1729,12 +1731,14 @@ if any(strncmpi(RO.Failed,'suma',4))
   for j1=1:length(indch)
    C1.Y=C1.Y+abs(spec(:,:,indch(j1)));
   end
+  C1.Y=C1.Y/max(C1.Y(:));
   C1.PlotInfo=spec.Source.PlotInfo;
   C1.name=sprintf('%s(%s)',name,Time.name);
   iicom(c13,'curveinit','SumSpec',C1);set(c13.ga,'yscale','linear');
 else
   iicom(c13,'curveinit','spec',spec);set(c13.ga,'yscale','linear');
 end
+if isfield(RO,'cm'); colormap(RO.cm); end
 
 if strcmpi(RO.type,'fft') % #guess_cycle_freq -3
  r2=sum(abs(C2.Y),2);if C2.X{1}(1)==0; r2(1:2)=0;end
@@ -1742,6 +1746,8 @@ if strcmpi(RO.type,'fft') % #guess_cycle_freq -3
 else;% If spectro
  if ~isfield(RO,'Failed')||~any(strcmpi(RO.Failed,'zlog'));
   c13.ua.YFcn='r3=abs(r3);';iiplot(c13);
+  cb=colorbar;cb.Label.String='Amplitude (lin)';
+ else; cb=colorbar;cb.Label.String='Amplitude [log_{10}]';
  end
  if isfield(C2,'Y')
   r2=sum(sum(abs(C2.Y),3),1);if C2.X{2}(1)==0; r2(1:2)=0;end
@@ -1752,7 +1758,15 @@ else;% If spectro
  RO.f=C2.X{2}(i2); out=RO; 
 end 
 
-c2.os_('p.','ImToFigN','ImLw50','WrW49c');c13.os_('p.','ImToFigN','ImLw50','WrW49c');
+if isfield(RO,'cleanFig')
+ % List of PlotWd
+ if strcmpi(RO.cleanFig,'Lw')
+  c2.os_('p.','ImToFigN','ImLw50','WrW70c');c13.os_('p.','ImToFigN','ImLw50','WrW70c');
+ else; error('cleanFig "%s" unknown',RO.cleanFig)
+ end
+else; c2.os_('p.','ImToFigN','ImSw80','WrW49c');c13.os_('p.','ImToFigN','ImSw80','WrW49c');
+end
+
 
 iimouse('interacturn',13,menu_generation('interact.surf3d'));
 nmap=sdth.urn(sprintf('iiplot(%i).nmap',c2.opt(1)));
@@ -1766,7 +1780,8 @@ if nargout==0; clear out;end
 elseif comstr(Cam,'par')
 %% #ViewPar{fs2,f(p),xxx,cuName}
 c2=sdth.urn('Dock.Id.ci'); nmap=c2.data.nmap.nmap;
-[~,RO]=sdtm.urnPar(CAM,'{}{fs%ug,u%s,cu%s,ciStoreName%s,ci%i,it%g,MinAmpRatio%ug,hold%s}');
+[~,RO]=sdtm.urnPar(CAM,...
+ '{}{fs%ug,u%s,cu%s,ciStoreName%s,ci%i,it%g,MinAmpRatio%ug,hold%s,reset%3,cm%s,xlim%g,ylim%g,cleanFig%s,a%s}');
 if ~isfield(RO,'Failed');RO.Failed={};end
 if ~isfield(RO,'cu');RO.cu='Time';end
 if isKey(nmap,RO.cu);Time=nmap(RO.cu); else; Time=c2.Stack{RO.cu};end;
@@ -1852,7 +1867,7 @@ for j1=1:size(RO.list,1)
   end
   ga=get(gf,'CurrentAxes'); if isempty(ga);ga=axes('parent',gf);end
   if isfield(RO,'hold');hold(ga,RO.hold);end
-  if isfield(RO,'reset')&&j1==1; cla(ga); end
+  if isfield(RO,'reset'); cla(ga); end
   if strcmpi(RO.list{j1,4},'radial')
    r2={C0.(RO.list{j1,2}) C0.(RO.list{j1,1}) C0.(RO.list{j1,3})};
    h=cdm.radialpline(r2{:},'parent',ga,'linewidth',2);
@@ -1895,7 +1910,12 @@ for j1=1:size(RO.list,1)
   elseif ~isempty(RO.list{j1,3})
    r2={C0.(RO.list{j1,2}) C0.(RO.list{j1,1}) C0.(RO.list{j1,3})};
    h=cdm.pline(r2{:},'parent',ga,'linewidth',2);
-   ii_plp('colormapband',parula(7));axis tight; 
+   if isfield(RO,'cm'), colormap(RO.cm);
+   else; ii_plp('colormapband',turbo(5));
+   end
+   axis tight; 
+   if isfield(RO,'xlim'); xlim(RO.xlim); end
+   if isfield(RO,'ylim'); ylim(RO.ylim); end
   else 
    % Just a line
    if ~isfield(C0,RO.list{j1,2})||~isfield(C0,RO.list{j1,1})
@@ -1906,7 +1926,7 @@ for j1=1:size(RO.list,1)
   
   end
   if gf==300;hold off;end
-   cleanFig(gf,Time,c2);  RO.back=1;
+   cleanFig(gf,Time,c2,RO);  RO.back=1;
    cingui('objset',gf,RO.typ{iTyp,4})
    RO.list{j1}='';iimouse('on');
 end
@@ -1958,7 +1978,7 @@ if any(sdtm.Contains(lower(RO.Failed),'pr(temp)'))
    end
    cdm.changeUnit(300,'y',struct('coef',1e-5,'From','Pa','To','bar'))
    hold off;axis tight; title('');legend('location','best');grid on
-   cleanFig(gf,Time,c2);  RO.back=1;
+   cleanFig(gf,Time,c2,RO);  RO.back=1;
 end
 i1=sdtm.Contains(lower(RO.Failed),'a(f)');
 if any(i1)
@@ -1993,7 +2013,7 @@ if any(i1)
   xlabel(st{2,1});ylabel(st{3,1});h(3)=colorbar;
   h(3).Label.String=st{1};ii_plp('colormapband',parula(7));
   axis tight; 
-  cleanFig(gf,Time,c2);  RO.back=1;
+  cleanFig(gf,Time,c2,RO);  RO.back=1;
 end
 i1=find(sdtm.regContains(RO.Failed,'(a.f,p.|a.wp.f.)','i'));
 if ~isempty(i1)
@@ -2020,7 +2040,7 @@ dbstack; keyboard;
   xlabel(st{2,1});ylabel(st{3,1});h=colorbar;
   h.Label.String=st{1};ii_plp('colormapband',parula(7));
   axis tight; wheelPosLines(c2);
-  cleanFig(gf,Time,c2);  RO.back=1;
+  cleanFig(gf,Time,c2,RO);  RO.back=1;
 end
 i1=sdtm.Contains(lower(RO.Failed),'a(t)');
 if any(i1);RO.Failed(i1)=[];
@@ -2046,7 +2066,7 @@ if any(i1);RO.Failed(i1)=[];
    set(ga,'ylim',max(get(ga,'ylim'))*[.01 1])
    xlabel(st{2,1});ylabel(strrep(st{3,1},'q1','qj'));
    legend('q_{2R}','q_{3R}','location','best')
-   cleanFig(gf,Time,c2);  RO.back=1;
+   cleanFig(gf,Time,c2,RO);  RO.back=1;
 
   end
   RO.back=1;
@@ -3377,11 +3397,15 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
     C0.WP=cdm({r2,'WP[0-4]',Time.name});  
   end
   if isfield(C0,'Amean')
-   i2=contains(C0.Amean(:,2),'[g]');
+   if ~isfield(RO,'a'); RO.a='[g]'; end
+   i2=contains(C0.Amean(:,2),RO.a);
    if any(i2);
     C0.Amean=cdm(C0.Amean(i2,:));
     C0.Amax=cdm(C0.Amax(contains(C0.Amax(:,2),'[g]'),:));
    else
+    sdtw('_nb',sprintf(['Several units found to compute Amean ( '...
+     sprintf('[%s] ',st2{:}),').\nPrecise selection with option a[unit].\n'...
+     sprintf('[%s] has been selected by default',st2{1})]));
     i2=1;
     C0.Amean=cdm(C0.Amean(i2,:));
     C0.Amax=cdm(C0.Amax(i2,:));
@@ -3400,7 +3424,7 @@ function wheelPosLines(c2)
 end
 
 
-function  cleanFig(gf,Time,c2)
+function  cleanFig(gf,Time,c2,RO)
 %%
 ga=get(gf,'currentaxes');
  if isfield(Time,'name');
@@ -3425,7 +3449,16 @@ if nargin==3
   wheelPosLines(c2);
 end
 %cingui('objset',gf,{'@OsDic',{'ImSw80{@line,""}'},'@PlotWd',{'@OsDic','WrW49c'}})
-cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImToFigN','ImSw80{@line,""}','WrW49c'});
+
+if isfield(RO,'cleanFig')
+ % List of PlotWd
+ if strcmpi(RO.cleanFig,'Lw')
+  cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImToFigN','ImLw50{@line,""}','WrW70c'});
+ else; error('cleanFig "%s" unknown',RO.cleanFig)
+ end
+else; 
+ cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImToFigN','ImSw80{@line,""}','WrW49c'});
+end
 wheelPosLines(c2);
  
 end
