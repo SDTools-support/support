@@ -1781,7 +1781,7 @@ elseif comstr(Cam,'par')
 %% #ViewPar{fs2,f(p),xxx,cuName}
 c2=sdth.urn('Dock.Id.ci'); nmap=c2.data.nmap.nmap;
 [~,RO]=sdtm.urnPar(CAM,...
- '{}{fs%ug,u%s,cu%s,ciStoreName%s,ci%i,it%g,MinAmpRatio%ug,hold%s,reset%3,cm%s,xlim%g,ylim%g,cleanFig%s,a%s}');
+ '{}{fs%ug,u%s,cu%s,ciStoreName%s,ci%i,it%g,MinAmpRatio%ug,hold%s,reset%3,cm%s,xlim%g,ylim%g,cleanFig%s,amp%s}');
 if ~isfield(RO,'Failed');RO.Failed={};end
 if ~isfield(RO,'cu');RO.cu='Time';end
 if isKey(nmap,RO.cu);Time=nmap(RO.cu); else; Time=c2.Stack{RO.cu};end;
@@ -1832,6 +1832,7 @@ RO.typ={'Amean(WP,iFreq)','a(wp,f)',103, ...
     {'@axes',{'yscale','linear','ygrid','on'}}
   'TorqueV(Time)','TorqueV(t)',301, ...
     {'@axes',{'yscale','linear','ygrid','on'}}
+   
     };
 
 RO.getDep=@getAmp;
@@ -3386,7 +3387,8 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
       if sdtm.regContains(C0.Amax{j1,2},'([g]|Amax)') 
        % Growth estimation / decay rate estimation
        % figure(1); plot(gradient(log(C0.Amean{1}))./C0.iFreq{1}/diff(Time.X{1}(1:2))*100)
-       coef=1; if contains(C0.iFreq.label,'kHz');coef=1e-3;end
+       coef=1; 
+       if contains(C0.iFreq.label,'kHz');coef=1e-3;end
        C0.dr=cdm({[ze(r2) ]*coef,'Decay rate [%]'},Time.name);
       end
      end
@@ -3397,8 +3399,8 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
     C0.WP=cdm({r2,'WP[0-4]',Time.name});  
   end
   if isfield(C0,'Amean')
-   if ~isfield(RO,'a'); RO.a='[g]'; end
-   i2=contains(C0.Amean(:,2),RO.a);
+   if ~isfield(RO,'amp'); RO.amp='[g]'; end
+   i2=contains(C0.Amean(:,2),RO.amp);
    if any(i2);
     C0.Amean=cdm(C0.Amean(i2,:));
     C0.Amax=cdm(C0.Amax(contains(C0.Amax(:,2),'[g]'),:));
