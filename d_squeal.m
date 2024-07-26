@@ -1781,7 +1781,7 @@ elseif comstr(Cam,'par')
 %% #ViewPar{fs2,f(p),xxx,cuName}
 c2=sdth.urn('Dock.Id.ci'); nmap=c2.data.nmap.nmap;
 [~,RO]=sdtm.urnPar(CAM,...
- '{}{fs%ug,u%s,cu%s,ciStoreName%s,ci%i,it%g,MinAmpRatio%ug,hold%s,reset%3,cm%s,xlim%g,ylim%g,cleanFig%s,amp%s}');
+ '{}{fs%ug,u%s,cu%s,ciStoreName%s,ci%i,it%g,MinAmpRatio%ug,hold%s,reset%3,cm%s,xlim%g,ylim%g,zlim%g,clim%g,cleanFig%s,amp%s}');
 if ~isfield(RO,'Failed');RO.Failed={};end
 if ~isfield(RO,'cu');RO.cu='Time';end
 if isKey(nmap,RO.cu);Time=nmap(RO.cu); else; Time=c2.Stack{RO.cu};end;
@@ -1917,6 +1917,8 @@ for j1=1:size(RO.list,1)
    axis tight; 
    if isfield(RO,'xlim'); xlim(RO.xlim); end
    if isfield(RO,'ylim'); ylim(RO.ylim); end
+   if isfield(RO,'zlim'); clim(RO.zlim); end % zlim and clim equivalent
+   if isfield(RO,'clim'); clim(RO.clim); end
   else 
    % Just a line
    if ~isfield(C0,RO.list{j1,2})||~isfield(C0,RO.list{j1,1})
