@@ -6,7 +6,7 @@ function [out,out1,out2]=d_mesh(varargin); %#ok<*NOSEM,*STOUT>
 %     sdtweb('_taglist','d_mesh') to view current contents
 %     d_mesh('tuto')  % to see integrated tutorials
 
-%       Copyright (c) 1990-2022 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2024 by SDTools, All Rights Reserved.
 %       For revision information use d_mesh('cvs')
 
 if nargin==0; d_mesh('tuto'); return; end
