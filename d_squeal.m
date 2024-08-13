@@ -672,7 +672,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
     SE.Load.DOF=SE.DOF;
     SE.Load.def=r1; SE.Load.lab{1}='steq';
    else
-    SE.Load.def(:,end+1)=r1; SE.Load.lab{1,end+1}='steq';
+    SE.Load.def(:,end+1)=r1; SE.Load.lab{end+1}='steq';
     SE.Load.curve(1,end+1)={''};
    end
   end
@@ -703,12 +703,15 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    SE.nmap('ModalNewmarkUseDiagDamp')=1;
    % figure(1);NL=SE.NL{end}; plot(sort(NL.vnl(2,:,2)))
    %SE.FNL=model.FNL+0; SE.FNLlab=model.FNLlab; SE.FNLDOF=model.FNLDOF
-   [d2,mo3]=fe_time(SE); %iicom('curveinit','def',d2)
-
-   if norm(d2.def,'Inf')>1e100; error('Diverged');end
+   %[d2,mo3]=fe_time(SE); %iicom('curveinit','def',d2)
+   fe_time(SE); % directly store co2
+   
+   %if norm(d2.def,'Inf')>1e100; error('Diverged');end
 
    co2=SE.nmap('LastContinue'); sdtm.store(RO)%iigui(RO,'setInNmap');
-   clear out; return;
+
+   if nargout>0; out=co2; end
+   return;
   end
 
 
@@ -718,16 +721,19 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    %% #SolveTimeContinue transient continuation and display
    if carg<=nargin;RT=varargin{carg};carg=carg+1;else;RT=evalin('caller','RO');end
    co2=RT.nmap('LastContinue'); %mo2=RT.nmap('CurModel'); co2=mo2.nmap('LastContinue');
-   [~,R2]=sdtm.urnPar(CAM,'{}{RandF%ug}');if ~isfield(R2,'Failed');R2.Failed={''};end
+   [~,R2]=sdtm.urnPar(CAM,'{}{RandF%ug,Flab%s}');if ~isfield(R2,'Failed');R2.Failed={''};end
    if ~any(co2.u)&&~any(co2.v)||any(strcmpi(R2.Failed,'randv'));
        co2.v=rand(size(co2.v))*.1; % xxx factor too high when unstable
    end
-   if isfield(R2,'RandF');
-     ca=co2.clist{1}.data; r1=ca.tft(2,:);
+   if isfield(R2,'RandF'); % xxx steq (atm), or piston force ?
+    if ~isfield(R2,'Flab');  in1=1+find(ismember(co2.model.Load.lab,'steq'));
+    else;  in1=1+find(~cellfun(@isempty,regexp(co2.model.Load.lab,R2.Flab)));
+    end
+     ca=co2.clist{1}.data; r1=ca.tft(in1,:);
    %  ca.r(:,4)=[1e1;0;0];ca.r=ca.r(:,[1 2 4 3]);
      %ca.tft(3,:)=sin(5000*2*pi*ca.tft(1,:));%rand(size(r1));
      if isempty(R2.RandF); R2.RandF=1e-4; end
-     ca.tft(2,:)=1+(rand(size(r1))-.5)*R2.RandF;
+     ca.tft(in1,:)=1+(rand(size(r1))-.5)*R2.RandF;
      co2.clist{1}.data=ca;
      %co2.clist{1}.data.tft(2,:)=r1.*(1+rand(size(r1))*1e-2);
    end
