@@ -1922,10 +1922,18 @@ elseif comstr(Cam,'naca')
  %% #MeshNaca
 
  if carg>nargin
-  RO=struct('Profile',... % (angle, xpos ypos)
+  RO=struct('nmap',vhandle.nmap);
+  p0=struct('section',... % (angle, xpos ypos)
    [[0; acos(.9); pi/2+asin(.3); pi; 3*pi/2; pi+acos(-.9); 2*pi] ...
    [1 0;.9 .003; .3 .05;0 0;.5 -.02;.9 -.001;1 0]],...
    'EndSlope',[0 0]);
+  p1=p0; p2=p0;
+  p1.section(:,2)=120*p1.section(:,2); p2.section(:,2)=60*p2.section(:,2);
+  p1.section(:,3)=1e2*p1.section(:,3); p2.section(:,3)=5e1*p2.section(:,3);
+  RO.nmap('p1')=p1; RO.nmap('p2')=p2;
+  % R,offset,Profile
+  RO.nmap('Profile')={0,0,'p1';180,30,'p2'};
+
  else
   RO=varargin{carg}; carg=carg+1;
  end
@@ -1937,70 +1945,129 @@ elseif comstr(Cam,'naca')
   'extr(5#%i#extrude in length")' ...
   ],{RO,CAM}); Cam=lower(CAM);
 
- % Generate profile curve (angle, xpos ypos), provide
- r1 = spline(RO.Profile(:,1)',[RO.EndSlope;RO.Profile(:,2:3);RO.EndSlope]');
- s1=linspace(0,2*pi,RO.sRef*2*round(RO.xn/2)); % angle refinement
- r2=ppval(r1,s1); % interpolated curve
- %figure(11); plot(r2(1,:),r2(2,:),'-b',RO.Profile(:,2),RO.Profile(:,3),'or'),axis equal
+ list=RO.nmap('Profile'); % recover profile
+ RO.EdgeN=[]; RO.TipN=[]; RO.ExtN=[]; % nodes on extra/intra with vertical lines for thickness
+ for jl=1:size(list,1) % loop on profile along radius
+  RO.curProf=RO.nmap(list{jl,3});
+  % Generate profile curve (angle, xpos ypos), provide
+  r1 = spline(RO.curProf.section(:,1)',...
+   [RO.curProf.EndSlope;RO.curProf.section(:,2:3);RO.curProf.EndSlope]');
+  s1=linspace(0,2*pi,RO.sRef*2*round(RO.xn/2)); % angle refinement
+  r2=ppval(r1,s1); % interpolated curve
+  %figure(11); plot(r2(1,:),r2(2,:),'-b',RO.curProf.section(:,2),RO.curProf.section(:,3),'or'),axis equal
 
- % prepare contour model, with closed line
- n0=[(1:size(r2,2)-1)' zeros(size(r2,2)-1,3) r2(:,1:end-1)' zeros(size(r2,2)-1,1)];
+  % prepare contour model, with closed line
+  n0=[(1:size(r2,2)-1)' zeros(size(r2,2)-1,3) r2(:,1:end-1)' zeros(size(r2,2)-1,1)];
 
- % prepare a grid to morph
- x1=linspace(min(RO.Profile(:,2)),max(RO.Profile(:,2)),RO.xn); x1=x1(:); % xxx should be max of profile
- y1=[min(r2(2,:)) max(r2(2,:))];
- node=[0 y1(1) 0;1 y1(1) 0;1 y1(2) 0;0 y1(2) 0];
- mo1=feutil('objectquad 1 1',node,RO.xn,1);
+  % prepare a grid to morph
+  x1=linspace(min(RO.curProf.section(:,2)),max(RO.curProf.section(:,2)),RO.xn); x1=x1(:); % xxx should be max of profile
+  y1=[min(r2(2,:)) max(r2(2,:))];
+  node=[x1(1) y1(1) 0;x1(end) y1(1) 0;x1(end) y1(2) 0;x1(1) y1(2) 0];
+  mo1=feutil('objectquad 1 1',node,RO.xn,1);
 
- NNode=sparse(mo1.Node(:,1),1,1:size(mo1.Node,1));
- % prepare vertical top to bottom edges info
- el1=feutil('selelt seledge',mo1); r1=sort(el1(isfinite(el1(:,1)),1:2),2);
- el2=feutil('selelt seledgeAll',mo1); r2=sort(el2(isfinite(el2(:,1)),1:2),2);
- el2=setdiff(r2,r1,'rows');
- % then sort top to bottom
- [~,i2]=sort(reshape(mo1.Node(NNode(el2),6),[],2),2,'descend'); i2=i2(:,1)~=1;
- el2(i2,:)=el2(i2,[2 1]);
- RO.EdgeN=el2;
+  if jl>1
+   mo1=feutil('renumber-noori',mo1,max(list{jl-1,4}.Node(:,1)));
+  end
 
- % select edge, identify closest node on curve and move
- % Surfstick xxxeb
- mo2=mo1; mo2.Elt=el1; mo2.Node=feutil('getnodegroupall',mo2);
- %[n2,i2]=feutil('addnode-nearest epsl10',n0,mo2.Node(:,5:7));
- % Keep verticals
- % look for closest abscissa and choose point with minimal height correciton
- n2=mo2.Node;
- for j1=1:size(n2,1)
-  r2=abs(n2(j1,5:6)-n0(:,5:6)); [r3,in2]=sort(abs(r2(:,1)),'ascend');
-  [r4,in3]=min(r2(in2(1:10),2));
-  n2(j1,5:6)=n0(in2(in3),5:6);
+  NNode=sparse(mo1.Node(:,1),1,1:size(mo1.Node,1));
+  % prepare vertical top to bottom edges info
+  el1=feutil('selelt seledge',mo1); r1=sort(el1(isfinite(el1(:,1)),1:2),2);
+  el2=feutil('selelt seledgeAll',mo1); r2=sort(el2(isfinite(el2(:,1)),1:2),2);
+  el2=setdiff(r2,r1,'rows');
+  % then sort top to bottom
+  [~,i2]=sort(reshape(mo1.Node(NNode(el2),6),[],2),2,'descend'); i2=i2(:,1)~=1;
+  el2(i2,:)=el2(i2,[2 1]);
+
+  % select edge, identify closest node on curve and move
+  % Surfstick xxxeb
+  mo2=mo1; mo2.Elt=el1; mo2.Node=feutil('getnodegroupall',mo2);
+  %[n2,i2]=feutil('addnode-nearest epsl10',n0,mo2.Node(:,5:7));
+  % Keep verticals
+  % look for closest abscissa and choose point with minimal height correciton
+  n2=mo2.Node;
+  for j1=1:size(n2,1)
+   r2=abs(n2(j1,5:6)-n0(:,5:6)); [r3,in2]=sort(abs(r2(:,1)),'ascend');
+   [r4,in3]=min(r2(in2(1:10),2));
+   n2(j1,5:6)=n0(in2(in3),5:6);
+  end
+
+  NNode=sparse(mo1.Node(:,1),1,1:size(mo1.Node,1));
+  %mo1.Node(NNode(mo2.Node(:,1)),5:7)=n2(i2,5:7);
+  mo1.Node(NNode(mo2.Node(:,1)),5:7)=n2(:,5:7);
+
+  % cleanup: coalesce exit tip
+  [r1,i1]=sort(abs(mo1.Node(:,5)-max(RO.curProf.section(:,2))),'ascend');
+  n1=mo1.Node(:,[1 1]); n1(i1(2),2)=n1(i1(1),1);
+  RO.ExtN=[RO.ExtN;n1(i1(1),1)];
+  % check height of front tip
+  [r1,i1]=sort(abs(mo1.Node(:,5)-min(RO.curProf.section(:,2))),'ascend');
+  %if abs(diff(mo1.Node(i1(1:2),6)))<abs(diff(y1))/20 % xxx should always be the case
+  n1(i1(2),2)=n1(i1(1),1);
+  RO.TipN=[RO.TipN;n1(i1(1),1)];
+  %end
+  mo1=feutil('renumber-noori',mo1,n1);
+  n1=sparse(n1(:,1),1,n1(:,2)); el2=full(n1(el2));
+
+  % EdgeN [bottom up] for verticals
+  RO.EdgeN=[RO.EdgeN;el2];
+
+  % we should divide after extrusion to allow profile variations
+  % the grid should remain the same, extrusion should connect parts
+  % use divide to clean quality if needed
+
+  % offset
+  mo1.Node(:,5)=mo1.Node(:,5)+list{jl,2};
+  mo1.Node(:,7)=mo1.Node(:,7)+list{jl,1};
+  % coherent numbering
+  if jl==1
+   model=struct('Node',mo1.Node,'Elt',[]);
+  else;
+   %mo1=feutil('renumber-noori',mo1,max(list{jl-1,4}.Node(:,1))); % earlier
+   model.Node=[model.Node;mo1.Node];
+   el1=[list{jl-1,4}.Elt(:,1:4) mo1.Elt(:,:)];
+   el1(~isfinite(el1(:,1)),:)=[];
+   model.Elt=feutil('addelt',model.Elt,'hexa8',el1);
+  end
+
+  list{jl,4}=mo1;
+
  end
 
- NNode=sparse(mo1.Node(:,1),1,1:size(mo1.Node,1));
- %mo1.Node(NNode(mo2.Node(:,1)),5:7)=n2(i2,5:7);
- mo1.Node(NNode(mo2.Node(:,1)),5:7)=n2(:,5:7);
 
- % cleanup: coalesce exit tip
- [r1,i1]=sort(abs(mo1.Node(:,5)-max(RO.Profile(:,2))),'ascend');
- n1=mo1.Node(:,[1 1]); n1(i1(2),2)=n1(i1(1),1);
- % check height of front tip
- [r1,i1]=sort(abs(mo1.Node(:,5)-min(RO.Profile(:,2))),'ascend');
- %if abs(diff(mo1.Node(i1(1:2),6)))<abs(diff(y1))/20 % xxx should always be the case
-  n1(i1(2),2)=n1(i1(1),1);
- %end
- mo1=feutil('renumber-noori',mo1,n1);
- n1=sparse(n1(:,1),1,n1(:,2)); RO.EdgeN=full(n1(RO.EdgeN));
+ if RO.extr % link profile sequence with an adequate mesh length
+  rd=max(abs(diff(sort(cell2mat(list(:,1))))))/...
+   (max(model.Node(:,5))-min(model.Node(:,5)))*RO.xn;
+  mo1=model;
+  model=feutil(sprintf('divideelt 1 1 %i',rd),model);
+  % now identify intra/extra by identifying equivalent refinement on faces from EdgeN
+  li={'ExtraDos_n','1 %i';'IntraDos_n','%i 1'};
+  r5=[];
+  for j1=1:2
+   % select a face
+   mo2=mo1; mo2.Elt=feutil('selelt selface & innode{nodeid}',mo2,....
+    [RO.EdgeN(:,j1);RO.TipN;RO.ExtN]);
+   % refine and recover nodes
+   mo2=feutil(sprintf(sprintf('divideelt %s',li{j1,2}),rd),mo2);
+   n2=feutil('getnodegroupall',mo2);
+   % match nodes and sotre sets
+   [n3,i3]=feutil('addnode-nearest',model.Node,n2(:,5:7));
+   model=feutil('addsetnodeid',model,li{j1},n3(i3,1));
+   r5(:,j1)=model.Node(i3,1);
+  end
+  RO.EdgeNN=r5;
 
- % EdgeN [bottom up] for verticals
+ end
 
- % refine in thickness
- if RO.yn>1; mo1=feutil(sprintf('divideelt %i 1 ',RO.yn),mo1); end
  % allow extrusion
- if RO.extr
+ if 0&&RO.extr % older stra
   mo1=feutil(sprintf('extrude %i 0 0 %g',RO.extr,RO.zs),mo1);
  end
 
- mo1=stack_set(mo1,'info','MeshOpt',RO);
- out=mo1;
+ % refine in thickness xxx
+ if RO.yn>1; mo1=feutil(sprintf('divideelt %i 1 ',RO.yn),mo1); end
+
+ model=stack_set(model,'info','MeshOpt',RO);
+ out=model;
 
 
 
