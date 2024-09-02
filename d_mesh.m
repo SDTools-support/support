@@ -1983,7 +1983,7 @@ elseif comstr(Cam,'naca')
   mo2=mo1; mo2.Elt=el1; mo2.Node=feutil('getnodegroupall',mo2);
   %[n2,i2]=feutil('addnode-nearest epsl10',n0,mo2.Node(:,5:7));
   % Keep verticals
-  % look for closest abscissa and choose point with minimal height correciton
+  % look for closest abscissa and choose point with minimal height correction
   n2=mo2.Node;
   for j1=1:size(n2,1)
    r2=abs(n2(j1,5:6)-n0(:,5:6)); [r3,in2]=sort(abs(r2(:,1)),'ascend');
@@ -2018,18 +2018,40 @@ elseif comstr(Cam,'naca')
   % offset
   mo1.Node(:,5)=mo1.Node(:,5)+list{jl,2};
   mo1.Node(:,7)=mo1.Node(:,7)+list{jl,1};
-  % coherent numbering
+
+  % also create a mid plane section
+  mo2=mo1;
+  n2=feutil('getnodegroupall',mo2); mo2.Node=n2;
+  mo2=feutil('divideelt 2 1',mo2);
+  n3=feutil('getnodegroupall',mo2);
+  [~,i3]=setdiff(n3(:,1),n2(:,1)); NN=sparse(n3(:,1),1,1:size(n3,1));
+  n3=n3(i3,:); [~,i3]=sort(n3(:,1),'ascend');
+  r3=[RO.TipN(end);n3(i3,1);RO.ExtN(end)];
+  n3=feutil('getnode',mo2,r3);
+  el3=[r3(1:end-1,1) r3(2:end,1)]; % middle section
+
+
+  % generate base section and mid plane secction
   if jl==1
    model=struct('Node',mo1.Node,'Elt',[]);
+   mo3=struct('Node',n3,'Elt',[]);
   else;
    %mo1=feutil('renumber-noori',mo1,max(list{jl-1,4}.Node(:,1))); % earlier
    model.Node=[model.Node;mo1.Node];
    el1=[list{jl-1,4}.Elt(:,1:4) mo1.Elt(:,:)];
    el1(~isfinite(el1(:,1)),:)=[];
    model.Elt=feutil('addelt',model.Elt,'hexa8',el1);
+
+   [mo3.Node,i3]=feutil('AddNodeKnownNew',mo3.Node,n3(:,5:7));
+   NN=sparse(n3(:,1),1,mo3.Node(i3,1));
+   el3=full(NN(el3));
+   el4=[list{jl-1,5} fliplr(el3)];
+   mo3.Node=[mo3.Node;mo3.Node(i3,:)];
+   mo3.Elt=feutil('addelt',mo3.Elt,'quad4',el4);
+
   end
 
-  list{jl,4}=mo1;
+  list{jl,4}=mo1; list{jl,5}=el3;
 
  end
 
@@ -2049,7 +2071,7 @@ elseif comstr(Cam,'naca')
    % refine and recover nodes
    mo2=feutil(sprintf(sprintf('divideelt %s',li{j1,2}),rd),mo2);
    n2=feutil('getnodegroupall',mo2);
-   % match nodes and sotre sets
+   % match nodes and store sets
    [n3,i3]=feutil('addnode-nearest',model.Node,n2(:,5:7));
    model=feutil('addsetnodeid',model,li{j1},n3(i3,1));
    r5(:,j1)=model.Node(i3,1);
