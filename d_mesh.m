@@ -2046,7 +2046,6 @@ elseif comstr(Cam,'naca')
    NN=sparse(n3(:,1),1,mo3.Node(i3,1));
    el3=full(NN(el3));
    el4=[list{jl-1,5} fliplr(el3)];
-   mo3.Node=[mo3.Node;mo3.Node(i3,:)];
    mo3.Elt=feutil('addelt',mo3.Elt,'quad4',el4);
 
   end
@@ -2057,32 +2056,57 @@ elseif comstr(Cam,'naca')
 
 
  if RO.extr % link profile sequence with an adequate mesh length
-  rd=max(abs(diff(sort(cell2mat(list(:,1))))))/...
-   (max(model.Node(:,5))-min(model.Node(:,5)))*RO.xn;
+  rd=round(max(abs(diff(sort(cell2mat(list(:,1))))))/...
+   (max(model.Node(:,5))-min(model.Node(:,5)))*RO.xn);
   mo1=model;
   model=feutil(sprintf('divideelt 1 1 %i',rd),model);
+  %mo3=feutil(sprintf('divideelt %i 1',rd),mo3);
   % now identify intra/extra by identifying equivalent refinement on faces from EdgeN
-  li={'ExtraDos_n','1 %i';'IntraDos_n','%i 1'};
-  r5=[];
-  for j1=1:2
-   % select a face
-   mo2=mo1; mo2.Elt=feutil('selelt selface & innode{nodeid}',mo2,....
-    [RO.EdgeN(:,j1);RO.TipN;RO.ExtN]);
-   % refine and recover nodes
-   mo2=feutil(sprintf(sprintf('divideelt %s',li{j1,2}),rd),mo2);
-   n2=feutil('getnodegroupall',mo2);
-   % match nodes and store sets
-   [n3,i3]=feutil('addnode-nearest',model.Node,n2(:,5:7));
-   model=feutil('addsetnodeid',model,li{j1},n3(i3,1));
-   r5(:,j1)=model.Node(i3,1);
-  end
+  %RO.midPlane=mo3;
+
+  % measure thickness and store
+  in1=isfinite(model.Elt(:,1));
+  r5=[reshape(model.Elt(in1,[3 4 7 8]),[],1) reshape(model.Elt(in1,[2 1 6 5]),[],1)];
+  r5=unique(r5,'rows');
   RO.EdgeNN=r5;
+  % generate the thickness map from EdgeNN and add centers here
+  NNode=sparse(model.Node(:,1),1,1:size(model.Node,1));
+  n61=model.Node(NNode(RO.EdgeNN(:,1)),5:7);
+  n62=model.Node(NNode(RO.EdgeNN(:,2)),5:7);
+  r6=.5*sqrt(sum((n62-n61).^2,2));
 
- end
+  model=feutil('divideelt 1 2',model);
+  [~,model.Elt]=feutil('eltidfix;',model);
 
- % allow extrusion
- if 0&&RO.extr % older stra
-  mo1=feutil(sprintf('extrude %i 0 0 %g',RO.extr,RO.zs),mo1);
+  [n5,i5]=feutil('addnode-nearest',model.Node,.5*(n61+n62));
+  def=struct('DOF',[r5(:,1)+.98;r5(:,2)+.98;n5(i5,1)+.98],'def',[0*r6;0*r6;r6]);
+  [~,idof]=unique(round(def.DOF*100));
+  def.DOF=def.DOF(idof); def.def=def.def(idof,:);
+
+  RO.PThick=def;
+  model=feutil('addsetnodeid',model,'ExtraDos_n',unique(RO.EdgeNN(:,1)));
+  model=feutil('addsetnodeid',model,'IntraDos_n',unique(RO.EdgeNN(:,2)));
+  model=feutil('addsetnodeid',model,'midPlane_n',unique(n5(i5,1)));
+
+  model=feutil('addsetfaceid',model,'extrados_face','selface & innode{setname ExtraDos_n}');
+  model=feutil('addsetfaceid',model,'intrados_face','selface & innode{setname IntraDos_n}');
+  model=feutil('addsetfaceid',model,'midPlane',...
+   sprintf('setname extrados_face:underlying & selface & innode{nodeid %s}',num2str(n5(i5,1)')));
+
+  % 
+  % % now identify intra/extra by identifying equivalent refinement on faces from EdgeN
+  % li={'ExtraDos_n','1 %i';'IntraDos_n','%i 1'};
+  % for j1=1:2
+  %  % select a face
+  %  mo2=mo1; mo2.Elt=feutil('selelt selface & innode{nodeid}',mo2,....
+  %   [RO.EdgeN(:,j1);RO.TipN;RO.ExtN]);
+  %  % refine and recover nodes
+  %  mo2=feutil(sprintf(sprintf('divideelt %s',li{j1,2}),rd),mo2);
+  %  n2=feutil('getnodegroupall',mo2);
+  %  % match nodes and store sets
+  %  [n3,i3]=feutil('addnode-nearest',model.Node,n2(:,5:7));
+  %  model=feutil('addsetnodeid',model,li{j1},n3(i3,1));
+  % end
  end
 
  % refine in thickness xxx
@@ -2157,3 +2181,47 @@ else; error('%s unknown',CAM);
 end 
 %% #End function
 end
+%% #SubFunc ------------------------------------------------------------------
+%% dThick: thickness measure for meshNACA models - - -------------------------
+function out=dThick(xyz,R1,mo1)
+
+if isempty(xyz); out=[]; return; end
+if ischar(xyz)
+ if strcmpi(xyz,'init')
+  % recover midplane and thickness values at nodes
+  mo5=mo1; mo5.Elt=feutil('selelt setname midPlane',mo5);
+  mo5=fe_quality('cleanDegenRecast',mo5); % we have degen elts, need to treat quad4
+  mo5.Node=feutil('getnodeGroupall',mo5);
+  mo5=feutil('quad2tria',mo5); % quicker match on tria
+  R1.moPlane=mo5;
+  opt=stack_get(mo1,'info','MeshOpt','getdata'); R1.PThick=opt.PThick; % thickess value at mid
+  out=R1; 
+  % xxx check thickness value
+ elseif strcmpi(xyz,'ro');out=R1;
+ else; error('%s unknown',xyz);
+ end
+ return
+end
+% compute thickness at any node: project on midplane interp thickness value from sticknode
+% remove distance to sticknde along normal, remove offset
+mo5=R1.moPlane;
+n0=struct('Node',xyz,'InterpNormal',1);
+r5=feutilb('matchsurf-radiusinf',mo5,n0,'groupall');
+% then you want value at StickNode and distance from sticknode along normal
+r6=feutilb('mpcfrommatch -entry',mo5,r5); % gives interp from sticknode to matched elt
+r6=feutilb('placeindof',fe_c(r6.DOF,.01,'dof',1),r6);
+r6.c=r6.c(1:6:end,:);
+%
+d1=R1.PThick;
+r6.DOF=r6.DOF+.97;
+r6=feutilb('placeindof',d1.DOF,r6);
+r7=-r6.c*d1.def; % thickness value at sticknode location (interp on midplane)
+
+out=r7-sqrt(sum(((r5.Node-r5.StickNode).*r5.InterpNormal).^2,2)); % substract distance to sticknode
+
+if isfield(R1,'thickness'); % offset
+ out=out-R1.thickness;
+end
+
+end
+
