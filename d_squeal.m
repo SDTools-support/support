@@ -723,7 +723,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    co2=RT.nmap('LastContinue'); %mo2=RT.nmap('CurModel'); co2=mo2.nmap('LastContinue');
    [~,R2]=sdtm.urnPar(CAM,'{}{RandF%ug,Flab%s}');if ~isfield(R2,'Failed');R2.Failed={''};end
    if ~any(co2.u)&&~any(co2.v)||any(strcmpi(R2.Failed,'randv'));
-       co2.v=rand(size(co2.v))*.1; % xxx factor too high when unstable
+       co2.v=rand(size(co2.v))*.1*1000; % xxx factor too high when unstable
    end
    if isfield(R2,'RandF'); % xxx steq (atm), or piston force ?
     if ~isfield(R2,'Flab');  in1=1+find(ismember(co2.model.Load.lab,'steq'));
