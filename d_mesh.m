@@ -2054,6 +2054,9 @@ elseif comstr(Cam,'naca')
 
  end
 
+ eltip=feutil('selelt seledgeAll & innode{nodeid}',model,RO.TipN);
+ elted=feutil('selelt seledgeAll & innode{nodeid}',model,RO.ExtN);
+
 
  if RO.extr % link profile sequence with an adequate mesh length
   rd=round(max(abs(diff(sort(cell2mat(list(:,1))))))/...
@@ -2063,6 +2066,17 @@ elseif comstr(Cam,'naca')
   %mo3=feutil(sprintf('divideelt %i 1',rd),mo3);
   % now identify intra/extra by identifying equivalent refinement on faces from EdgeN
   %RO.midPlane=mo3;
+
+  % store tip line
+  mo2=struct('Node',mo1.Node,'Elt',eltip); mo2.Node=feutil('getnodegroupall',mo2);
+  mo2=feutil(sprintf('divideelt %i',rd),mo2);mo2.Node=feutil('getnodegroupall',mo2);
+  [n2,i2]=feutil('AddNode-nearest',model.Node,mo2.Node(:,5:7));
+  model=feutil('AddSetNodeId',model,'TipLine',n2(i2,1));
+  % store edge line
+  mo2=struct('Node',mo1.Node,'Elt',elted); mo2.Node=feutil('getnodegroupall',mo2);
+  mo2=feutil(sprintf('divideelt %i',rd),mo2);mo2.Node=feutil('getnodegroupall',mo2);
+  [n2,i2]=feutil('AddNode-nearest',model.Node,mo2.Node(:,5:7));
+  model=feutil('AddSetNodeId',model,'EdgeLine',n2(i2,1));
 
   % measure thickness and store
   in1=isfinite(model.Elt(:,1));
@@ -2074,6 +2088,7 @@ elseif comstr(Cam,'naca')
   n61=model.Node(NNode(RO.EdgeNN(:,1)),5:7);
   n62=model.Node(NNode(RO.EdgeNN(:,2)),5:7);
   r6=.5*sqrt(sum((n62-n61).^2,2));
+  RO.EdgeNN(:,3)=r6;
 
   model=feutil('divideelt 1 2',model);
   [~,model.Elt]=feutil('eltidfix;',model);
@@ -2092,6 +2107,8 @@ elseif comstr(Cam,'naca')
   model=feutil('addsetfaceid',model,'intrados_face','selface & innode{setname IntraDos_n}');
   model=feutil('addsetfaceid',model,'midPlane',...
    sprintf('setname extrados_face:underlying & selface & innode{nodeid %s}',num2str(n5(i5,1)')));
+
+
 
   % 
   % % now identify intra/extra by identifying equivalent refinement on faces from EdgeN
