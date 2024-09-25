@@ -1548,35 +1548,58 @@ elseif comstr(Cam,'time')
 elseif comstr(Cam,'specrem')
 %% #ViewSpecRem : show different remaining singal bands in spectrogram
 
-[~,RO]=sdtm.urnPar(CAM,'{}{coef%g}');
+[~,RO]=sdtm.urnPar(CAM,'{}{coef%g,fcoef%g,show%s}');
 if ~isfield(RO,'coef');RO.coef=[.6 .8];end
+if ~isfield(RO,'fcoef');RO.fcoef=.001;end
+
 c13=iiplot(13,';');
 iicom(c13,'iixonly','spec')
 
-C2=c13.Stack{'SpecRem'};
-r3=C2(:,:,c13.ua.ch).';go=handle(c13.ua.ob(1));ga=ancestor(go,'axes');
-eval(c13.ua.YFcn);
-it=round(size(r3,2)*RO.coef(1)):round(size(r3,2)*RO.coef(2));
-go.CData(:,it)=r3(:,it);
+C2=c13.Stack{'SpecRem'};C4=c13.Stack{'Spec'};
+
+r2=C2(:,:,c13.ua.ch).';r4=C4(:,:,c13.ua.ch).';
+
+go=handle(c13.ua.ob(1));ga=ancestor(go,'axes');
+
+% broad
+it=round(size(r2,2)*RO.coef(2)):size(r2,2);
+r3=r2; eval(c13.ua.YFcn); go.CData(:,it)=r3(:,it);
 delete(findobj(ga,'tag','now'))
 
-RO.tlim=[mean(go.XData(it(1)+[-1 0])) mean(go.XData(it(end)+[1 0]))];
+% harmonic
+it2=round(size(r3,2)*RO.coef(1)):round(size(r3,2)*RO.coef(2));
+r3=r4-r2; eval(c13.ua.YFcn); go.CData(:,it2)=r3(:,it2);
+go.CData(:,it2)=r3(:,it2);
+delete(findobj(ga,'tag','now'))
+
+RO.tlim=[mean(go.XData(it2(1)+[-1 0])) mean(go.XData(it2(end)+[-1 0]))];
 line(RO.tlim(1)*[1 1],get(ga,'YLim'),'color','k','linewidth',2,'tag','now')
 line(RO.tlim(2)*[1 1],get(ga,'YLim'),'color','k','linewidth',2,'tag','now')
-text(RO.tlim*[.9;.1],ga.YLim*[.95;.05],'y_{Broad}');
+%text(RO.tlim*[.9;.1],ga.YLim*[.95;.05],'y_{Harm}');
+text(RO.tlim*[-.1;1.1],ga.YLim*[.95;.05],'y_{Broad}');
 
 c2=sdth.urn('Dock.Id.ci'); projM=sdtroot('param.nmap',c2); C1=projM('SqShape');
 [C0,st2,st1]=cdm.xvec(C1,{'iFreq(t),Amp(t)'},struct);
 t=double(C0.Time)-C2.Source.Edit.tmin;
-RO.fcoef=.001;
-it=t>RO.tlim(2);RO.harm=cellfun(@(x)str2double(x(2:end)),C1.X{3});
-iFreq=C0.iFreq(it)*RO.fcoef;
+it3=t>=RO.tlim(1)&t<=RO.tlim(2);
+RO.harm=cellfun(@(x)str2double(x(2:end)),C1.X{3});
+iFreq=C0.iFreq(it3)*RO.fcoef;
 set(ga,'yscale','linear')
-h=line(t(it),iFreq*RO.harm(:)','color','k','tag','now');
-r1=t(it);r1=[.9 .1]*r1([1 end]);r1=r1*ones(size(RO.harm));
+h=line(t(it3),iFreq*RO.harm(:)','color','k','tag','now');
+r1=t(it3);r1=[.9 .1]*r1([1 end]);r1=r1*ones(size(RO.harm));
 r2=mean(iFreq)*(RO.harm(:)+.05);
 st=cellfun(@(x)sprintf('h%i %.1f kHz',x,x*mean(iFreq)),num2cell(RO.harm),'uni',0);
 text(r1,r2,st);
+
+if isfield(RO,'show')&&sdtm.regContains(RO.show,'t','i')
+ gf=501;figure(gf);clf
+ h=cdm.urnVec(C4.Source.frame,'{x,1}{y,1}{gf501}');
+ hold on
+  h(2)=cdm.urnVec(C2.Source.frame,'{x,1}{y,1}{gf501}');
+  hold('off')
+ sdth.os(gf,'d.',{'ImGrid','ImSw80{@line,""}'},'p.',{'WrW49c'})
+
+end
 
 elseif comstr(Cam,'specevt')
 %% #ViewSpecEvt : extract frequency from peaks
@@ -1787,7 +1810,7 @@ elseif comstr(Cam,'par')
 %% #ViewPar{fs2,f(p),xxx,cuName}
 c2=sdth.urn('Dock.Id.ci'); nmap=c2.data.nmap.nmap;
 [~,RO]=sdtm.urnPar(CAM,...
- '{}{fs%ug,u%s,cu%s,ciStoreName%s,ci%i,it%g,MinAmpRatio%ug,hold%s,reset%3,cm%s,xlim%g,ylim%g,zlim%g,clim%g,cleanFig%s,amp%s}');
+ '{}{fs%ug,u%s,cu%s,ciStoreName%s,ci%i,it%g,tmin%g,MinAmpRatio%ug,hold%s,reset%3,cm%s,xlim%g,ylim%g,zlim%g,clim%g,cleanFig%s,amp%s}');
 if ~isfield(RO,'Failed');RO.Failed={};end
 if ~isfield(RO,'cu');RO.cu='Time';end
 if isKey(nmap,RO.cu);Time=nmap(RO.cu); else; Time=c2.Stack{RO.cu};end;
@@ -1796,8 +1819,9 @@ if isfield(RO,'ciStoreName')
 end
 RO.back=0;
 if carg<=nargin;RO=sdth.sfield('addmissing',varargin{carg},RO);end
-if isfield(RO,'it')% d_squeal('viewpar{a(f,p),cuSqShape,it4 7}')
-   Time=fe_def('subdef',Time,@(x)x(:,1)>RO.it(1)&x(:,1)<RO.it(2));
+if isfield(RO,'it');RO.tmin=RO.it;end
+if isfield(RO,'tmin')% d_squeal('viewpar{a(f,p),cuSqShape,it4 7}')
+   Time=fe_def('subdef',Time,@(x)x(:,1)>RO.tmin(1)&x(:,1)<RO.tmin(2));
 end
 if ~isfield(Time,'name');Time.name='Time';end
 omethod=sdth.eMethods.omethod;
@@ -1820,8 +1844,12 @@ RO.typ={'Amean(WP,iFreq)','a(wp,f)',103, ...
     {'@axes',{'yscale','linear','xgrid','on','ygrid','on'}}
   'dr(iFreq,aMax)','dr(f,am)',106, ...
     {'@axes',{'yscale','linear','xgrid','on','ygrid','on'}}
+  'dr(iFreq,Pressure)','dr(f,Pr)',108, ...
+    {'@axes',{'yscale','linear','xgrid','on','ygrid','on'}}
   'dr(iFreq,aMax)','dr(f,am)',106, ...
     {'@axes',{'yscale','linear','xgrid','on','ygrid','on'}}
+  'qr(Time)','qr(t)',109, ...
+    {'@axes',{'yscale','log','xgrid','on','ygrid','on'}}
   'iFreq(Time)','f(t)',102, ...
     {'@axes',{'yscale','linear','ygrid','on'}}
   'iFreq(Time,AMean)','f(t,a)',102, ...
@@ -1870,6 +1898,7 @@ for j1=1:size(RO.list,1)
   gf=RO.typ{iTyp,3};
   gf=sdth.urn(sprintf('figure(%i).os{@Dock,{name,SqSig},name,%i %s,NumberTitle,off}',gf,gf,RO.typ{iTyp,2}));
   figure(gf);
+  if isfield(RO,'hold');hold(RO.hold);else; clf(gf);end
   if gf==300;hold on;
   end
   ga=get(gf,'CurrentAxes'); if isempty(ga);ga=axes('parent',gf);end
@@ -1914,8 +1943,25 @@ for j1=1:size(RO.list,1)
    r2{2}.data=abs(r2{2}.data);
    h=cdm.pline(r2{:},'parent',ga,'linewidth',2);
 
+  elseif strncmpi(RO.list{j1,1},'qr',2)
+   %% qr Principal coordinates
+   r2={C0.(RO.list{j1,2}) C0.(RO.list{j1,1}) };
+   r2{2}.data=abs(r2{2}.data);
+   if isfield(RO,'MinAmpRatio')
+       i2=~isfinite(double(C0.Amean));
+       r2{1}.data(i2)=NaN;
+   end
+   h=cdm.plot(r2{:},'parent',ga,'linewidth',2);
+   set(h(3:end),'linestyle',':','color','k','linewidth',.5)
+   axis tight; 
+
   elseif ~isempty(RO.list{j1,3})
+   %% standard plot
    r2={C0.(RO.list{j1,2}) C0.(RO.list{j1,1}) C0.(RO.list{j1,3})};
+   if isfield(RO,'MinAmpRatio')
+       i2=~isfinite(double(C0.Amean));
+       r2{1}.data(i2)=NaN;
+   end
    h=cdm.pline(r2{:},'parent',ga,'linewidth',2);
    if isfield(RO,'cm'), colormap(RO.cm);
    else; ii_plp('colormapband',turbo(5));
@@ -1934,8 +1980,8 @@ for j1=1:size(RO.list,1)
    axis tight; 
   
   end
-  if gf==300;hold off;end
-   cleanFig(gf,Time,c2,RO);  RO.back=1;
+  if any(gf==[300 106 108]);hold off;end
+   cleanFig(gf,Time,c2);  RO.back=1;
    cingui('objset',gf,RO.typ{iTyp,4})
    RO.list{j1}='';iimouse('on');
 end
@@ -3381,6 +3427,11 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
     C0.Amax(j1,1:2)={max(abs(Time.Y(:,i2==j1,1)),[],2) sprintf('Amax [%s]',st2{j1})};
    end
   end
+  if any(strcmpi(st,'qr')) 
+    %% QR Compute generalized coordinates
+    [u,s,v]=vhandle.matrix.rsvd(Time.Y(:,strcmpi(Time.X{2}(:,2),'g'),1));
+    u=u.*reshape(s,1,[]);C0.qr=cdm({u, sprintf('qR [g]')});
+  end
   if any(strncmpi(RO.Failed,'dr(',3))&&~isfield(RO,'MinAmpRatio')
       RO.MinAmpRatio=1e-3;
   end
@@ -3397,6 +3448,7 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
        % figure(1); plot(gradient(log(C0.Amean{1}))./C0.iFreq{1}/diff(Time.X{1}(1:2))*100)
        coef=1; 
        if contains(C0.iFreq.label,'kHz');coef=1e-3;end
+       if ~isfield(C0,'iFreq');[C1,~,~]=cdm.xvec(Time,{'f(t)'},RO);end
        C0.dr=cdm({[ze(r2) ]*coef,'Decay rate [%]'},Time.name);
       end
      end
