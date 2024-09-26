@@ -2088,7 +2088,8 @@ elseif comstr(Cam,'naca')
   n61=model.Node(NNode(RO.EdgeNN(:,1)),5:7);
   n62=model.Node(NNode(RO.EdgeNN(:,2)),5:7);
   r6=.5*sqrt(sum((n62-n61).^2,2));
-  RO.EdgeNN(:,3)=r6;
+  RO.EdgeNN(:,3)=r6; % thickness from "mid" as half total
+  RO.EdgeNN(:,4)=n61(:,3); % rad, could be mean of n61 and n62
 
   model=feutil('divideelt 1 2',model);
   [~,model.Elt]=feutil('eltidfix;',model);
