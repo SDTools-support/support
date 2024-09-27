@@ -161,7 +161,7 @@ RT.nmap('TrajScldD')=struct('ToolTip','Cube with target Lc and force', ...
     'li',{{ ...
     'Case{reset}'
     'Case{FixDof,Base,"inelt{innode{setname"Rail"}&selface&innode{z<.01}&facing> .9 0 0 -1000}"}'
-    'Case{FixDof,TOP,"inelt{innode{setname"Wheel"}&selface&innode{z>.14}&facing> .9 0 0 1000} -DOF2"}'
+    'Case{FixDof,Topd,"inelt{innode{setname"Wheel"}&selface&innode{z>.14}&facing> .9 0 0 1000} -DOF2"}'
     'Case{DofLoad,Top,"rb{inelt{proid8&selface&facing> .9 0 0 1000},dir 1 3,curveDownForward,KeepDof}"}'
     'Case{Pcond,Scld,p_contact(''PcondScld'')}'
     'CbRefWheelLC';'CbRefRailLC';'CbStickWheel';'CbCtcGen'

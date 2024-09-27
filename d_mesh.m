@@ -1811,6 +1811,22 @@ elseif comstr(Cam,'case'); [CAM,Cam]=comstr(CAM,5);
   %% #CaseCompA
   % Use lsutil to get material orientation map
   RO.nmap('InitMatOrient')
+  % leading / trailing edge
+  i1=feutilb('geolinetopo',model,struct('starts',1,'dir',[0 0 1]));
+ 
+  cf=feplot(model);
+  fe_shapeoptim('wireInit{oSurfDist,selSelFace,_SelFcnlsutil(edgeSelLevelLines)}',cf);
+  RW=stack_get(cf,'dist','SurfDist','g'); % Store the dist MAP in stack
+  % Display distance MAP 
+  cf.def=feval(RW.dist.idToDist,RW.dist.C1,i1{1});
+  cf.osd_{'FiCEvalX','CmFeplotA'};
+  cf.SelF{1}=sdsetprop(cf.sel,'fsProp','FaceAlpha',.1);
+
+  %feval(RW.dist.idToDist,RW,struct('starts',1,'dir',[0 0 1]),struct('cf',cf,'view','{color,map{deflen,.05}}'));
+  cla(cf.ga);
+  st1='{color,map{deflen,.2,edgecolor,r},tmap{deflen,.2,edgecolor,g}}';
+  feval(RW.dist.idToDist,RW,struct('starts',1,'dir',[0 0 1]),struct('cf',cf,'view',st1));
+
   dbstack; keyboard;
 
  else; error('Case%s unknown',CAM)
