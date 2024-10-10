@@ -1815,7 +1815,8 @@ elseif comstr(Cam,'case'); [CAM,Cam]=comstr(CAM,5);
   i1=feutilb('geolinetopo',model,struct('starts',1,'dir',[0 0 1]));
  
   cf=feplot(model);
-  fe_shapeoptim('wireInit{oSurfDist,selSelFace,_SelFcnlsutil(edgeSelLevelLines)}',cf);
+  cf.sel='selSelFace & facing >.8 0 -1e5 0'
+  fe_shapeoptim('wireInit{oSurfDist,selSelFace & facing >.8 0 -1e5 0,_SelFcnlsutil(edgeSelLevelLines)}',cf);
   RW=stack_get(cf,'dist','SurfDist','g'); % Store the dist MAP in stack
   % Display distance MAP 
   cf.def=feval(RW.dist.idToDist,RW.dist.C1,i1{1});
@@ -1828,7 +1829,7 @@ elseif comstr(Cam,'case'); [CAM,Cam]=comstr(CAM,5);
   feval(RW.dist.idToDist,RW,struct('starts',1,'dir',[0 0 1]),struct('cf',cf,'view',st1));
 
   dbstack; keyboard;
-
+ elseif comstr(Cam,'empty'); out=model;return
  else; error('Case%s unknown',CAM)
  end
 
@@ -1939,6 +1940,11 @@ elseif comstr(Cam,'naca')
 
  if carg>nargin
   RO=struct('nmap',vhandle.nmap);
+ else
+  RO=varargin{carg}; carg=carg+1;
+  if isfield(RO,'urn');CAM=RO.name;end
+ end
+ if ~isKey(RO.nmap,'Profile') % Default blade
   p0=struct('section',... % (angle, xpos ypos)
    [[0; acos(.9); pi/2+asin(.3); pi; 3*pi/2; pi+acos(-.9); 2*pi] ...
    [1 0;.9 .003; .3 .05;0 0;.5 -.02;.9 -.001;1 0]],...
@@ -1949,9 +1955,6 @@ elseif comstr(Cam,'naca')
   RO.nmap('p1')=p1; RO.nmap('p2')=p2;
   % R,offset,Profile
   RO.nmap('Profile')={0,0,'p1';180,30,'p2'};
-
- else
-  RO=varargin{carg}; carg=carg+1;
  end
  [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
   'xn(20#%i#"refinement in long side")' ...
@@ -2147,6 +2150,7 @@ elseif comstr(Cam,'naca')
  if RO.yn>1; mo1=feutil(sprintf('divideelt %i 1 ',RO.yn),mo1); end
 
  model=stack_set(model,'info','MeshOpt',RO);
+ if isKey(RO.nmap,'MeshPlies');model=fevisco('MeshPlies',model,RO);end
  out=model;
 
 
