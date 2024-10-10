@@ -1944,17 +1944,19 @@ elseif comstr(Cam,'naca')
   RO=varargin{carg}; carg=carg+1;
   if isfield(RO,'urn');CAM=RO.name;end
  end
- if ~isKey(RO.nmap,'Profile') % Default blade
-  p0=struct('section',... % (angle, xpos ypos)
-   [[0; acos(.9); pi/2+asin(.3); pi; 3*pi/2; pi+acos(-.9); 2*pi] ...
-   [1 0;.9 .003; .3 .05;0 0;.5 -.02;.9 -.001;1 0]],...
-   'EndSlope',[0 0]);
-  p1=p0; p2=p0;
-  p1.section(:,2)=120*p1.section(:,2); p2.section(:,2)=60*p2.section(:,2);
-  p1.section(:,3)=1e2*p1.section(:,3); p2.section(:,3)=5e1*p2.section(:,3);
-  RO.nmap('p1')=p1; RO.nmap('p2')=p2;
-  % R,offset,Profile
-  RO.nmap('Profile')={0,0,'p1';180,30,'p2'};
+ if comstr(Cam,'naca{')
+  r1=sdth.findobj('_sub{}',CAM);
+  r2=sdth.findobj('_sub:',r1(2).subs{1});
+  'xxx interpret further parameters'
+  list=RO.nmap.('Map:Bprofiles').(r2(1).subs);
+  RM=RO.nmap.('Map:Bplies').(r2(2).subs);
+  RO.plyList=RM.plyList; RO.OrientLine=RM.OrientLine;
+ else % xxx
+  if ~isKey(RO.nmap,'Map:profiles') % Default blade
+   RO.nmap=d_mesh('nmap');
+   RO.nmap('Profile')=RO.nmap.('Map:Bprofiles').('HyFoilA');
+  end
+  list=RO.nmap('Profile'); % recover profile
  end
  [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
   'xn(20#%i#"refinement in long side")' ...
@@ -1963,11 +1965,11 @@ elseif comstr(Cam,'naca')
   'sRef(400#%i#"profile curve refinement factor")' ...
   'extr(5#%i#extrude in length")' ...
   ],{RO,CAM}); Cam=lower(CAM);
+ 
 
- list=RO.nmap('Profile'); % recover profile
  RO.EdgeN=[]; RO.TipN=[]; RO.ExtN=[]; % nodes on extra/intra with vertical lines for thickness
  for jl=1:size(list,1) % loop on profile along radius
-  RO.curProf=RO.nmap(list{jl,3});
+  RO.curProf=RO.nmap.('Map:Bsections').(list{jl,3});
   % Generate profile curve (angle, xpos ypos), provide
   r1 = spline(RO.curProf.section(:,1)',...
    [RO.curProf.EndSlope;RO.curProf.section(:,2:3);RO.curProf.EndSlope]');
@@ -2128,29 +2130,13 @@ elseif comstr(Cam,'naca')
   model=feutil('addsetfaceid',model,'midPlane',...
    sprintf('setname extrados_face:underlying & selface & innode{nodeid %s}',num2str(n5(i5,1)')));
 
-
-
-  % 
-  % % now identify intra/extra by identifying equivalent refinement on faces from EdgeN
-  % li={'ExtraDos_n','1 %i';'IntraDos_n','%i 1'};
-  % for j1=1:2
-  %  % select a face
-  %  mo2=mo1; mo2.Elt=feutil('selelt selface & innode{nodeid}',mo2,....
-  %   [RO.EdgeN(:,j1);RO.TipN;RO.ExtN]);
-  %  % refine and recover nodes
-  %  mo2=feutil(sprintf(sprintf('divideelt %s',li{j1,2}),rd),mo2);
-  %  n2=feutil('getnodegroupall',mo2);
-  %  % match nodes and store sets
-  %  [n3,i3]=feutil('addnode-nearest',model.Node,n2(:,5:7));
-  %  model=feutil('addsetnodeid',model,li{j1},n3(i3,1));
-  % end
  end
 
  % refine in thickness xxx
  if RO.yn>1; mo1=feutil(sprintf('divideelt %i 1 ',RO.yn),mo1); end
 
  model=stack_set(model,'info','MeshOpt',RO);
- if isKey(RO.nmap,'MeshPlies');model=fevisco('MeshPlies',model,RO);end
+ if isfield(RO,'plyList'); model=fevisco('MeshPlies',model,RO);end
  out=model;
 
 
@@ -2199,6 +2185,38 @@ cinM.add={
    ],'largeBase','ALoad'} ... % do not redefine
   };
 % vhandle.uo('',C3.info,rail19('nmap.Map:Cin'))
+
+%% #Bsections #Bprofiles: geometry data for mesh naca
+p0=struct('section',... % (angle, xpos ypos)
+ [[0; acos(.9); pi/2+asin(.3); pi; 3*pi/2; pi+acos(-.9); 2*pi] ...
+ [1 0;.9 .003; .3 .05;0 0;.5 -.02;.9 -.001;1 0]],...
+ 'EndSlope',[0 0]);
+p1=p0; p2=p0;
+p1.section(:,2)=120*p1.section(:,2); p2.section(:,2)=60*p2.section(:,2);
+p1.section(:,3)=1e2*p1.section(:,3); p2.section(:,3)=5e1*p2.section(:,3);
+secM=vhandle.nmap;
+secM('naca66_120')=p1; secM('naca66_60')=p2;
+projM('Map:Bsections')=secM;
+
+profM=vhandle.nmap;
+profM('HyFoilA')={0,0,'naca66_120';180,30,'naca66_60'};
+projM('Map:Bprofiles')=profM;
+
+plyM=vhandle.nmap;
+RP=struct('plyList',{{ ... 
+ 'name','thick','matid','theta','rstop'
+ 'ply1' .15  1   0  Inf
+ 'ply2' .15  2  45  150
+ 'ply3' .15  3  45   75
+ 'ply4' .15  4  45   50 
+ 'core' Inf  5   0  Inf % Symmetry 
+  }},...
+  'OrientLine',struct('starts',10,'dir',[0 0 1]));
+plyM('plyA')=RP;
+projM('Map:Bplies')=plyM;
+
+projM('NacaA')={'MeshCfg{d_mesh(Naca{HyFoilA:plyA,zs.1,yn1,unitmm}):empty}','RunCfg{feplot}'};
+
 
  % sdtm.stdNmapOut('call')
  if nargout==1;out=sdtm.stdNmapOut(nmap,key,nargout,CAM);
