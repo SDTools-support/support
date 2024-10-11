@@ -2187,6 +2187,8 @@ cinM.add={
 % vhandle.uo('',C3.info,rail19('nmap.Map:Cin'))
 
 %% #Bsections #Bprofiles: geometry data for mesh naca
+
+RA=struct('nmap',vhandle.nmap,'ToolTip','Composite blade example');
 p0=struct('section',... % (angle, xpos ypos)
  [[0; acos(.9); pi/2+asin(.3); pi; 3*pi/2; pi+acos(-.9); 2*pi] ...
  [1 0;.9 .003; .3 .05;0 0;.5 -.02;.9 -.001;1 0]],...
@@ -2196,11 +2198,11 @@ p1.section(:,2)=120*p1.section(:,2); p2.section(:,2)=60*p2.section(:,2);
 p1.section(:,3)=1e2*p1.section(:,3); p2.section(:,3)=5e1*p2.section(:,3);
 secM=vhandle.nmap;
 secM('naca66_120')=p1; secM('naca66_60')=p2;
-projM('Map:Bsections')=secM;
+RA.nmap('Map:Bsections')=secM;
 
 profM=vhandle.nmap;
 profM('HyFoilA')={0,0,'naca66_120';180,30,'naca66_60'};
-projM('Map:Bprofiles')=profM;
+RA.nmap('Map:Bprofiles')=profM;
 
 plyM=vhandle.nmap;
 RP=struct('plyList',{{ ... 
@@ -2213,10 +2215,10 @@ RP=struct('plyList',{{ ...
   }},...
   'OrientLine',struct('starts',10,'dir',[0 0 1]));
 plyM('plyA')=RP;
-projM('Map:Bplies')=plyM;
+RA.nmap('Map:Bplies')=plyM;
 
-projM('NacaA')={'MeshCfg{d_mesh(Naca{HyFoilA:plyA,zs.1,yn1,unitmm}):empty}','RunCfg{feplot}'};
-
+RA.nmap('NacaA')={'MeshCfg{d_mesh(Naca{HyFoilA:plyA,zs.1,yn1,unitmm}):empty}','RunCfg{feplot}'};
+projM('Naca')=RA;
 
  % sdtm.stdNmapOut('call')
  if nargout==1;out=sdtm.stdNmapOut(nmap,key,nargout,CAM);
