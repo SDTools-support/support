@@ -1950,7 +1950,8 @@ elseif comstr(Cam,'naca')
   'xxx interpret further parameters'
   list=RO.nmap.('Map:Bprofiles').(r2(1).subs);
   RM=RO.nmap.('Map:Bplies').(r2(2).subs);
-  RO.plyList=RM.plyList; RO.OrientLine=RM.OrientLine;
+  %RO.plyList=RM.plyList; RO.OrientLine=RM.OrientLine;
+  RO=sdth.sfield('AddMissing',RO,RM);
  else % xxx
   if ~isKey(RO.nmap,'Map:profiles') % Default blade
    RO.nmap=d_mesh('nmap');
@@ -2186,7 +2187,7 @@ cinM.add={
   };
 % vhandle.uo('',C3.info,rail19('nmap.Map:Cin'))
 
-%% #Bsections #Bprofiles: geometry data for mesh naca
+%% #Bsections #Bprofiles: geometry data for mesh naca -2
 
 RA=struct('nmap',vhandle.nmap,'ToolTip','Composite blade example');
 p0=struct('section',... % (angle, xpos ypos)
@@ -2205,6 +2206,7 @@ profM('HyFoilA')={0,0,'naca66_120';180,30,'naca66_60'};
 RA.nmap('Map:Bprofiles')=profM;
 
 plyM=vhandle.nmap;
+% base plies test
 RP=struct('plyList',{{ ... 
  'name','thick','matid','theta','rstop'
  'ply1' .15  1   0  Inf
@@ -2215,9 +2217,56 @@ RP=struct('plyList',{{ ...
   }},...
   'OrientLine',struct('starts',10,'dir',[0 0 1]));
 plyM('plyA')=RP;
+% various thickness and split core to control mesh size
+RP=struct('plyList',{{ ... 
+ 'name','thick','matid','theta','rstop'
+ 'ply1' .15   1 0    Inf
+ 'ply2' .25   2 45   150
+ 'ply3'  .05  3 45   75
+ 'ply4'  .15  4 45   50 
+ 'core'  1  5  0   Inf
+  'core'  1  5  0   Inf
+  'core' Inf  5  0   Inf
+  }},...
+  'OrientLine',struct('starts',10,'dir',[0 0 1]));
+plyM('plyB')=RP;
+% unsymm case with various plies
+RP=struct('plyList',{{ ... 
+ 'name','thick','matid','theta','rstop'
+ 'ply1' .15  1   0  Inf
+ 'ply2' .15  2  45  150
+ 'ply3' .15  3  45   75
+ 'ply4' .15  4  45   50 
+ 'core' Inf  5   0  Inf
+ 'ply5' .2  6  45   50 
+ 'ply1' .15  1  0  Inf
+  }},...
+  'OrientLine',struct('starts',10,'dir',[0 0 1]));
+plyM('plyC')=RP;
+% case with visco on extrados and rstop as contour
+moC=struct('Node',[1 0 0 0 10 0 -1;2 0 0  0 40 0 200 ;3 0 0 0  70 0 200;4 0 0 0 90 0 -1],...
+ 'isClosed',1);
+RC=feval(lsutil('@dToPoly'),'init',moC);
+RP=struct('plyList',{{ ... 
+ 'name','thick','matid','theta','rstop','hforced'
+ 'cply' .5   101 0  RC  0
+ 'visc' .25  201 0  RC  0
+ 'ply1' .15  1   0  Inf 1
+ 'ply2' .15  3  45   75 0
+ 'core' Inf  5   0  Inf 0% Symmetry 
+ 'ply2' .15  3  45   75 0
+ 'ply1' .15  1   0  Inf 1
+  }},...
+  'notsym',1,  'OrientLine',struct('starts',10,'dir',[0 0 1]));
+plyM('plyVe')=RP;
+
+
 RA.nmap('Map:Bplies')=plyM;
 
-RA.nmap('NacaA')={'MeshCfg{d_mesh(Naca{HyFoilA:plyA,zs.1,yn1,unitmm}):empty}','RunCfg{feplot}'};
+RA.nmap('NacaAA')={'MeshCfg{d_mesh(Naca{HyFoilA:plyA,zs.1,yn1,unitmm}):empty}','RunCfg{feplot}'};
+RA.nmap('NacaAB')={'MeshCfg{d_mesh(Naca{HyFoilA:plyB,zs.1,yn1,unitmm}):empty}','RunCfg{feplot}'};
+RA.nmap('NacaAC')={'MeshCfg{d_mesh(Naca{HyFoilA:plyC,zs.1,yn1,unitmm}):empty}','RunCfg{feplot}'};
+RA.nmap('NacaAVe')={'MeshCfg{d_mesh(Naca{HyFoilA:plyVe,zs.1,yn1,unitmm}):empty}','RunCfg{feplot}'};
 projM('Naca')=RA;
 
  % sdtm.stdNmapOut('call')
