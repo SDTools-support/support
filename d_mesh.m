@@ -2245,18 +2245,18 @@ RP=struct('plyList',{{ ...
   'OrientLine',struct('starts',10,'dir',[0 0 1]));
 plyM('plyC')=RP;
 % case with visco on extrados and rstop as contour
-moC=struct('Node',[1 0 0 0 10 0 -1;2 0 0  0 40 0 200 ;3 0 0 0  70 0 200;4 0 0 0 90 0 -1],...
+moC=struct('Node',[1 0 0 0 10 0 10;2 0 0  0 40 0 200 ;3 0 0 0  70 0 200;4 0 0 0 90 0 10],...
  'isClosed',1);
 RC=feval(lsutil('@dToPoly'),'init',moC);
 RP=struct('plyList',{{ ... 
- 'name','thick','matid','theta','rstop','hforced'
- 'cply' .25   101 0  RC  0
- 'visc' .5  201 0  RC  0
- 'ply1' .15  1   0  Inf 1
- 'ply2' .15  3  45   75 0
- 'core' Inf  5   0  Inf 0% Symmetry 
- 'ply2' .15  3  45   75 0
- 'ply1' .15  1   0  Inf 1
+ 'name','thick','matid','theta','rstop','hforced','htrans'
+ 'cply' .25       101      0       RC      0         0 
+ 'visc' .5        201      0       RC      1         1
+ 'ply1' .15         1      0      Inf      1         1
+ 'ply2' .15         3     45       75      0         1
+ 'core' Inf         5      0      Inf      0         1 % Symmetry 
+ 'ply2' .15         3     45       75      0         1
+ 'ply1' .15         1      0      Inf      1         1
   }},...
   'notsym',1,  'OrientLine',struct('starts',10,'dir',[0 0 1]));
 plyM('plyVe')=RP;
