@@ -1829,6 +1829,39 @@ elseif comstr(Cam,'case'); [CAM,Cam]=comstr(CAM,5);
   feval(RW.dist.idToDist,RW,struct('starts',1,'dir',[0 0 1]),struct('cf',cf,'view',st1));
 
   dbstack; keyboard;
+
+ elseif comstr(Cam,'parvecut')
+  %% #CaseParVeCut (naca with matched layers)
+  % add parametrization of visc layer with cut
+
+  % xxx should be done elsewhere
+  % cleanup materials and set a visc property
+  pl=double(model.nmap.('Map:MatName').('visc'));
+  pl=[pl fe_mat('type','m_elastic','MM',1) 1e3 .45 1.190e-6 0];
+  model.pl(model.pl(:,1)==pl(1),1:length(pl))=pl;
+  model.pl(:,6)=0; % xxx G
+
+  % add bc
+  model=fe_case(model,'fixdof','footclamp','z==0');
+
+  % prepare matcut: do a selection of elements with order to follow
+  % need to match cst and visc layers to process
+  n1=feutil('findnode inelt{matname cply} & inelt{matname visc}',model);
+  el1=feutil('selelt matname cply & selface & innode{nodeid}',model,n1);
+  el2=feutil('selelt matname visc & selface & innode{nodeid}',model,n1);
+  % quad nodes: match
+  in1=isfinite(el1(:,1));
+  [i1,i2]=ismember(sort(el2(isfinite(el2(:,1)),1:4),2),...
+   sort(el1(isfinite(el1(:,1)),1:4),2),'rows');
+  % matched elements
+  r1=[el2(in1(i1),7) el1(in1(i2(i1)),7)];
+
+  % define cuti into matrix
+  model=fe_caseg('ParMatCut',model,'matname visc | matname cply',...
+   struct('lab','CstVisc','EltId',r1,'val',1));
+
+  out=model;
+
  elseif comstr(Cam,'empty'); out=model;return
  else; error('Case%s unknown',CAM)
  end
@@ -2100,7 +2133,7 @@ elseif comstr(Cam,'naca')
   [n2,i2]=feutil('AddNode-nearest',model.Node,mo2.Node(:,5:7));
   model=feutil('AddSetNodeId',model,'EdgeLine',n2(i2,1));
 
-  % measure thickness and store
+  %% measure thickness and store
   in1=isfinite(model.Elt(:,1));
   r5=[reshape(model.Elt(in1,[3 4 7 8]),[],1) reshape(model.Elt(in1,[2 1 6 5]),[],1)];
   r5=unique(r5,'rows');
@@ -2267,7 +2300,7 @@ RA.nmap('Map:Bplies')=plyM;
 RA.nmap('NacaAA')={'MeshCfg{d_mesh(Naca{HyFoilA:plyA,zs.1,yn1,unitmm}):empty}','RunCfg{feplot}'};
 RA.nmap('NacaAB')={'MeshCfg{d_mesh(Naca{HyFoilA:plyB,zs.1,yn1,unitmm}):empty}','RunCfg{feplot}'};
 RA.nmap('NacaAC')={'MeshCfg{d_mesh(Naca{HyFoilA:plyC,zs.1,yn1,unitmm}):empty}','RunCfg{feplot}'};
-RA.nmap('NacaAVe')={'MeshCfg{d_mesh(Naca{HyFoilA:plyVe,zs.1,yn1,unitmm}):empty}','RunCfg{feplot}'};
+RA.nmap('NacaAVe')={'MeshCfg{d_mesh(Naca{HyFoilA:plyVe,zs.1,yn1,unitmm}):ParVeCut}','RunCfg{feplot}'};
 projM('Naca')=RA;
 
  % sdtm.stdNmapOut('call')
