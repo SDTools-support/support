@@ -1810,25 +1810,14 @@ elseif comstr(Cam,'case'); [CAM,Cam]=comstr(CAM,5);
  if comstr(Cam,'compa')
   %% #CaseCompA
   % Use lsutil to get material orientation map
-  RO.nmap('InitMatOrient')
+  %RO.nmap('InitMatOrient')
   % leading / trailing edge
-  i1=feutilb('geolinetopo',model,struct('starts',1,'dir',[0 0 1]));
- 
-  cf=feplot(model);
-  cf.sel='selSelFace & facing >.8 0 -1e5 0'
-  fe_shapeoptim('wireInit{oSurfDist,selSelFace & facing >.8 0 -1e5 0,_SelFcnlsutil(edgeSelLevelLines)}',cf);
-  RW=stack_get(cf,'dist','SurfDist','g'); % Store the dist MAP in stack
-  % Display distance MAP 
-  cf.def=feval(RW.dist.idToDist,RW.dist.C1,i1{1});
-  cf.osd_{'FiCEvalX','CmFeplotA'};
-  cf.SelF{1}=sdsetprop(cf.sel,'fsProp','FaceAlpha',.1);
+  
+  RO=struct('OrientLine',struct('starts',1,'dir',[0 0 1]), ...
+      'SurfSel','SelFace & facing >.7 0 -1e5 0','surforient',10);
+  %RO.cf=feplot;
+  out=fe_shapeoptim('MapOrient',model,RO);
 
-  %feval(RW.dist.idToDist,RW,struct('starts',1,'dir',[0 0 1]),struct('cf',cf,'view','{color,map{deflen,.05}}'));
-  cla(cf.ga);
-  st1='{color,map{deflen,.2,edgecolor,r},tmap{deflen,.2,edgecolor,g}}';
-  feval(RW.dist.idToDist,RW,struct('starts',1,'dir',[0 0 1]),struct('cf',cf,'view',st1));
-
-  dbstack; keyboard;
 
  elseif comstr(Cam,'parvecut')
   %% #CaseParVeCut (naca with matched layers)
