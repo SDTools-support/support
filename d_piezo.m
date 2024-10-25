@@ -20,11 +20,28 @@ else;RO=varargin{carg};carg=carg+1;
 end
 
 if comstr(Cam,'buildc1');
-     C1.X{1}=varargin{2}; C1.X{2}={varargin{4}}; C1.X{3}={varargin{5}}; % Freq - Output Label - Input Label
+  r1=varargin{2};
+  C1=struct('X',[],'Xlab',[],'Y',[]);
+  w=varargin{3};
+  if isa(r1,'ss')
+    C1.Y=freqresp(r1,w); C1.Y=permute(C1.Y,[3 1 2]); 
+    C1.X{1}=w(:)/2/pi;C1.Xlab{1}={'Frequency','Hz',[18 0 0 0 -1]};
+    C1.X{2}=r1.OutputName;C1.Xlab{2}='Out';
+    C1.X{3}=r1.InputName;C1.Xlab{3}='In';
+    C1.Ylab=[2 3];
+  elseif isfield(r1,'a')
+    C1=qbode(r1,w,'{stra2,otStruct}');
+    if isfield(r1,'InputName');C1.X{3}=r1.InputName; end
+    if isfield(r1,'OutputName');C1.X{2}=r1.OutputName; end
+    
+  else
+     C1.X{1}=varargin{2}; 
+     C1.X{2}={varargin{4}}; C1.X{3}={varargin{5}}; % Freq - Output Label - Input Label
      C1.Xlab{1}={'Frequency','Hz',[18 0 0 0 -1]};
      C1.Xlab{2}='Outputs'; C1.Xlab{3}='In';
-     C1.Y=varargin{3}; C1.Ylab=2; C1.name='DFRF';
+     C1.Y=varargin{3}; C1.Ylab=[2 3]; C1.name='DFRF';
      C1=sdsetprop(C1,'PlotInfo','sub','magpha','scale','xlin;ylog');
+  end
 out=C1;
 
 
