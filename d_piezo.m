@@ -2068,9 +2068,13 @@ model.unit='SI';
 % Build a MPC and defining ground and actuation DOF
 InputDOF=[];
 [model,InputDOF(end+1,1)]=p_piezo('ElectrodeMPC IDE bottom -ground',model, ...
-    ['y==0 | y==' num2str(RO.ly) '& z<' num2str(RO.e0*1.01)]);
+   ['y==0 | y==' num2str(RO.ly) '& z<' num2str(RO.e0*1.01)]);
 [model,InputDOF(end+1,1)]=p_piezo('ElectrodeMPC IDE top -input"Applied Voltage"' ...
-    ,model,['y==0 | y==' num2str(RO.ly) '& z>' num2str(RO.p0-RO.e0*1.01)]);
+   ,model,['y==0 | y==' num2str(RO.ly) '& z>' num2str(RO.p0-RO.e0*1.01)]);
+%  [model,InputDOF(end+1,1)]=p_piezo('ElectrodeMPC IDE bottom -ground',model, ...
+%      ['z<' num2str(RO.e0*1.01) '| z>' num2str(RO.p0-RO.e0*1.01) ' & y==0 ']);
+%  [model,InputDOF(end+1,1)]=p_piezo('ElectrodeMPC IDE bottom top -input"Applied Voltage"' ...
+%      ,model,['z<' num2str(RO.e0*1.01) '| z>' num2str(RO.p0-RO.e0*1.01) ' & y==' num2str(RO.ly)]);
 RO.InputDOF=InputDOF;
 model=stack_set(model,'info','MeshInfo',RO);
 
