@@ -3512,7 +3512,7 @@ if nargin==3
 end
 %cingui('objset',gf,{'@OsDic',{'ImSw80{@line,""}'},'@PlotWd',{'@OsDic','WrW49c'}})
 
-if isfield(RO,'cleanFig')
+if nargin>3&&isfield(RO,'cleanFig')
  % List of PlotWd
  if strcmpi(RO.cleanFig,'Lw')
   cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImToFigN','ImLw50{@line,""}','WrW70c'});

@@ -75,6 +75,15 @@ Use command {m}`sdtm.jup('sdtlexer')`
           "en-US": [":path_to_be_edited/sdt.cur/tex/en-US.usr"]
             },
 ```
+
+Note that an execution bug may require to manually edit the extensions.js file to contain `shell:true`. See https://github.com/valentjn/vscode-ltex/issues/886.
+```
+        const executableOptions = {
+                encoding: 'utf-8',
+                timeout: 15000,
+                shell: true
+              };
+```
 (collab-install-GitHub)=
 ## GitHub desktop as git interface
 
