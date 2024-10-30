@@ -1839,11 +1839,18 @@ elseif comstr(Cam,'case'); [CAM,Cam]=comstr(CAM,5);
   el1=feutil('selelt matname cply & selface & innode{nodeid}',model,n1);
   el2=feutil('selelt matname visc & selface & innode{nodeid}',model,n1);
   % quad nodes: match
-  in1=isfinite(el1(:,1));
+  in1=find(isfinite(el1(:,1)));
   [i1,i2]=ismember(sort(el2(isfinite(el2(:,1)),1:4),2),...
    sort(el1(isfinite(el1(:,1)),1:4),2),'rows');
   % matched elements
   r1=[el2(in1(i1),7) el1(in1(i2(i1)),7)];
+  % add visc w/o cply
+  el1=feutil('selelt matname visc',model); eid=feutil('eltid',el1); eid(eid==0)=[];
+  eid=setdiff(eid,r1(:,1)); eid(:,2)=NaN;
+  r1=[r1;eid];
+  % there should be not cply left
+  el1=feutil('selelt matname cply',model); eid=feutil('eltid',el1); eid(eid==0)=[];
+  if ~isempty(setdiff(eid,r1(:,2))); sdtw('_nb','some constraind layer elements missed'); end
 
   % define cuti into matrix
   model=fe_caseg('ParMatCut',model,'matname visc | matname cply',...
