@@ -1813,10 +1813,14 @@ elseif comstr(Cam,'case'); [CAM,Cam]=comstr(CAM,5);
   %RO.nmap('InitMatOrient')
   % leading / trailing edge
   
-  RO=struct('OrientLine',struct('starts',1,'dir',[0 0 1]), ...
-      'SurfSel','SelFace & facing >.7 0 -1e5 0','surforient',10);
-  %RO.cf=feplot;
-  out=fe_shapeoptim('MapOrient',model,RO);
+ RL=struct('OrientLine',struct('starts',1,'dir',[0 0 1]), ...
+      'SurfSel','SelFace & facing >.7 0 -1e5 0','surforient',10, ...
+      'Face1',[1 2 5]);
+ eltid=feutil('eltidfix;',model);
+ r1=RO.CaseVal(strncmpi(RO.CaseVal,'theta',5));
+ if ~isempty(r1);r1=str2double(r1{1}(6:end));else; r1=30;end
+ RL.EltIdAng=eltid(eltid~=0);RL.EltIdAng(:,2)=r1; % as two columns
+ out=fe_shapeoptim('MapOrient',model,RL);
 
 
  elseif comstr(Cam,'parvecut')
@@ -1948,14 +1952,16 @@ if strncmpi(RO.mat,'ortho',5)
  model.pl(3,3:5)=model.pl(2,3:5)*1.1;
  model.Elt(feutil('findelt innode{x<5}',model),9)=3;
  model.Elt(feutil('findelt innode{x>14}',model),9)=2;
- data=struct('EltId',eltid(cEGI),'bas',eltid(cEGI));
- NNode=sparse(model.Node(:,1),1,1:size(model.Node,1));
- for jElt=1:length(cEGI)
-  n1=model.Node(NNode(model.Elt(cEGI(jElt),1:3)),:);
-  p=diff(n1(:,5:7));p=sp_util('basis',p(1,:),p(2,:));
-  data.bas(jElt,7:15)=p(:)';
- end
- model=stack_set(model,'info','EltOrient',data);
+ %% orient illustrated in d_mesh CaseCompA
+
+ % data=struct('EltId',eltid(cEGI),'bas',eltid(cEGI));
+ % NNode=sparse(model.Node(:,1),1,1:size(model.Node,1));
+ % for jElt=1:length(cEGI)
+ %  n1=model.Node(NNode(model.Elt(cEGI(jElt),1:3)),:);
+ %  p=diff(n1(:,5:7));p=sp_util('basis',p(1,:),p(2,:));
+ %  data.bas(jElt,7:15)=p(:)';
+ % end
+ % model=stack_set(model,'info','EltOrient',data);
 end
 
 model=fe_case(model,'fixdof','base','r<2'); model.name='blade';
