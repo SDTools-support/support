@@ -2236,7 +2236,7 @@ profM('HyFoilA')={0,0,'naca66_120';180,30,'naca66_60'};
 RA.nmap('Map:Bprofiles')=profM;
 
 plyM=vhandle.nmap;
-% base plies test
+%% #plyA base plies test -3
 RP=struct('plyList',{{ ... 
  'name','thick','matid','theta','rstop'
  'ply1' .15  1   0  Inf
@@ -2247,7 +2247,7 @@ RP=struct('plyList',{{ ...
   }},...
   'OrientLine',struct('starts',10,'dir',[0 0 1]));
 plyM('plyA')=RP;
-% various thickness and split core to control mesh size
+%% #plyB various thickness and split core to control mesh size
 RP=struct('plyList',{{ ... 
  'name','thick','matid','theta','rstop'
  'ply1' .15   1 0    Inf
@@ -2290,8 +2290,19 @@ RP=struct('plyList',{{ ...
   'notsym',1,  'OrientLine',struct('starts',10,'dir',[0 0 1]));
 plyM('plyVe')=RP;
 
-
 RA.nmap('Map:Bplies')=plyM;
+%% #Naca_Map:MatName definition 
+matM={'cply',m_elastic('dbval101 UD')
+ 'ply1',m_elastic('dbval1 ortho1 -unitMM') % To check unit conversion
+ 'ply2',m_elastic('dbval2 ortho1') 
+ 'ply3',m_elastic('dbval3 ortho1') 
+ 'ply4',m_elastic('dbval4 ortho1') 
+ 'ply5',m_elastic('dbval5 ortho1') 
+ 'visc',m_visco('database201 Smactane 50_G')
+ };
+matM=vhandle.nmap(matM,[],'Map:MatName');
+RA.nmap('Map:MatName')=matM;
+
 
 RA.nmap('NacaAA')={'MeshCfg{d_mesh(Naca{HyFoilA:plyA,zs.1,yn1,unitmm}):empty}','RunCfg{feplot}'};
 RA.nmap('NacaAB')={'MeshCfg{d_mesh(Naca{HyFoilA:plyB,zs.1,yn1,unitmm}):empty}','RunCfg{feplot}'};
