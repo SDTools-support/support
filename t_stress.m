@@ -566,13 +566,11 @@ elseif comstr(Cam,'homo')
 st={'hexa8b','pyra5','pyra13'};
 for j1=1:length(st)
  model=femesh(['teststruct' st{j1}]);model.Elt=feutil('set group1 matid 100',model.Elt);
- model.name='';
- [a,b]=fe_homo('rvekubc',fe_case(model,'reset')); 
+ model.name=''; RH=struct('toFun',fe_homo('@toDD'));
+ [a,b]=fe_homo('rvekubc',fe_case(model,'reset'),RH); 
  dd=feutil('getdd',[100 111 3 1],model);
- if norm(b.dd-dd.dd,'inf')/norm(dd.dd,'inf')>1e-9; error('mismatch');end
+ if norm(a.dd-dd.dd,'inf')/norm(dd.dd,'inf')>1e-9; error('mismatch');end
 end
-
-
 
 
 %% #Aniso test of anisotropic materials

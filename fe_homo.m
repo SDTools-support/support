@@ -1920,6 +1920,7 @@ if comstr(Cam,'pbc')||comstr(Cam,'simpleload')||comstr(Cam,'kubc')||comstr(Cam,'
     for j1=1:length(R2.li)
      d2.def(:,j1)=R2.li{j1}.TIn-ofact({mo1.K{strcmpi(mo1.Klab,'k')},R2.li{j1}.T},mo1.K{strcmpi(mo1.Klab,'k')}*R2.li{j1}.TIn,RO.oProp{:});
     end
+   elseif isempty(C1.T);d2.def=C1.TIn;
    else
      d2.def=C1.TIn-ofact({mo1.K{strcmpi(mo1.Klab,'k')},C1.T},mo1.K{strcmpi(mo1.Klab,'k')}*C1.TIn,RO.oProp{:});
    end
@@ -3122,23 +3123,34 @@ function  r2=histToId(RO,def)
   r2.zfun=@(xa,ya,ga)ii_plp('plzcrop',ga,{'linewidth',1,'linestyle','-'});
   r2.po.MainDim='y';
 
+%% #toDD : return DD
+ function   r1=toDD(C1,Range,r1);
+
+ r1=struct('dd',C1); 
+
 %% #toOrtho : extract orthotropic moduli
  function   r1=toOrtho(C1,Range,r1);
 
-if nargin==1
+if nargin==1||(nargin==3&&isfield(r1,'pl'))
  %dd stiffness matrix, c softness 
  c=inv(C1);
 M(1,1)=1./c(1,1);
-M(1,9)=conj(-c(1,2)*M(1,1));% xxx
-M(1,8)=-c(1,3)*M(1,1);
+M(1,9)=conj(-c(1,2)*M(1,1));% nu12
+M(1,8)=-c(1,3)*M(1,1); % nu13
 M(1,2)=1./c(2,2);
-M(1,7)=-c(2,3)*M(2);
+M(1,7)=-c(2,3)*M(2); % nu12
 M(1,3)=1./c(3,3);
 M(1,6)=1./c(6,6);
 M(1,5)=1./c(5,5);
 M(1,4)=1./c(4,4);
-r1=struct('X',{{{'E1', 'E2', 'E3','G23','G13','G12','nu23','nu13','nu12'}'}}, ...
+if nargout==0||(nargin==3&&isfield(r1,'pl'))
+  M(10)=-c(3,1)*M(3); % SDT uses nu31 rather than 13
+  if nargin<3||~isfield(r1,'pl');r1=struct('pl',1);end
+  r1.pl=[r1.pl(1) fe_mat('m_elastic','US',6) M([1 2 3 7 10 9 4 5 6])];
+else
+    r1=struct('X',{{{'E1', 'E2', 'E3','G23','G13','G12','nu23','nu13','nu12'}'}}, ...
      'Xlab',{{'Comp'}},'Y',M(:));
+end
 else
  %% current value to extract certain components
  ind=[1 8 15 22 29 36 7 13 14];% reshape(1:36,6,6)
