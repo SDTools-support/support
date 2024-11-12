@@ -1971,7 +1971,7 @@ else; out=model;
 end 
 
 elseif comstr(Cam,'naca')
- %% #MeshNaca
+ %% #MeshNaca : sample blade with NACA profile and orthotropic material
 
  if carg>nargin
   RO=struct('nmap',vhandle.nmap);
@@ -2253,7 +2253,7 @@ RP=struct('plyList',{{ ...
   }},...
   'OrientLine',struct('starts',10,'dir',[0 0 1]));
 plyM('plyA')=RP;
-%% #plyB various thickness and split core to control mesh size
+%% #plyB various thickness and split core to control mesh size -3
 RP=struct('plyList',{{ ... 
  'name','thick','matid','theta','rstop'
  'ply1' .15   1 0    Inf
@@ -2297,7 +2297,7 @@ RP=struct('plyList',{{ ...
 plyM('plyVe')=RP;
 
 RA.nmap('Map:Bplies')=plyM;
-%% #Naca_Map:MatName definition 
+%% #Naca_Map:MatName definition -3
 matM={'cply',m_elastic('dbval101 UD')
  'ply1',m_elastic('dbval1 ortho1 -unitMM') % To check unit conversion
  'ply2',m_elastic('dbval2 ortho1') 
