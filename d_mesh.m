@@ -1829,10 +1829,11 @@ elseif comstr(Cam,'case'); [CAM,Cam]=comstr(CAM,5);
 
   % xxx should be done elsewhere
   % cleanup materials and set a visc property
-  pl=double(model.nmap.('Map:MatName').('visc'));
-  pl=[pl fe_mat('type','m_elastic','MM',1) 1e3 .45 1.190e-6 0];
-  model.pl(model.pl(:,1)==pl(1),1:length(pl))=pl;
-  model.pl(:,6)=0; % xxx G
+  
+  %pl=double(model.nmap.('Map:MatName').('visc'));
+  %pl=[pl fe_mat('type','m_elastic','MM',1) 1e3 .45 1.190e-6 0];
+  %model.pl(model.pl(:,1)==pl(1),1:length(pl))=pl;
+  %model.pl(:,6)=0; % xxx G
 
   % add bc
   model=fe_case(model,'fixdof','footclamp','z==0');
@@ -2298,16 +2299,16 @@ plyM('plyVe')=RP;
 
 RA.nmap('Map:Bplies')=plyM;
 %% #Naca_Map:MatName definition -3
-matM={'cply',m_elastic('dbval101 UD')
- 'ply1',m_elastic('dbval1 ortho1 -unitMM') % To check unit conversion
- 'ply2',m_elastic('dbval2 ortho1') 
- 'ply3',m_elastic('dbval3 ortho1') 
- 'ply4',m_elastic('dbval4 ortho1') 
- 'ply5',m_elastic('dbval5 ortho1') 
- 'visc',m_visco('database201 Smactane 50_G')
+matM={'cply','m_elastic(dbval101 UD)'
+ 'ply1','m_elastic(dbval1 ortho1 -unitMM)' % To check unit conversion
+ 'ply2','m_elastic(dbval2 ortho1)' 
+ 'ply3','m_elastic(dbval3 ortho1)' 
+ 'ply4','m_elastic(dbval4 ortho1)'
+ 'ply5','m_elastic(dbval5 ortho1)' 
+ 'visc','m_visco(database201 Smactane 50_G)'
  };
-matM=vhandle.nmap(matM,[],'Map:MatName');
-RA.nmap('Map:MatName')=matM;
+matM=vhandle.nmap(matM,[],'Map:MatDB');
+RA.nmap('Map:MatDB')=matM;
 
 
 RA.nmap('NacaAA')={'MeshCfg{d_mesh(Naca{HyFoilA:plyA,zs.1,yn1,unitmm}):empty}','RunCfg{feplot}'};
