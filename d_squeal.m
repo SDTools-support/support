@@ -3340,7 +3340,25 @@ function out=AutoMeta(Time,RO)
 if nargin==1
   RO=struct; 
 end
-if ~isfield(RO,'forInfo')
+if isa(Time,'vhandle.nmap')
+ %% Fill database
+ projM=Time; cbM=projM('Map:Cb');
+ RO=struct; r1=useOrDefault(cbM,'ForMeta','','','getValue');
+ RO.forInfo=r1.ForMeta;
+ RO.projM=projM; 
+ li=cell(projM);
+ for j1=1:size(li,1)
+   meta=li{j1,2};
+   if ~isfield(meta,'dtype')||~strcmpi(meta.dtype,'time');continue;end
+   if ~isfield(RO,'ci');RO.ci=sdth.urn('Dock.Id.ci');end
+   sdtm.nodeLoad(meta.Import{2},RO);
+   Time=RO.ci.Stack{'Time'};%dbstack; keyboard; 
+   Time=AutoMeta(Time,RO);
+   meta=sdth.sfield('addmissing',Time.meta,li{j1,2}); 
+   projM(li{j1})=meta; 
+ end
+ return
+elseif ~isfield(RO,'forInfo')
   RO.forInfo={'RPM','%.0f %.0f',@(x)[min(x) max(x)]
     'Pressure','%.0f %.0f Bar',@(x)[min(x) max(x)]/1e5
     'TempPad','%.0f %.0f C',@(x)[min(x) max(x)]
@@ -3350,6 +3368,7 @@ if ~isfield(RO,'forInfo')
     'Disp','%.1f %.1f micron',@(x)([min(x) max(x)]-mean(x))
     };
 end
+
 dt=diff(Time.X{1}([1 end],1))/(size(Time.X{1},1)-1);
 if isfield(Time,'By') % Actually a time scan
   Time.meta=struct('Type','TimeScan');out=Time;return;
@@ -3399,7 +3418,7 @@ end
     % xxx
    end
     'xxx missing type detection' % Pressure profile
-   Time.meta.info=st3(:,[1 4]);
+   Time.meta=sdth.sfield('addmissing',sdtm.toStruct(st3(:,[1 4])),Time.meta);
    Time.meta.fs=round(1/dt); Time.meta.decimate=round(Time.meta.fs/1000);
 
    out=Time; 

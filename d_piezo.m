@@ -4740,3 +4740,32 @@ if isfield(RO,'RefineToQuad');
 end
 end
 
+
+
+
+function SE=modal()
+%% #modal : just modal 
+
+% Transfers model to function
+eval(iigui({'model','Case'},'MoveFromCaller'))
+eval(iigui({'RunOpt'},'GetInCaller'))
+
+% clean up model to remove info about matid/proid
+SE=feutil('rmfield',model,'pl','il','unit','Stack');
+%dbstack; keyboard
+
+% Compute modeshapes
+def=fe_eig({model.K{1},model.K{2},Case.T,Case.mDOF},stack_get(model,'info','Eigopt','g'));
+
+% reduce matrics based on N modes
+SE.K = feutilb('tkt',def.def,model.K);
+SE.DOF=[1:size(SE.K{1},1)]'+.99; % .99 DOFS
+SE.Klab={'m' 'k' 'c' '4'};
+SE.TR=def; SE.TR.adof=SE.DOF;
+
+% assign to output
+assignin('caller','T',SE)
+assignin('caller','Case','');
+
+
+end
