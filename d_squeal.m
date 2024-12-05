@@ -1663,7 +1663,7 @@ if isempty(Cam)
   feval(Cb{:});
   return
 else
-  [st,RO]=sdtm.urnPar(CAM,'{Spec%s}:{ci%g,jframe%g,ChSel%s,name%s,jPar%g,fi%s,cleanFig%s,cm%s}');  
+  [st,RO]=sdtm.urnPar(CAM,'{Spec%s}:{ci%g,jframe%g,ChSel%s,name%s,jPar%g,fi%s,cleanFig%s,cm%s,filtf%g}');  
 end
   if ~isfield(RO,'Failed');RO.Failed={};end
   i1=~cellfun(@isempty,regexpi(RO.Failed,'[ft](min|max)'));
@@ -1702,6 +1702,10 @@ r3=fe_def('cleanentry',spec.Source.Edit);
 spec.Source.X{1}=spec.Source.X{1}+r3.BufTime/2;
 if ~isfield(RO,'fi'); RO.fi='-type "image"';end
 spec.Source.PlotInfo=ii_plp(['PlotInfo2D ' RO.fi],spec.Source); % To allow horz shift
+  if isfield(RO,'filtf')
+    %r1.PlotInfo{strcmpi(r1.PlotInfo(:,1),'ua.axProp'),2}(1,end+(1:2))= ...
+   spec.Source=sdsetprop(spec.Source,'PlotInfo','ua.PostFcn',sprintf('cdm.viewFilt(''f%f'',cf)',RO.filtf));
+  end
 C2=spec.Source;
 if isequal(C2.Xlab{2},'DOF'); RO.type='fft'; C2.PlotInfo={};C2.name='FFT'; 
 else; RO.type='spec';
@@ -2182,7 +2186,9 @@ if carg>nargin||comstr(Cam,'instfreq{')
  projM=sdth.urn(sprintf('iiplot(%i).nmap',c2.opt(1))); 
  RO=useOrDefault(projM,'InstFreq');
  if isempty(RO);RO=sdtm.pcin('gr:IFreq','uo');end
- if carg<=nargin; RB=varargin{carg};carg=carg+1;RO=sdth.sfield('addselected',RO,RB);end
+ if carg<=nargin; 
+     RB=varargin{carg};carg=carg+1;RO=sdth.sfield('addselected',RO,RB);
+ end
 else
  Time=varargin{carg};carg=carg+1;projM=[];
  RO=varargin{carg};carg=carg+1;
@@ -3229,7 +3235,9 @@ function out=specMax(RO)
       if isa(spec,'curvemodel');r2=spec.Source.Xlab{2}{3};
       else;r2=spec.Xlab{2}{3};
       end
-      RO.fCoef=r2.coef;RO.fUnit=r2.DispUnit;
+      if isfield(r2,'coef')
+       RO.fCoef=r2.coef;RO.fUnit=r2.DispUnit;
+      end
   end
   f=ob.YData;t=ob.XData;
 
@@ -3260,10 +3268,21 @@ function out=specMax(RO)
    [r3,i3]=max(Z,[],1);
    [N,X]=hist(i3,round(length(i3)/10));
    try
-    RO.iOcc=round(X(sdtpy.find_peaks(N,'height',max(N)/30,'prominence',1)));RO.fOcc=f(RO.iOcc);
+    RO.iOcc=round(X(sdtpy.find_peaks(N,'height',max(N)/30,'prominence',1)));
+    RO.fOcc=sortrows([f(RO.iOcc)/RO.fCoef r2(RO.iOcc,:)],2,'descend');
     %figure(13);h=line(r3.X{1},r3.Y(:,1),'color','r');
     % RO.iOcc=sdtpy.find_peaks(log10(r2(:,2)),'prominence',.5);RO.fOcc=f(RO.iOcc);
-    fprintf('Found occurences %s\n',sdtm.toString(RO.fOcc(:)'/RO.fCoef))
+    if isempty(RO.fOcc)
+     fprintf('Found no occurences\n');
+    else
+     fprintf('Found occurences %s\n',sprintf('\n%.0f Hz max%9.2e mean%9.2e',RO.fOcc'))
+     try; ci=sdth.urn('Dock.Id.ci');projM=ci.data.nmap.nmap;
+         st1=spec.Source.meta.Name;
+         if isKey(projM,st1)
+            meta=projM(st1);meta.fOcc=RO.fOcc;projM(st1)=meta;
+         end
+     end
+    end
    end
   end
 
