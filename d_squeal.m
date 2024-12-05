@@ -1812,7 +1812,7 @@ if nargout==0; clear out;end
 % figure(1);plot(C2.X{2},r2,':+')
 elseif comstr(Cam,'par')
 %% #ViewPar{fs2,f(p),xxx,cuName}
-c2=sdth.urn('Dock.Id.ci'); nmap=c2.data.nmap.nmap;
+c2=sdth.urn('Dock.Id.ci'); nmap=c2.data.nmap.nmap;projM=nmap; 
 [~,RO]=sdtm.urnPar(CAM,...
  '{}{fs%ug,u%s,cu%s,ciStoreName%s,ci%i,it%g,tmin%g,MinAmpRatio%ug,hold%s,reset%3,cm%s,xlim%g,ylim%g,zlim%g,clim%g,cleanFig%s,amp%s}');
 if ~isfield(RO,'Failed');RO.Failed={};end
@@ -1832,49 +1832,10 @@ omethod=sdth.eMethods.omethod;
 
 %% #build needed quantities -3
 C0=struct;st1=cell(0,3);
-RO.ShortLong={'f','iFreq','%.2f';'a','Amean','%.1f';'am','Amax','%.1f';
-     'wp','WP','%.2f';'t','Time',java.lang.String('.00');
-     'Pr','Pressure','%.2f';'Temp','TempPad','%.2f';'tv','TorqueV','%.2f'
-     'Dr','DecayR',java.lang.String('.0%')};
-RO.typ={'Amean(WP,iFreq)','a(wp,f)',103, ...
-    {'@axes',{'yscale','log','xgrid','on','ygrid','on','xlim',[0 4]}}
-  'Amax(WP,iFreq)','am(wp,f)',103, ...
-    {'@axes',{'yscale','log','xgrid','on','ygrid','on','xlim',[0 4]}}
-  'dr(iFreq,WP)','dr(f,wp)',106, ...
-    {'@axes',{'yscale','linear','xgrid','on','ygrid','on','clim',[0 4]}}
-  'dr(iFreq,Time)','dr(f,t)',106, ...
-    {'@axes',{'yscale','linear','xgrid','on','ygrid','on'}}
-  'dr(iFreq,aMean)','dr(f,a)',106, ...
-    {'@axes',{'yscale','linear','xgrid','on','ygrid','on'}}
-  'dr(iFreq,aMax)','dr(f,am)',106, ...
-    {'@axes',{'yscale','linear','xgrid','on','ygrid','on'}}
-  'dr(iFreq,Pressure)','dr(f,Pr)',108, ...
-    {'@axes',{'yscale','linear','xgrid','on','ygrid','on'}}
-  'dr(iFreq,aMax)','dr(f,am)',106, ...
-    {'@axes',{'yscale','linear','xgrid','on','ygrid','on'}}
-  'qr(Time)','qr(t)',109, ...
-    {'@axes',{'yscale','log','xgrid','on','ygrid','on'}}
-  'iFreq(Time)','f(t)',102, ...
-    {'@axes',{'yscale','linear','ygrid','on'}}
-  'iFreq(Time,AMean)','f(t,a)',102, ...
-    {'@axes',{'yscale','linear','ygrid','on'}}
-  'iFreq(WP,dr)','f(wp,dr)',107, ...
-    {'@axes',{'yscale','linear','ygrid','on','clim',[-4 4]}}
-  'AMean(iFreq)','a(f)',104, ...
-    {'@axes',{'yscale','linear','ygrid','on'}}
-  'AMean(iFreq,Time)','a(f,t)',104, ...
-    {'@axes',{'yscale','linear','ygrid','on'}}
-  'Pressure(TempPad)','P(T)',300, ...
-    {'@axes',{'yscale','linear','ygrid','on'}}
-  'Torque(Time)','Torque(t)',301, ...
-    {'@axes',{'yscale','linear','ygrid','on'}}
-  'TorqueV(Time)','TorqueV(t)',301, ...
-    {'@axes',{'yscale','linear','ygrid','on'}}
-   
-    };
+RO.projM=projM; 
 
 RO.getDep=@getAmp;
-[C0,st2,st1]=cdm.xvec(Time,[RO.Failed;{'WAng(t)'}],RO);
+[C0,st2,st1,RO]=cdm.xvec(Time,[RO.Failed;{'WAng(t)'}],RO);
 if isfield(C0,'Time')
  t=double(C0.Time);ind=find(diff(t)>diff(t(1:2))*3); 
  if ~isempty(ind);ind=unique([ind;ind+1]);
@@ -1882,7 +1843,7 @@ if isfield(C0,'Time')
  end
 end
 if isscalar(fieldnames(C0));return;end 
-if isfield(C0,'Pressure')&&~sdtm.regContains(C0.Pressure.label,'bar','i')
+if sdtm.regContains(C0.Pressure.label,'[Pa]','i')
     C0.Pressure=C0.Pressure/{1e5,'Pressure [bar]'};
 end
 st1(end,:)=[]; st1(1,end+1:4)={''};RO.list=st1;
@@ -3378,22 +3339,26 @@ if isa(Time,'vhandle.nmap')
  end
  return
 elseif ~isfield(RO,'forInfo')
-  RO.forInfo={'RPM','%.0f %.0f',@(x)[min(x) max(x)]
+  RO.forInfo={
+      'tag','OutFmt','OutVal'
+     'RPM','%.0f %.0f',@(x)[min(x) max(x)]
     'Pressure','%.0f %.0f Bar',@(x)[min(x) max(x)]/1e5
     'TempPad','%.0f %.0f C',@(x)[min(x) max(x)]
     'TempDisk','%.0f %.0f C',@(x)[min(x) max(x)]
     'Torque','%.0f %.0f Nm',@(x)[min(x) max(x)]
     'WAng','%.1f turns',@(x)diff(x([1 end]))/2/pi
     'Disp','%.1f %.1f micron',@(x)([min(x) max(x)]-mean(x))
+    'Time','',''
     };
 end
 
-dt=diff(Time.X{1}([1 end],1))/(size(Time.X{1},1)-1);
+C0=cdm.xvec(Time,{'Time','Pressure'},struct); % Get Vectors Pressure in bar
+
+dt=diff(C0.Time(1:2));
 if isfield(Time,'By') % Actually a time scan
   Time.meta=struct('Type','TimeScan');out=Time;return;
 
 elseif isfield(RO,'ClipPres')
-   r1=cdm.urnVec(Time,'{x,#Pres}');
    if RO.ClipPres(1)<1&&isscalar(RO.ClipPres)
     [r2,r3]=histcounts(r1{1}/1e5,1:ceil(max(r1{1})/1e5));
     r3(find(r2>4e3,1,'first'))
@@ -3409,10 +3374,11 @@ elseif isfield(RO,'ClipPres')
 
    else % Pascal
     % remove parts that are too low pressure
-    it=find(r1{1}>RO.ClipPres,1,'first'):find(r1{1}>RO.ClipPres,1,'last');
+    r1=double(C0.Pressure);it=find(r1>RO.ClipPres,1,'first'):find(r1>RO.ClipPres,1,'last');
    end
    if nnz(it)
     Time=fe_def('subdef',Time,it);
+    Time.meta.tmin=Time.X{1}([1 end],1)';
     i2=strcmpi(Time.Xlab{1}(:,1),'WAng');
     off=-Time.X{1}(1,i2); Time.X{1}(:,i2)=Time.X{1}(:,i2)-off;
     if isfield(Time,'ID')
@@ -3420,6 +3386,11 @@ elseif isfield(RO,'ClipPres')
     end
    end
 end
+C0=cdm.xvec(Time,unique([RO.forInfo(2:end,1);{'Time'}]),struct); % Get Vectors
+RP=struct('gf',501,'ax',[1 1 1],'os',{{'@title',{'String',Time.name},...
+    '@line',{'linewidth',2}, ...
+    '@PlotWd',{'@OsDic',{'ImSw80{@line,""}','WrW49c'}}}});
+cdm.plotys({C0.Time,C0.RPM,C0.Time,C0.Pressure,C0.Time,C0.TempPad},RP);
    %% AutoMeta 
    st3=RO.forInfo;
    [i2,i3]=ismember(st3(:,1),Time.X{2}(:,1));
@@ -3431,12 +3402,14 @@ end
    st3(~i2,:)=[];
    for j1=1:size(st3,1)
     x=Y(:,strcmpi(st1,st3{j1}));
+    if isempty(st3{j1,2});continue;end
     st3{j1,4}=sprintf(st3{j1,2},st3{j1,3}(x));
     % Drag mostly constant velocity
     % Stop xxx
     % xxx
    end
-    'xxx missing type detection' % Pressure profile
+   
+    'xxx missing type detection decel, stops, drag, ramping, pstep' % Pressure profile
    Time.meta=sdth.sfield('addmissing',sdtm.toStruct(st3(:,[1 4])),Time.meta);
    Time.meta.fs=round(1/dt); Time.meta.decimate=round(Time.meta.fs/1000);
 
