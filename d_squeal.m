@@ -1714,6 +1714,7 @@ if isfield(RO,'name');C2.name=RO.name;
 elseif isfield(Time,'info')&&isfield(Time.info,'key')
     C2.name=Time.info.key; 
 end
+C2=sdsetprop(C2,'PlotInfo','OsDic',{'CbR','FnI'});
 spec.Source=C2;
 
 if isfield(Time,'evt')&&isfield(Time.evt,'urn')
@@ -1778,10 +1779,11 @@ if strcmpi(RO.type,'fft') % #guess_cycle_freq -3
  [~,i2]=max(r2);RO.f=C2.X{1}(i2); out=RO; 
 else;% If spectro
  if ~isfield(RO,'Failed')||~any(strcmpi(RO.Failed,'zlog'));
-  c13.ua.YFcn='r3=abs(r3);';iiplot(c13);
-  cb=colorbar;cb.Label.String='Amplitude (lin)';
- else; cb=colorbar;cb.Label.String='Amplitude [log_{10}]';
+  c13.ua.YFcn='r3=abs(r3);';
+ % cb=colorbar;cb.Label.String='Amplitude (lin)';
+ %else; cb=colorbar;cb.Label.String='Amplitude [log_{10}]';
  end
+ iiplot(c13);
  if isfield(C2,'Y')
   r2=sum(sum(abs(C2.Y),3),1);if C2.X{2}(1)==0; r2(1:2)=0;end
  else; % Update needed
@@ -1835,7 +1837,7 @@ C0=struct;st1=cell(0,3);
 RO.projM=projM; 
 
 RO.getDep=@getAmp;
-[C0,st2,st1,RO]=cdm.xvec(Time,[RO.Failed;{'WAng(t)'}],RO);
+[C0,st2,st1,RO]=cdm.xvec(Time,[RO.Failed;{'WAng(t)'}],RO);% Vectors and dependencies
 if isfield(C0,'Time')
  t=double(C0.Time);ind=find(diff(t)>diff(t(1:2))*3); 
  if ~isempty(ind);ind=unique([ind;ind+1]);
@@ -1843,9 +1845,6 @@ if isfield(C0,'Time')
  end
 end
 if isscalar(fieldnames(C0));return;end 
-if sdtm.regContains(C0.Pressure.label,'[Pa]','i')
-    C0.Pressure=C0.Pressure/{1e5,'Pressure [bar]'};
-end
 st1(end,:)=[]; st1(1,end+1:4)={''};RO.list=st1;
 
 for j1=1:size(RO.list,1)
@@ -2273,6 +2272,35 @@ if ~isempty(st); d_squeal(['viewpar' st]);end
 
 [~,RC]=sdtm.urnPar(CAM,'{}{yy%s}');if ~isfield(RC,'Failed');RC.Failed={};end
 
+i1=sdtm.Contains(RC.Failed,'DirScan');
+if any(i1);% d_squeal('ViewOcc{DirScan}')
+ li=cell(projM);
+ li(cellfun(@(x)~isfield(x,'fOcc'),li(:,2)),:)=[];
+
+ r1=cellfun(@(x)x.fOcc,li(:,2),'uni',0);
+ %ua.table={'f','Amp','Rem','Test','pVar','pMax'};
+ for j2=1:size(r1,1)
+   meta=li{j2,2};
+   i2=sscanf(li{j2,2}.Name,'Auto%i'); 
+   if isempty(i2);r1{j2}=[];continue;end
+   r1{j2,1}(:,4)=i2;
+   st2=li{j2,2}.Pressure;
+   r2=sscanf(st2,'%g',1);
+   if isscalar(r2);r1{j2,1}(:,5)=0;r1{j2,1}(:,6)=r2;
+   else;r2=sscanf(st2,'Ramp %g %g',2);
+       r1{j2,1}(:,5)=min(r2);r1{j2,1}(:,6)=max(r2);
+   end
+ end
+ r2=vertcat(r1{:});
+ gf=502;
+ gf=sdth.urn(sprintf('figure(%i).os{@Dock,{name,SqSig},name,OccFP,NumberTitle,off}',gf));
+ clf(gf);ga=gf.CurrentAxes;axes(ga)
+ h=cdm.pline(cdm({r2(:,6),'Pressure [Bar]'}), ...
+     cdm({r2(:,1),'Frequency [Hz]'}), ...
+     cdm({log10(r2(:,2)),'Amplitude'}),log10(r2(:,2)),'marker','o','linestyle','none','linewidth',2);
+ sdth.os(gf,'d.',{'ImGrid','ImSw80'},'p.',{'ImToFigN','WrW49c'})
+
+end
 i1=sdtm.Contains(RC.Failed,'detect');
 if any(i1);
  %% #ViewOccDetect : see from spectro -3
@@ -3201,6 +3229,11 @@ function out=specMax(RO)
       end
   end
   f=ob.YData;t=ob.XData;
+  st1='';
+  try;st1=get(get(findobj(c13.opt(1),'type','colorbar'),'Label'),'string');end
+  if ~isempty(st1)&&contains(lower(st1),'pa')
+    Z=(f).*Z;
+  end
 
   r2=[max(Z,[],2) mean(abs(Z),2)]; 
   r3=mean(r2);r2(:,2)=r2(:,2)*r3(1)/r3(2); % Scale mean to have mean(SMean) = mean(Max)
@@ -3226,21 +3259,38 @@ function out=specMax(RO)
    RO.fCoef=1; 
    fprintf('Using occurences %s\n',sdtm.toString(RO.fOcc(:)'/RO.fCoef))
   else
-   [r3,i3]=max(Z,[],1);
-   [N,X]=hist(i3,round(length(i3)/10));
-   try
+   if 1==2
+    [r3,i3]=max(Z,[],1);% frequency of max occurence
+    [N,X]=hist(i3,round(length(i3)/10));
     RO.iOcc=round(X(sdtpy.find_peaks(N,'height',max(N)/30,'prominence',1)));
     RO.fOcc=sortrows([f(RO.iOcc)/RO.fCoef r2(RO.iOcc,:)],2,'descend');
+    RO.stOcc='\n%.0f Hz max%9.2e mean%9.2e';
+   else
+    RO.max=Inf;RO.iOcc=[];RO.fOcc=[];
+    while 1
+     [r3,i3]=max(Z,[],1);% frequency of max occurence
+     data=sparse(i3,1,r3,length(f),1); % weigh by amplitude
+     [r2,i2]=max(data);r2=full(r2)/nnz(i3==i2);
+     ind=f>f(i2)-100*RO.fCoef&f<f(i2)+100*RO.fCoef;r3(ind)=0;
+     if ~isfinite(RO.max);RO.max=full(r2);end
+     if length(RO.iOcc)>3||r2<.05*RO.max;break;end
+     RO.fOcc(end+1,:)=full([f(i2)/RO.fCoef,r2 max(r3)]);
+     RO.stOcc='\n%.0f Hz level%9.2e meanRest %9.2e';
+     Z(ind,:)=0; RO.iOcc(end+1,1)=i2;
+    end
+   end
+   try
     %figure(13);h=line(r3.X{1},r3.Y(:,1),'color','r');
     % RO.iOcc=sdtpy.find_peaks(log10(r2(:,2)),'prominence',.5);RO.fOcc=f(RO.iOcc);
     if isempty(RO.fOcc)
      fprintf('Found no occurences\n');
     else
-     fprintf('Found occurences %s\n',sprintf('\n%.0f Hz max%9.2e mean%9.2e',RO.fOcc'))
+     fprintf('Found occurences %s\n',sprintf(RO.stOcc,RO.fOcc'))
      try; ci=sdth.urn('Dock.Id.ci');projM=ci.data.nmap.nmap;
          st1=spec.Source.meta.Name;
          if isKey(projM,st1)
             meta=projM(st1);meta.fOcc=RO.fOcc;projM(st1)=meta;
+          fprintf('Updated projM(''%s.fOcc'')\n',st1)
          end
      end
     end
@@ -3389,8 +3439,9 @@ end
 C0=cdm.xvec(Time,unique([RO.forInfo(2:end,1);{'Time'}]),struct); % Get Vectors
 RP=struct('gf',501,'ax',[1 1 1],'os',{{'@title',{'String',Time.name},...
     '@line',{'linewidth',2}, ...
+  ... % '@Dock',{'name','SqSig'}, ...
     '@PlotWd',{'@OsDic',{'ImSw80{@line,""}','WrW49c'}}}});
-cdm.plotys({C0.Time,C0.RPM,C0.Time,C0.Pressure,C0.Time,C0.TempPad},RP);
+ax=cdm.plotys({C0.Time,C0.RPM,C0.Time,C0.Pressure,C0.Time,C0.TempPad},RP);
    %% AutoMeta 
    st3=RO.forInfo;
    [i2,i3]=ismember(st3(:,1),Time.X{2}(:,1));
@@ -3401,19 +3452,42 @@ cdm.plotys({C0.Time,C0.RPM,C0.Time,C0.Pressure,C0.Time,C0.TempPad},RP);
    end
    st3(~i2,:)=[];
    for j1=1:size(st3,1)
+    %'xxx missing type detection decel, stops, drag, ramping, pstep' % Pressure profile
     x=Y(:,strcmpi(st1,st3{j1}));
-    if isempty(st3{j1,2});continue;end
-    st3{j1,4}=sprintf(st3{j1,2},st3{j1,3}(x));
-    % Drag mostly constant velocity
-    % Stop xxx
-    % xxx
+    if strcmpi(st3{j1,1},'RPM')
+       [N,X]=hist(x,1:1:1000);
+       X=X([find(N>max(N)*.1,1,'first') find(N>max(N)*.1,1,'last')]);
+       %[i1,i2]=max(N);N(1)=0;
+       if diff(X)<2 
+         st3{j1,4}=sprintf('Drag %i',X(1)); % Constant mostly constant velocity
+       else; 
+         st3{j1,4}=sprintf('Stop %i',X(2)); % dropping 
+       end
+    elseif strncmpi(st3{j1,1},'Pres',4)
+      x=double(C0.(st3{j1})); % Bar
+      [N,X]=hist(x,1:.1:30);
+      X=X([find(N>max(N)*.1,1,'first') find(N>max(N)*.1,1,'last')]);
+      if diff(X)<.5
+       st3{j1,4}=sprintf('%.1f',mean(X)); 
+      else
+       st3{j1,4}=sprintf('Ramp %.1f %.1f',X); 
+      end
+    elseif isempty(st3{j1,2})||all(x==0);continue;
+    else
+     st3{j1,4}=sprintf(st3{j1,2},st3{j1,3}(x));
+    end
    end
-   
-    'xxx missing type detection decel, stops, drag, ramping, pstep' % Pressure profile
-   Time.meta=sdth.sfield('addmissing',sdtm.toStruct(st3(:,[1 4])),Time.meta);
-   Time.meta.fs=round(1/dt); Time.meta.decimate=round(Time.meta.fs/1000);
 
+   Time.meta=sdth.sfield('addmissing',sdtm.toStruct(st3(:,[1 4])),Time.meta);
+   Time.meta=sdtm.rmfield(Time.meta,{'SplitList','info','timeMeta','ci'});
+   Time.meta.fs=round(1/dt); Time.meta.decimate=round(Time.meta.fs/1000);
+   title(ax(1),sprintf('%s %s RPM %s Bar',Time.meta.Name,Time.meta.RPM,Time.meta.Pressure))
+   set(findobj(ax,'type','line'),'linewidth',2)
    out=Time; 
+
+   if nargout==0
+     sdtm.toString(sdtm.rmfield(Time.meta,'Import'))
+   end
 
 end
 
