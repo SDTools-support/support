@@ -2134,17 +2134,17 @@ if RO.back; return;end
 
 
 
- elseif comstr(Cam,'instfreq')
-%% #ViewInstFreq : estimate instant frequency and modulation
+ elseif comstr(Cam,'hbv')
+%% #ViewHBV : estimate HBV : instant frequency and modulation
 
-if carg>nargin||comstr(Cam,'instfreq{') 
+if carg>nargin||comstr(Cam,'HBV{') 
  c2=sdth.urn('Dock.Id.ci'); 
  if carg<=nargin&&isfield(varargin{carg},'Y');Time=varargin{carg};carg=carg+1;
  else
   Time=c2.Stack{'Time'};% (SqLastSpec).Time is preemptive 
  end
  projM=sdth.urn(sprintf('iiplot(%i).nmap',c2.opt(1))); 
- RO=useOrDefault(projM,'InstFreq');
+ RO=useOrDefault(projM,'HBV');
  if isempty(RO);RO=sdtm.pcin('gr:IFreq','uo');end
  if carg<=nargin; 
      RB=varargin{carg};carg=carg+1;RO=sdth.sfield('addselected',RO,RB);
@@ -2156,7 +2156,7 @@ end
 hfs=ii_signal('@sqSig');
 ROc=hfs('depend',RO,Time,projM,CAM); % sdtweb ii_signal sqsig.depend
 %try
-    [out,RB]=hfs('obsPha',ROc); % sdtweb ii_signal obspha
+    [out,RB]=hfs('HbvDo',ROc); % sdtweb ii_signal obspha
 %catch err
 %    sdtm.toString(err)
 %    out=[];return
@@ -2586,10 +2586,10 @@ end
    if ~any(i1);elseif ~isKey(RT.nmap,'ViewSpec');error('Missing ViewSpec key')
    else;  d_squeal(RT.nmap('ViewSpec'));
    end
-   i1=sdtm.regContains(R2.Failed,'viewInstFreq','i');
+   i1=sdtm.regContains(R2.Failed,'viewHBV','i');
    %RT.nmap('ViewSpec')='ViewSpec(BufTime .4 Overlap .8 tmin .5 -window hanning fmin 1300 1700)';
-   if ~any(i1);elseif ~isKey(RT.nmap,'ViewInstFreq');error('Missing ViewInstFreq key')
-   else;  d_squeal(RT.nmap('ViewInstFreq'));
+   if ~any(i1);elseif ~isKey(RT.nmap,'ViewHBV');error('Missing ViewHBV key')
+   else;  d_squeal(RT.nmap('ViewHBV'));
    end
    i1 =1;
    while any(i1)
@@ -2701,7 +2701,7 @@ end
    end
 
    if 1==2
-    d_squeal('ViewInstFreq{dmBand100,harm1,do{ReEstY,f(t),a(t)},f 1500,ifBand100,aeBand100,clipBand500 3k,,tclip .01 .01}');
+    d_squeal('ViewHBV{dmBand100,harm1,do{ReEstY,f(t),a(t)},f 1500,ifBand100,aeBand100,clipBand500 3k,,tclip .01 .01}');
     c3=iiplot(3,';');nmap=c3.data.nmap.nmap;C4=nmap('SqShape');
     c14=sdth.urn('iiplot(3).clone(14)');iicom(c14,'curveinit','A1',C4);
     iicom(c3,'polarx2');
@@ -3618,4 +3618,24 @@ function cg=initPres(cf,co2,i5)
        end
        cg.mdl.DOF=sel.mdl.Node(:,1)+.19;
 
+end
+
+function showCoh
+ % #showCoh
+ c5=get(5,'userdata'); c2=get(2,'userdata');
+ C1=c5.Stack{c5.ua.sList{1}};
+ ch=remi(c5.ua.ch,size(C1.Y,2));
+ C2=fe_def('subchcurve',C1,{'DOF',ch;'TF',3});
+ C2.X(2)=[];C2.Xlab(2)=[];C2.Y=log10(squeeze(C2.Y));
+ iw=C2.X{1}<c5.ua.xlim(1)|C2.X{1}>c5.ua.xlim(2);C2.X{1}(iw,:)=[];C2.Y(iw,:)=[];
+ C2.Ylab=C1.X{2}(ch,:);
+ gf=figure(601);clf;gf.Name='1-COH';cdm.pcolor(C2)
+ if size(C2.X{2},2)>1
+  try;
+    RO=struct('dir','v','xvec',{{C2.Xlab{2}{1},'Pressure'}},'ty','pcolor', ...
+        'tval',[3:1:10]); 
+    cdm.parbar(gf.CurrentAxes,C2,RO)
+  end
+ end
+ cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImToFigN','ImSw80{@line,""}','WrW49c'});
 end
