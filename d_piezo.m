@@ -59,7 +59,7 @@ d_piezo('SetPlotwd');
 % See full example as MATLAB code in d_piezo('ScriptTutoPzPatchExt')
 d_piezo('DefineStyles');
 
-%% Step 1 Build mesh - Define electrodes
+%% Step 1 Build mesh - Define electrodes 
 % Meshing script can be viewed with sdtweb d_piezo('MeshPatch')
 model=d_piezo('MeshPatch lx=1e-2 ly=1e-2 h=2e-3 nx=1 ny=1 nz=1');
 % Define electrodes
@@ -291,15 +291,12 @@ d_piezo('SetPlotwd');
 % See full example as MATLAB code in d_piezo('ScriptTutoPzBeamCol')
 d_piezo('DefineStyles');
 
-%% Step 1 : meshing and BC
+%% Step 1 : meshing, boundary conditions and point sensor definition
 model = femesh('test ubeam');
 % BC : fix top
 model=fe_case(model,'FixDOF','Clamp','z==0');
 
-%% Step 2: Compute modes and frequencies
-def=fe_eig(model,[5 10 0]);
-
-%% Step 3 : Introduce a point displacement sensor and visualize
+% Introduce a point displacement sensor and visualize
 % sdtweb sensor#slab % URN based definition of sensors
 model = fe_case(model,'SensDOF','Point Sensors',{'104:x'});
 cf=feplot(model); iimouse('resetview');
@@ -312,7 +309,6 @@ fecom('showfialpha') %
  fecom curtabcases 'Point Sensors' % Shows the case 'Point Sensors'
 
 % Improve figure
-
 % Arrow length and thickness
 sdth.urn('Tab(Cases,Point Sensors){Proview,on,deflen,.25}',cf)
 sdth.urn('Tab(Cases,Point Sensors){arProp,"linewidth,2"}',cf)
@@ -322,17 +318,16 @@ d_piezo('SetStyle',cf); feplot(cf);
 
 % Insert the number for the sensor :
 fecom('textnode',104,'fontsize',14)
-%% Step 4 : Introduce collocated force actuator
+%% Step 2 : Introduce collocated force actuator and compute response
 model=fe_case(model,'DofLoad SensDof','Collocated Force','Point Sensors:1') 
 % 1 for first sensor if there are multiple
 
-%% Step 5 : compute static response and visualize
-model=stack_set(model,'info','oProp',mklserv_utils('oprop','CpxSym'));
-d0=fe_simul('dfrf',stack_set(model,'info','Freq',0)); % Static response
-%% Step 5 : compute static response and visualize
+% compute static response and visualize
 model=stack_set(model,'info','oProp',mklserv_utils('oprop','CpxSym'));
 d0=fe_simul('dfrf',stack_set(model,'info','Freq',0)); % Static response
 feplot(model,d0); fecom(';scd .3;undef line'); 
+
+% Visualize sensors
 fecom curtabcases 'Point Sensors'
 sdth.urn('Tab(Cases,Point Sensors){Proview,on,deflen,.25}',cf)
 sdth.urn('Tab(Cases,Point Sensors){arProp,"linewidth,2"}',cf)
@@ -341,7 +336,8 @@ fecom('textnode',104,'fontsize',14);
 % Title
 cf.mdl.name='Ubeam PS1 Static';
 d_piezo('SetStyle',cf); feplot
-%% Step 6 :  Compute dynamic response in freq band of first 5 modes and plot
+%% Step 3 :  Compute dynamic response in freq band of first 5 modes and plot
+def=fe_eig(model,[5 10 0]);
 frq=linspace(0,def.data(6)-(def.data(6)-def.data(5))/2,300);
 d1=fe_simul('dfrf',stack_set(model,'info','Freq',frq)); % Dynamic response
 
@@ -353,11 +349,12 @@ C1=sdsetprop(C1,'PlotInfo','sub','magpha','scale','xlin;ylog');
 ci=iiplot; 
 iicom(ci,'curveInit',C1.name,C1); iicom('submagpha');
 d_piezo('setstyle',ci)
-%%% Step 7 : multiple collocated sensors and actuators
+%%% Step 4 : multiple collocated sensors and actuators
 
 % Introduce two sensors and visualize
 model = fe_case(model,'SensDOF','Point sensors',{'104:x';'344:y'});
 cf=feplot(model);
+
 % Visualize sensors :
 fecom('showfialpha') %
 fecom proviewon
@@ -373,17 +370,17 @@ cf.mdl.name='Ubeam MS1';
 % Insert the number for the sensor :
 fecom('textnode',[104 344],'FontSize',14)
 d_piezo('SetStyle',cf)
-%% Step 8 : Introduce collocated force actuators
+%% Step 5 : Introduce collocated force actuators
 model=fe_case(model,'DofLoad SensDof','Collocated Force','Point sensors:1:2')
 
-%% Step 9 : compute static response and visualize (two static responses)
+% compute static response and visualize (two static responses)
 d0=fe_simul('dfrf',stack_set(model,'info','Freq',0)); % Static response
 feplot(model,d0); fecom(';scd .3; undef line')
 fecom('textnode',[104 344],'FontSize',14)
 
 % Style
 d_piezo('SetStyle',cf);  cf.os_('LgMl-FontSize14');% Keep both mdl.name and title
-%% Step 10 :  Compute dynamic response in freq band of first 5 modes and plot
+%% Step 6 :  Compute dynamic response in freq band of first 5 modes and plot
 frq=linspace(0,def.data(6)-(def.data(6)-def.data(5))/2,300);
 d1=fe_simul('dfrf',stack_set(model,'info','Freq',frq)); % Dynamic response
 
@@ -412,17 +409,11 @@ d_piezo('SetPlotwd');
 % See full example in d_piezo('ScriptTutoPzBeamNCol')
 d_piezo('DefineStyles'); % Init styles for figures
 
-% Example 2 : Non collocated point sensors and actuators
-
-%% Step 1 : meshing and BC
+%% Step 1 : meshing, BC and sensors def
 model = femesh('test ubeam');
 % BC : fix top
 model=fe_case(model,'FixDOF','Clamp','z==0');
-
-%% Step 2: Compute modes and frequencies
-def=fe_eig(model,[5 10 0]);
-
-%% Step 3 : Define sensors
+% Define sensors
 model = fe_case(model,'SensDOF','Point Sensors',{'104:x';'207:y'});
 cf=feplot(model); iimouse('resetview');
 
@@ -443,12 +434,12 @@ d_piezo('SetStyle',cf); feplot(cf);
 
 % Insert the number for the sensor :
 fecom('textnode',[104 207],'fontsize',14)
-
-%% Step 4 : Define point actuators
+%% Step 2 : Define point actuators
 % relative force between DOFs 207x and 241x and one point loads at DOFs 207y
 data  = struct('DOF',[207.01;241.01;207.02],'def',[1 0;-1 0;0 1]);
 model=fe_case(model,'DofLoad','Actuators',data); %
-cf=feplot(model); fecom('showline') 
+cf=feplot(model); fecom('showline')
+ 
 fecom curtabcases 'Actuators' % Shows the case 'Actuators'
 
 % Improve figure
@@ -465,7 +456,7 @@ fecom('textnode',[241 207],'fontsize',14)
 cf.CStack{'Actuators'}.Sel.ch=2;sdth.urn('Tab(Cases,Actuators)',cf) % second
 cf.mdl.name='Ubeam MANC 2'; % Model name for title
 d_piezo('SetStyle',cf); feplot(cf);
-%% Step 5 : compute static response and visualize
+%% Step 3 : compute static response and visualize
 model=stack_set(model,'info','oProp',mklserv_utils('oprop','CpxSym'));
 d0=fe_simul('dfrf',stack_set(model,'info','Freq',0)); % Static response
 feplot(model,d0); fecom(';scd .1; undef line;')
@@ -474,10 +465,9 @@ feplot(model,d0); fecom(';scd .1; undef line;')
 % Title
 d_piezo('SetStyle',cf); cf.os_('LgMl-FontSize14');% Keep both mdl.name and title
 fecom('textnode',[241 207],'FontSize',14)
-
-
-%% Step 6 :  Compute dynamic response in freq band of first 5 modes and plot
-
+%% Step 4 :  Compute dynamic response in freq band of first 5 modes and plot
+% Compute modes and frequencies
+def=fe_eig(model,[5 10 0]);
 % compute response
 frq=linspace(0,def.data(6)-(def.data(6)-def.data(5))/2,300);
 d1=fe_simul('dfrf',stack_set(model,'info','Freq',frq)); % Dynamic response
@@ -508,10 +498,10 @@ d_piezo('SetPlotwd');
  d_piezo('DefineStyles'); % Define styles for figures
 
 %% Step 1 Apply  a volumic load and represent
- model = femesh('testubeam');
- data=struct('sel','groupall','dir',[0 32 0]);
- data2=struct('sel','groupall','dir',{{0,0,'(z-1).^3.*x'}});
- model=fe_case(model,'FVol','Constant',data, ...
+model = femesh('testubeam');
+data=struct('sel','groupall','dir',[0 32 0]);
+data2=struct('sel','groupall','dir',{{0,0,'(z-1).^3.*x'}});
+model=fe_case(model,'FVol','Constant',data, ...
                      'FVol','Variable',data2);
 
 % Visualize loads
@@ -521,14 +511,13 @@ cf=feplot(model); iimouse('resetview');
 fecom('showfialpha') %
 
 % Visualize Load
- fecom proviewon
+fecom proviewon
 
 % Improve figure
- sdth.urn('Tab(Cases,Constant){deflen,.5,arProp,"linewidth,2"}',cf)
-  fecom curtabcases 'Constant' % Shows the case 'Constant'
+sdth.urn('Tab(Cases,Constant){deflen,.5,arProp,"linewidth,2"}',cf)
+fecom curtabcases 'Constant' % Shows the case 'Constant'
 
-
- % Set style and print
+% Set style and print
 cf.mdl.name='Ubeam VLoad-Cst'; % Model name for title
 d_piezo('SetStyle',cf); feplot(cf);
 % Visualize variable Load and print
@@ -541,49 +530,48 @@ Load = fe_load(model); cf=feplot(model,Load); cf.mdl.name='Ubeam VLoad Color';
 % display as color-code to see change of vol force with z and x
 fecom(';showpatch;colordataz;scd .0001;'); 
 d_piezo('SetStyle',cf); feplot(cf); fecom('colorbar on')
-
 %% Step 2 :  Apply a surface load case in a model using selectors
- data=struct('sel','x==-.5', ...
+data=struct('sel','x==-.5', ...
              'eltsel','withnode {z>1.25}','def',1,'DOF',.19);
- model=fe_case(model,'Fsurf','Surface load',data); cf=feplot(model);
+model=fe_case(model,'Fsurf','Surface load',data); cf=feplot(model);
 
 % Visualize Load
- fecom proviewon
- fecom curtabcases 'Surface Load' % Shows the case 'Constant'
- fecom showline
+fecom proviewon
+fecom curtabcases 'Surface Load' % Shows the case 'Constant'
+fecom showline
 
- sdth.urn('Tab(Cases,Surface load){deflen,.5,arProp,"linewidth,2"}',cf)
- cf.mdl.name='Ubeam SLoad'; % Model name for title
- d_piezo('SetStyle',cf); feplot(cf);
+sdth.urn('Tab(Cases,Surface load){deflen,.5,arProp,"linewidth,2"}',cf)
+cf.mdl.name='Ubeam SLoad'; % Model name for title
+d_piezo('SetStyle',cf); feplot(cf);
 %% Step 3 : Applying a surfacing load case in a model using node lists
- data=struct('eltsel','withnode {z>1.25}','def',1,'DOF',.19);
- NodeList=feutil('findnode x==-.5',model);
- data.sel={'','NodeId','==',NodeList};
- model=fe_case(model,'Fsurf','Surface load 2',data); cf=feplot(model);
+data=struct('eltsel','withnode {z>1.25}','def',1,'DOF',.19);
+NodeList=feutil('findnode x==-.5',model);
+data.sel={'','NodeId','==',NodeList};
+model=fe_case(model,'Fsurf','Surface load 2',data); cf=feplot(model);
 
- fecom proviewon
- fecom curtabcases 'Surface load 2' %
- fecom showline
+fecom proviewon
+fecom curtabcases 'Surface load 2' %
+fecom showline
 
 sdth.urn('Tab(Cases,Surface load){deflen,.5,arProp,"linewidth,2"}',cf)
 cf.mdl.name='Ubeam SLoad2'; % Model name for title
 d_piezo('SetStyle',cf); feplot(cf);
 %% Step 4 : Applying a surfacing load case in a model using sets
 
- % Define a face set
-  [eltid,model.Elt]=feutil('eltidfix;',model);
- i1=feutil('findelt withnode {x==-.5 & y<0}',model);i1=eltid(i1);
- i1(:,2)=2; % fourth face is loaded
- data=struct('ID',1,'data',i1,'type','FaceId');
- model=stack_set(model,'set','Face 1',data);
+% Define a face set
+[eltid,model.Elt]=feutil('eltidfix;',model);
+i1=feutil('findelt withnode {x==-.5 & y<0}',model);i1=eltid(i1);
+i1(:,2)=2; % fourth face is loaded
+data=struct('ID',1,'data',i1,'type','FaceId');
+model=stack_set(model,'set','Face 1',data);
 
- % define a load on face 1
- data=struct('set','Face 1','def',1,'DOF',.19);
- model=fe_case(model,'Fsurf','Surface load 3',data); cf=feplot(model);
+% define a load on face 1
+data=struct('set','Face 1','def',1,'DOF',.19);
+model=fe_case(model,'Fsurf','Surface load 3',data); cf=feplot(model);
 
- sdth.urn('Tab(Cases,Surface load 3){deflen,.5,arProp,"linewidth,2"}',cf)
- fecom proviewon
- fecom curtabcases 'Surface load 3' %
+sdth.urn('Tab(Cases,Surface load 3){deflen,.5,arProp,"linewidth,2"}',cf)
+fecom proviewon
+fecom curtabcases 'Surface load 3' %
 
 cf.mdl.name='Ubeam SLoad3'; % Model name for title
 d_piezo('SetStyle',cf); feplot(cf);
@@ -613,17 +601,17 @@ model=fe_case(model,'FixDof','Clamping','z==0 -DOF 1 3');
 % find node z==0
 nd=feutil('find node z==0',model);
 data.DOF=nd+.02; data.def=ones(length(nd),1);
-model=fe_case(model,'DofSet','Uimp',data); cf=feplot(model); iimouse('resetview')
+model=fe_case(model,'DofSet','Uimp',data); cf=feplot(model); 
+iimouse('resetview')
 
 % Visualize
 fecom proview on
 fecom curtabcases 'Uimp' % Shows the case 'Constant'
 
- % Set style and print
+% Set style and print
 cf.mdl.name='Ubeam Uimp'; % Model name for title
 d_piezo('SetStyle',cf); feplot(cf);
 %% Step 2 : Introduce a point displacement sensor and visualize
-
 model = fe_case(model,'SensDOF','Point Sensors',{'104:y'});
 cf=feplot(model);
 
@@ -631,10 +619,10 @@ cf=feplot(model);
 fecom('showfialpha') %
 
 % Visualize sensor and actuator
- fecom proviewon
- sdth.urn('Tab(Cases,Point Sensors){arProp,"linewidth,2"}',cf)
- sdth.urn('Tab(Cases,Uimp){arProp,"linewidth,2"}',cf)
- fecom('curtabCase','#(Uimp|Point)')
+fecom proviewon
+sdth.urn('Tab(Cases,Point Sensors){arProp,"linewidth,2"}',cf)
+sdth.urn('Tab(Cases,Uimp){arProp,"linewidth,2"}',cf)
+fecom('curtabCase','#(Uimp|Point)')
 
 cf.mdl.name='Ubeam Uimp Sens Act'; % Model name for title
 d_piezo('SetStyle',cf); feplot(cf);
@@ -645,7 +633,7 @@ fecom('textnode',[104],'fontsize',14)
 def=fe_eig(model,[5 10 0]);
 feplot(model,def)
 
-%% Step 4:  Compute dynamic response in freq band of first 5 modes and plot
+% Compute dynamic response in freq band of first 5 modes and plot
 frq=linspace(0,def.data(6)-(def.data(6)-def.data(5))/2,300);
 d1=fe_simul('dfrf',stack_set(model,'info','Freq',frq)); % Dynamic response
 
@@ -672,19 +660,16 @@ elseif comstr(Cam,'tutopzbeamdispvelacc')
 d_piezo('SetPlotwd');
 % See full example in d_piezo('ScriptTutoPzBeamDispVelAcc')
 d_piezo('DefineStyles');
+
 %% Step 1 : meshing, BC and compute modeshapes
 model = femesh('test ubeam');
 model=fe_case(model,'FixDOF','Clamp','z==0');
-
-%% Step 2: Compute modes and frequencies
 def=fe_eig(model,[5 10 0]);
-
-%% Step 3 : Introduce a point displ/vel/acc sensor and collocated force
+%% Step 2 : Introduce a point displ/vel/acc sensor and collocated force
 model = fe_case(model,'SensDOF','Sensors',{'104:x';'104:vx';'104:ax'});
 model=fe_case(model,'DofLoad SensDof','Collocated Force','Sensors:1'); 
 % 1 for first sensor if there are multiple
-
-%% Step 4 : Compute response and plot FRFs
+%% Step 3 : Compute response and plot FRFs
 frq=linspace(10,def.data(6)-(def.data(6)-def.data(5))/2,300);
 
 d1=fe_simul('dfrf',stack_set(model,'info','Freq',frq)); % Dynamic response
@@ -1328,7 +1313,7 @@ out0=sens.cta*d0.def;
 
 % With reduced basis 3 modes
 model = stack_set(model,'info','EigOpt',[5 3 0]); % To keep 3 modes
-SE1=fe_reduc('call modal -matdes 2 1 3 4',model); 
+SE1=fe_reduc('call d_piezo@modal -matdes 2 1 3 4',model); 
 % Build super-element with 3 modes
 
 % Make model with a single super-element
@@ -1666,8 +1651,9 @@ d1=fe_eig(model,[5 20 1e3]);
 DOF=p_piezo('electrodeDOF.*',model);
 d2=fe_eig(fe_case(model,'FixDof','SC',DOF),[5 20 1e3]);
 r1=[d1.data(1:end)./d2.data(1:end)];
-figure;plot(r1,'*','linewidth',2);axis tight; set(gca,'Fontsize',15)
+gf=figure;plot(r1,'*','linewidth',2);axis tight; set(gca,'Fontsize',15)
 xlabel('Mode number');ylabel('f_{OC}/f_{SC}');
+
 % End of script
 
 %% EndSource EndTuto
