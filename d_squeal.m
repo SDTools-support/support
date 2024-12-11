@@ -2273,6 +2273,23 @@ if ~isempty(st); d_squeal(['viewpar' st]);end
  %% #viewOcc : occurence tracking 
  c2=sdth.urn('Dock.Id.ci');projM=c2.data.nmap.nmap;
 
+if ~isempty(obj)
+  %% dataTipDirScan 
+ li=cell(projM);
+ li(cellfun(@(x)~isfield(x,'fOcc'),li(:,2)),:)=[];RO.done=0;
+ for j1=1:size(li,1)
+  r2=li{j1,2}.fOcc; if size(r2,2)==1;continue;end
+  i2=r2(:,1)==evt.Position(2)&log10(r2(:,2))==evt.Position(3); 
+  if any(i2);RO.done=1;break;end
+ end
+ out=sprintf('%.1f Bar\n%.0f Hz\nlog10(A) %.1f',evt.Position);
+ if RO.done; 
+  uo=li{j1,2};
+  out=sprintf('%s\n%.1f Bar\n%.0f Hz\nlog10(A) %.1f',uo.Name,evt.Position);
+ end
+ return
+
+end
 [~,RC]=sdtm.urnPar(CAM,'{}{yy%s}');if ~isfield(RC,'Failed');RC.Failed={};end
 
 i1=sdtm.Contains(RC.Failed,'DirScan');
@@ -2297,11 +2314,12 @@ if any(i1);% d_squeal('ViewOcc{DirScan}')
  r2=vertcat(r1{:});
  gf=502;
  gf=sdth.urn(sprintf('figure(%i).os{@Dock,{name,SqSig},name,OccFP,NumberTitle,off}',gf));
- clf(gf);ga=gf.CurrentAxes;axes(ga)
+ clf(gf);ga=axes('parent',gf);
  h=cdm.pline(cdm({r2(:,6),'Pressure [Bar]'}), ...
      cdm({r2(:,1),'Frequency [Hz]'}), ...
-     cdm({log10(r2(:,2)),'Amplitude'}),log10(r2(:,2)),'marker','o','linestyle','none','linewidth',2);
- sdth.os(gf,'d.',{'ImGrid','ImSw80'},'p.',{'ImToFigN','WrW49c'})
+     cdm({log10(r2(:,2)),'Amplitude [log]'}),log10(r2(:,2)), ...
+     'marker','o','linestyle','none','linewidth',2);
+ sdth.os(gf,'d.',{'ImTight','ImGrid','ImSw80'},'p.',{'ImToFigN','WrW49c'})
 
 end
 i1=sdtm.Contains(RC.Failed,'detect');
