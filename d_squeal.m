@@ -1868,10 +1868,7 @@ for j1=1:size(RO.list,1)
   ga=get(gf,'CurrentAxes'); if isempty(ga);ga=axes('parent',gf);end
   if isfield(RO,'hold');hold(ga,RO.hold);end
   if isfield(RO,'reset'); cla(ga); end
-  if strcmpi(RO.list{j1,4},'radial')
-   r2={C0.(RO.list{j1,2}) C0.(RO.list{j1,1}) C0.(RO.list{j1,3})};
-   h=cdm.radialpline(r2{:},'parent',ga,'linewidth',2);
-  elseif strncmpi(RO.list{j1,4},'hist',4)
+  if strncmpi(RO.list{j1,4},'hist',4)
    %% Amplitude bin 
    r2={C0.(RO.list{j1,2}) C0.(RO.list{j1,1}) C0.(RO.list{j1,3})};
    h=cdm.hist2(RO.list{j1,4},r2{:});
@@ -1926,8 +1923,10 @@ for j1=1:size(RO.list,1)
    uf.do=RO.list(j1,[2 1 3:end]);
    if isfield(RO,'MinAmpRatio'); uf.do(end+1,1:2)={'SetNan','Amean'};end
    prop={'@OsDic',{'ImTight','ImGrid'},'@line',{'linewidth',2},'@axes',{}};
-   if isempty(uf.do{1,3}) % Some color
-    uf.do(end+1,1)='plot';
+   if size(uf.do,2)==4&&strcmpi(uf.do{1,4},'radial')
+    uf.do{end+1,1}='radialpline';uf.do{1,4}='';
+   elseif isempty(uf.do{1,3}) % Some color
+    uf.do{end+1,1}='plot';
    else
     uf.do{end+1,1}='pline';prop{3}='@patch';
     uf.do(end+1,1)={'colormap'};
@@ -1950,7 +1949,9 @@ end
 if ~isempty(RO.Linked)
   gf=cellfun(@(x)x.ga.Parent,RO.Linked);
   RO.Linked{1}.gfl=gf;
-  RO.Linked{1}.listen=addlistener(RO.Linked{1}.ga,'XLim','PostSet',@cdm.parPlot);
+  listen={};listen{1}=addlistener(RO.Linked{1}.ga,'XLim','PostSet',@cdm.parPlot);
+  listen{2}=addlistener(RO.Linked{1}.ga,'XLimMode','PostSet',@cdm.parPlot);
+  RO.Linked{1}.listen=listen;
 end
 if isfield(RO,'ciStoreName')&&size(Time.X{1},2)>1
  %% standard display parameters (initial version)
@@ -3631,13 +3632,28 @@ function showCoh
  C2.X(2)=[];C2.Xlab(2)=[];C2.Y=log10(squeeze(C2.Y));
  iw=C2.X{1}<c5.ua.xlim(1)|C2.X{1}>c5.ua.xlim(2);C2.X{1}(iw,:)=[];C2.Y(iw,:)=[];
  C2.Ylab=C1.X{2}(ch,:);
- gf=figure(601);clf;gf.Name='1-COH';cdm.pcolor(C2)
+ gf=figure(601);clf;gf.Name='1-COH';cdm.pcolor(C2);
  if size(C2.X{2},2)>1
   try;
     RO=struct('dir','v','xvec',{{C2.Xlab{2}{1},'Pressure'}},'ty','pcolor', ...
         'tval',[3:1:10]); 
-    cdm.parbar(gf.CurrentAxes,C2,RO)
+    cdm.parbar(gf.CurrentAxes,C2,RO);
   end
+ end
+ h=[];
+ i1=size(C1.Y);i1(1)=[];[i1,i2,i3]=ind2sub(i1,c5.ua.ch);
+ coh=log10(squeeze(C1.Y(:,i1,i2,3)));r2=[min(coh) max(coh)];coh(end+1)=NaN;
+  prop={'CData',coh,'EdgeColor','Flat','linewidth',2};
+ for j1=1:size(c5.ax,1)
+  ga=c5.ga(j1);ua=get(ga,'userdata');go=handle(ua.ob(1));
+  if ~strcmp(get(go,'type'),'patch') 
+   g2=cdm.pline(go);delete(go);go=g2;
+   ua.ob(1)=double(go);set(ga,'userdata',ua);
+   c5.Stack{c5.ua.sList{1}}.Y(end,:)=NaN;
+  end
+  prop{2}(size(go.XData,1)+1:end)=[];
+  set(go,prop{:});set(go.Parent,'clim',r2);
+  if j1==1; h=go;else;h(j1)=go;end
  end
  cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImToFigN','ImSw80{@line,""}','WrW49c'});
 end
