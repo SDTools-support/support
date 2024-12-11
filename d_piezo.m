@@ -510,19 +510,14 @@ cf=feplot(model); iimouse('resetview');
 % Make mesh transparent :
 fecom('showfialpha') %
 
-% Visualize Load
-fecom proviewon
+% Show Cases tab entry Constant and visualize load
+sdth.urn('Tab(Cases,Constant){ProView,on,deflen,.5,arProp,"linewidth,2"}',cf)
 
-% Improve figure
-sdth.urn('Tab(Cases,Constant){deflen,.5,arProp,"linewidth,2"}',cf)
-fecom curtabcases 'Constant' % Shows the case 'Constant'
-
-% Set style and print
+ % Set style and print
 cf.mdl.name='Ubeam VLoad-Cst'; % Model name for title
 d_piezo('SetStyle',cf); feplot(cf);
 % Visualize variable Load and print
   sdth.urn('Tab(Cases,Variable){deflen,.5,arProp,"linewidth,2"}',cf)
- fecom curtabcases 'Variable' % Shows the case 'Variable'
  cf.mdl.name='Ubeam VLoad-Var'; % Model name for title
  d_piezo('SetStyle',cf); feplot(cf);
 % Visualize Constant and Variable loads with colors
