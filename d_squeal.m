@@ -1845,7 +1845,7 @@ if isfield(C0,'Time')
  end
 end
 if isscalar(fieldnames(C0));return;end 
-st1(end,:)=[]; st1(1,end+1:4)={''};RO.list=st1;
+st1(end,:)=[]; st1(1,end+1:4)={''};RO.list=st1; RO.Linked={};
 
 for j1=1:size(RO.list,1)
   st2=sprintf('%s(%s,%s)',RO.list{j1,1:3});st2=strrep(st2,',)',')');
@@ -1919,37 +1919,39 @@ for j1=1:size(RO.list,1)
    set(h(3:end),'linestyle',':','color','k','linewidth',.5)
    axis tight; 
 
-  elseif ~isempty(RO.list{j1,3})
+  else%if ~isempty(RO.list{j1,3})
    %% standard plot
-   r2={C0.(RO.list{j1,2}) C0.(RO.list{j1,1}) C0.(RO.list{j1,3})};
-   if isfield(RO,'MinAmpRatio')
-       i2=~isfinite(double(C0.Amean));
-       r2{1}.data(i2)=NaN;
+   uf=vhandle.uo(gf);
+   uf.C0=C0;uf.ga=ga;
+   uf.do=RO.list(j1,[2 1 3:end]);
+   if isfield(RO,'MinAmpRatio'); uf.do(end+1,1:2)={'SetNan','Amean'};end
+   prop={'@OsDic',{'ImTight','ImGrid'},'@line',{'linewidth',2},'@axes',{}};
+   if isempty(uf.do{1,3}) % Some color
+    uf.do(end+1,1)='plot';
+   else
+    uf.do{end+1,1}='pline';prop{3}='@patch';
+    uf.do(end+1,1)={'colormap'};
+    if ~isfield(RO,'cm');RO.cm=ii_plp('colormapband',turbo(5));end
+    uf.do{end,2}=RO.cm;
    end
-   h=cdm.pline(r2{:},'parent',ga,'linewidth',2);
-   if isfield(RO,'cm'), colormap(RO.cm);
-   else; ii_plp('colormapband',turbo(5));
-   end
-   axis tight; 
-   if isfield(RO,'xlim'); xlim(RO.xlim); end
-   if isfield(RO,'ylim'); ylim(RO.ylim); end
-   if isfield(RO,'zlim'); clim(RO.zlim); end % zlim and clim equivalent
-   if isfield(RO,'clim'); clim(RO.clim); end
-  else 
-   % Just a line
-   if ~isfield(C0,RO.list{j1,2})||~isfield(C0,RO.list{j1,1})
-       continue;
-   end
-   h=cdm.plot(C0.(RO.list{j1,2}),C0.(RO.list{j1,1}),'parent',ga,'linewidth',2);
-   axis tight; 
-  
+   if isfield(RO,'xlim');prop{end}(end+(1:2))={'xlim',RO.xlim};end
+   if isfield(RO,'ylim');prop{end}(end+(1:2))={'ylim',RO.ylim};end
+   if isfield(RO,'zlim');prop{end}(end+(1:2))={'zlim',RO.zlim};end
+   if isfield(RO,'clim');prop{end}(end+(1:2))={'clim',RO.clim};end
+   uf.do(end+1,1:2)={'os',prop};
+   cdm.parPlot(uf)
+   RO.Linked{end+1}=uf;
   end
   if any(gf==[300 106 108]);hold off;end
    cleanFig(gf,Time,c2);  RO.back=1;
    cingui('objset',gf,RO.typ{iTyp,4})
    RO.list{j1}='';iimouse('on');
 end
-
+if ~isempty(RO.Linked)
+  gf=cellfun(@(x)x.ga.Parent,RO.Linked);
+  RO.Linked{1}.gfl=gf;
+  RO.Linked{1}.listen=addlistener(RO.Linked{1}.ga,'XLim','PostSet',@cdm.parPlot);
+end
 if isfield(RO,'ciStoreName')&&size(Time.X{1},2)>1
  %% standard display parameters (initial version)
  %[~,r2]=sdtm.urnPar('a{polar,fs2}','{}{fs%ug,u%s}');
