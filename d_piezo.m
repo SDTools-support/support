@@ -295,7 +295,6 @@ d_piezo('DefineStyles');
 model = femesh('test ubeam');
 % BC : fix top
 model=fe_case(model,'FixDOF','Clamp','z==0');
-
 % Introduce a point displacement sensor and visualize
 % sdtweb sensor#slab % URN based definition of sensors
 model = fe_case(model,'SensDOF','Point Sensors',{'104:x'});
@@ -321,7 +320,6 @@ fecom('textnode',104,'fontsize',14)
 %% Step 2 : Introduce collocated force actuator and compute response
 model=fe_case(model,'DofLoad SensDof','Collocated Force','Point Sensors:1') 
 % 1 for first sensor if there are multiple
-
 % compute static response and visualize
 model=stack_set(model,'info','oProp',mklserv_utils('oprop','CpxSym'));
 d0=fe_simul('dfrf',stack_set(model,'info','Freq',0)); % Static response
@@ -349,12 +347,10 @@ C1=sdsetprop(C1,'PlotInfo','sub','magpha','scale','xlin;ylog');
 ci=iiplot; 
 iicom(ci,'curveInit',C1.name,C1); iicom('submagpha');
 d_piezo('setstyle',ci)
-%%% Step 4 : multiple collocated sensors and actuators
-
+%% Step 4 : multiple collocated sensors and actuators
 % Introduce two sensors and visualize
 model = fe_case(model,'SensDOF','Point sensors',{'104:x';'344:y'});
 cf=feplot(model);
-
 % Visualize sensors :
 fecom('showfialpha') %
 fecom proviewon
@@ -496,8 +492,7 @@ elseif comstr(Cam,'tutopzbeamsurfvol')
 d_piezo('SetPlotwd');
 % See full example in d_piezo('ScriptTutoPzBeamSurfVol')
  d_piezo('DefineStyles'); % Define styles for figures
-
-%% Step 1 Apply  a volumic load and represent
+ %% Step 1 Apply  a volumic load and represent
 model = femesh('testubeam');
 data=struct('sel','groupall','dir',[0 32 0]);
 data2=struct('sel','groupall','dir',{{0,0,'(z-1).^3.*x'}});
@@ -510,14 +505,18 @@ cf=feplot(model); iimouse('resetview');
 % Make mesh transparent :
 fecom('showfialpha') %
 
-% Show Cases tab entry Constant and visualize load
-sdth.urn('Tab(Cases,Constant){ProView,on,deflen,.5,arProp,"linewidth,2"}',cf)
+% Visualize Load
+fecom proviewon
 
- % Set style and print
+% Improve figure
+sdth.urn('Tab(Cases,Constant){deflen,.5,arProp,"linewidth,2"}',cf)
+fecom curtabcases 'Constant' % Shows the case 'Constant'
+% Set style and print
 cf.mdl.name='Ubeam VLoad-Cst'; % Model name for title
 d_piezo('SetStyle',cf); feplot(cf);
 % Visualize variable Load and print
   sdth.urn('Tab(Cases,Variable){deflen,.5,arProp,"linewidth,2"}',cf)
+ fecom curtabcases 'Variable' % Shows the case 'Variable'
  cf.mdl.name='Ubeam VLoad-Var'; % Model name for title
  d_piezo('SetStyle',cf); feplot(cf);
 % Visualize Constant and Variable loads with colors
@@ -529,7 +528,6 @@ d_piezo('SetStyle',cf); feplot(cf); fecom('colorbar on')
 data=struct('sel','x==-.5', ...
              'eltsel','withnode {z>1.25}','def',1,'DOF',.19);
 model=fe_case(model,'Fsurf','Surface load',data); cf=feplot(model);
-
 % Visualize Load
 fecom proviewon
 fecom curtabcases 'Surface Load' % Shows the case 'Constant'
@@ -543,7 +541,6 @@ data=struct('eltsel','withnode {z>1.25}','def',1,'DOF',.19);
 NodeList=feutil('findnode x==-.5',model);
 data.sel={'','NodeId','==',NodeList};
 model=fe_case(model,'Fsurf','Surface load 2',data); cf=feplot(model);
-
 fecom proviewon
 fecom curtabcases 'Surface load 2' %
 fecom showline
@@ -563,7 +560,6 @@ model=stack_set(model,'set','Face 1',data);
 % define a load on face 1
 data=struct('set','Face 1','def',1,'DOF',.19);
 model=fe_case(model,'Fsurf','Surface load 3',data); cf=feplot(model);
-
 sdth.urn('Tab(Cases,Surface load 3){deflen,.5,arProp,"linewidth,2"}',cf)
 fecom proviewon
 fecom curtabcases 'Surface load 3' %
@@ -585,28 +581,24 @@ elseif comstr(Cam,'tutopzbeamuimp')
 d_piezo('SetPlotwd');
 % See full example in d_piezo('ScriptTutoPzBeamUimp')
 d_piezo('DefineStyles');
-
 %% Step 1 Meshing and BC
 model = femesh('test ubeam');
-% BC : Impose displacement
-% Fix all other dofs for Base
+% BC : Impose displacement -  Fix all other dofs for Base
 model=fe_case(model,'FixDof','Clamping','z==0 -DOF 1 3');
-
 %% Step 2 Apply base displacement in y-direction
 % find node z==0
-nd=feutil('find node z==0',model);
+nd=feutil('find node z==0',model); 
 data.DOF=nd+.02; data.def=ones(length(nd),1);
-model=fe_case(model,'DofSet','Uimp',data); cf=feplot(model); 
-iimouse('resetview')
+model=fe_case(model,'DofSet','Uimp',data);
+cf=feplot(model); iimouse('resetview')
 
 % Visualize
 fecom proview on
 fecom curtabcases 'Uimp' % Shows the case 'Constant'
-
 % Set style and print
 cf.mdl.name='Ubeam Uimp'; % Model name for title
 d_piezo('SetStyle',cf); feplot(cf);
-%% Step 2 : Introduce a point displacement sensor and visualize
+%% Step 3 : Introduce a point displacement sensor and visualize
 model = fe_case(model,'SensDOF','Point Sensors',{'104:y'});
 cf=feplot(model);
 
@@ -624,7 +616,7 @@ d_piezo('SetStyle',cf); feplot(cf);
 
 % Insert the number for the sensor :
 fecom('textnode',[104],'fontsize',14)
-%% Step 3: Compute modes and frequencies (dofs in Dofset are fixed)
+%% Step 4 : Compute modes and transfer functions
 def=fe_eig(model,[5 10 0]);
 feplot(model,def)
 
@@ -724,7 +716,6 @@ fecom('proviewon')
 sdth.urn('Tab(Cases,Tip){Proview,on,deflen,20}',cf)
 sdth.urn('Tab(Cases,Tip){arProp,"linewidth,2"}',cf)
 fecom('curtabCase',{'Tip';'V-Act'})
-
 d_piezo('SetStyle',cf); feplot(cf);
 
 % Insert the number for the sensor :
@@ -782,18 +773,18 @@ fecom curtabcases Vin-Shaker %
 % Visualize VSens electrode
 fecom curtabcases 'V-Top sensor'
 r1=p_piezo('TabInfo',model); % List piezo related properties
-%% Step 3: compute and visualize response
+%% Step 3: compute and visualize dynamic response
 ofact('silent'); f=logspace(3,5.3,400)';
 model=stack_set(model,'info','oProp',mklserv_utils('oprop','CpxSym'));
 d1=fe_simul('dfrf',stack_set(model,'info','Freq',f(:))); % direct refer frf
 
 % Project on sensor and create output
- sens=fe_case(model,'sens');
- C1=fe_case('SensObserve -DimPos 2 3 1',sens,d1);
- C1.X{2}{1}='V-sensor(V)'
- ci=iiplot; 
- iicom(ci,'curveInit',C1.name,C1); iicom('submagpha');
- d_piezo('setstyle',ci);
+sens=fe_case(model,'sens');
+C1=fe_case('SensObserve -DimPos 2 3 1',sens,d1);
+C1.X{2}{1}='V-sensor(V)'
+ci=iiplot; 
+iicom(ci,'curveInit',C1.name,C1); iicom('submagpha');
+d_piezo('setstyle',ci);
 % End of script
 
 %% EndSource EndTuto
@@ -828,7 +819,7 @@ d_piezo('DefineStyles');
 model.pl=m_elastic('dbval 1 Aluminum');
 model.pl=m_piezo(model.pl,'dbval 3 -elas2 SONOX_P502_iso');
 % To avoid warning due to the use of simplified piezo properties.
-model=p_piezo('DToSimple',model)
+model=p_piezo('DToSimple',model);
   model.pl=m_elastic('dbval 1 Aluminum');
   d=zeros(1,18); d([11 13])=560e-12; d([3 6])=-185e-12; d(9)=440e-12;
   eps=zeros(1,9); eps([1 5 9])= 8.854e-12*1850;
@@ -843,12 +834,10 @@ model.il=p_shell('dbval 1 laminate 1 1.2e-3 0', ...
 %%%                                         NdNb LayerID   NdNb  LayerID
 model.il=p_piezo(model.il,'dbval 3 shell 2 1682    1   0    1683  3 0');
 model.il=p_piezo(model.il,'dbval 4 shell 2 1684    1   0    1685  3 0');
-%% Step 5 - show orientation of the normal
 cf=feplot(model); fecom('showmap'); fecom('view3');
 % scale properly
 fecom('scalecoeff 1e-10'); fecom('showmap')
-cf.mdl.name='Plate_4pzt_Normal_Orient'; d_piezo('SetStyle',cf); feplot(cf);
-%% Step 6 - Compute and display response to static imposed voltage
+%% Step 5 - Compute and display response to static imposed voltage
 model=fe_case(model,'FixDof','Cantilever','x==0 -DOF 1:6');
 model=fe_case(model,'DofSet','V-Act',struct('def',1,'DOF',1682.21)); %Act
 model=p_piezo('ElectrodeSensQ  1683 Q-S1',model);
@@ -861,7 +850,8 @@ d0=fe_simul('dfrf',stack_set(model,'info','Freq',0)); % direct refer frf at 0Hz
 cf=feplot(model,d0); fecom(';view3;colordatagroup;undefline');
 cf.mdl.name='Plate_4pzt'; d_piezo('SetStyle',cf); 
 d=sens.cta(4,:)*d0.def % Tip displacement is positive.
-%% Step 7 - Piezoelectric patches on the bottom only
+d =  2.5244e-06
+%% Step 6 - Piezoelectric patches on the bottom only
  model=struct('Node',[1 0 0 0 0 0 0],'Elt',[]);
  model=feutil('addelt',model,'mass1',1);
  % Note that the extrusion values are chosen to include the patch edges
@@ -881,14 +871,12 @@ d=sens.cta(4,:)*d0.def % Tip displacement is positive.
 model.pl=m_elastic('dbval 1 Aluminum');
 model.pl=m_piezo(model.pl,'dbval 3 -elas2 SONOX_P502_iso');
 % To avoid warning due to the use of simplified piezo properties.
-model=p_piezo('DToSimple',model)
-
+model=p_piezo('DToSimple',model);
 %%  Laminate properties and piezo electrodes
 % This is where an offset must be specified
 %(else z0=-7.25e-4 (half of total thickness which is not correct).
 model.il=p_shell('dbval 1 laminate 1 1.2e-3 0', ...
    'dbval 2 laminate z0=-8.5e-4 3 2.5e-4 0 1 1.2e-3 0 ');
-
 %%% Piezo electrodes
 %%%                                         NdNb LayerID
 model.il=p_piezo(model.il,'dbval 3 shell 2 1682    1   0    ');
@@ -904,7 +892,7 @@ model=fe_case(model,'FixDof','SC*1682-1684',[1682 1684]+.21);
 d0=fe_simul('dfrf',stack_set(model,'info','Freq',0)); % direct refer frf at 0Hz
 feplot(model,d0); fecom(';view3;colordatagroup;undefline');
 d2=sens.cta(2,:)*d0.def % Tip displacement is positive.
-disp(['difference of static response' num2str((d2-d)/d*100) '%'])
+disp(['difference of static response ' num2str((d2-d)/d*100) '%'])
 % End of script
 
 %% EndSource EndTuto
@@ -937,7 +925,6 @@ model.pl=m_elastic('dbval 1 Aluminum');
 % Laminate properties
 model.il=p_shell('dbval 1 -punit mm laminate 1 1.2 0') % this is to specify in mm
 model=fe_case(model,'FixDof','Cantilever','x==0 -DOF 1:6');
-
 %%% Step 2: Add patches
 RG.list={'Name','Lam','shape'
    'Main_plate', model,''  % Base structure
@@ -953,7 +940,7 @@ RG.list={'Name','Lam','shape'
 mo1=d_piezo('MeshPlate',RG);
 mo1=stack_rm(mo1,'info','Electrodes'); % Obsolete stack field to be removed
 % To avoid warning due to the use of simplified piezo properties.
-mo1=p_piezo('DToSimple',mo1)
+mo1=p_piezo('DToSimple',mo1);
 
 %% Step 3 : compute response
 nd=feutil('find node x==463 & y==100',model);
@@ -972,15 +959,15 @@ elnd([2:4])+.21);
 sens=fe_case(mo1,'sens');
 
 d1=fe_simul('dfrf',stack_set(mo1,'info','Freq',0)); % direct refer frf at 0Hz
-d1t=sens.cta(1,:)*d1.def; % Extract tip displ
+d1t=sens.cta(1,:)*d1.def % Extract tip displ
 feplot(mo1,d1);
 fecom('colordatapro'); fecom('view3');
-
 %% Step 4 : use local remeshing element size is 7 mm
  model=feutil('objectquad 1 1',[0 0 0;1 0 0;0 1 0], ...
     feutil('refineline 7',[0 463]), ...
     feutil('refineline 7',[0 100]));
      model.unit='mm';
+         
 % Material Properties
 model.pl=m_elastic('dbval 1 Aluminum');
 % Laminate properties
@@ -1002,7 +989,7 @@ RG.list={'Name','Lam','shape'
 mo2=d_piezo('MeshPlate',RG);
 mo2=stack_rm(mo2,'info','Electrodes'); % Obsolete stack field to be removed
 % To avoid warning due to the use of simplified piezo properties.
-mo2=p_piezo('DToSimple',mo2)
+mo2=p_piezo('DToSimple',mo2);
 
 nd=feutil('find node x==463 & y==100',model);
 elnd=floor(p_piezo('electrodedof.*',mo2)); % Nodes associated to electrodes
@@ -1057,7 +1044,7 @@ RG.list={'Name','Lam','shape'
 mo2=d_piezo('MeshPlate',RG);
 mo2=stack_rm(mo2,'info','Electrodes'); % Obsolete stack field to be removed
 % To avoid warning due to the use of simplified piezo properties.
-mo2=p_piezo('DToSimple',mo2)
+mo2=p_piezo('DToSimple',mo2);
 
 nd=feutil('find node x==463 & y==100',model);
 elnd=floor(p_piezo('electrodedof.*',mo2)); % Nodes associated to electrodes
@@ -1097,7 +1084,6 @@ model.pl=m_elastic('dbval 1 Aluminum');
 model.il=p_shell('dbval 1 -punit mm laminate 1 1.2 0') % this is to specify in mm
 
 model=fe_case(model,'FixDof','Cantilever','x==0 -DOF 1:6');
-
 RG.list={'Name','Lam','shape'
    'Main_plate', model,''  % Base structure
    'Act1', ... % name of patch
@@ -1106,7 +1092,6 @@ RG.list={'Name','Lam','shape'
    'Act2', ... % name of patch
    'BaseId1 -Disk.Sonox_P502_iso.RC10TH0_25 +Disk.Sonox_P502_iso.RC10TH0_25', ...
    struct('shape','lscirc','xc',15+55/2,'yc',63+25/2)};
-
 %
 mo3=d_piezo('MeshPlate',RG);
 mo3=stack_rm(mo3,'info','Electrodes'); 
@@ -1114,7 +1099,7 @@ mo3=stack_rm(mo3,'info','Electrodes');
 mo3.pl([3 5 7 9],7)=0; 
 % Set damping to zero in Noliac otherwise complex static response
 % To avoid warning due to the use of simplified piezo properties.
-mo3=p_piezo('DToSimple',mo3)
+mo3=p_piezo('DToSimple',mo3);
 
 nd=feutil('find node x==463 & y==100',model);
 elnd=floor(p_piezo('electrodedof.*',mo3)); % Nodes associated to electrodes
@@ -1139,7 +1124,6 @@ fecom(';colordatapro;view3;undef line')
 d_piezo('setstyle',cf);
 iimouse('view',gca,[ -1499 -1955 1462 -248.6 -325.7 ...
  275.9 0.30 0.40 0.87 2.20]); % obtained with iimouse('cv')
-
 %% Step 7 : Check convergence
 
 ref=[5 3 2];
@@ -1173,7 +1157,7 @@ mo3=stack_rm(mo3,'info','Electrodes');
 mo3.pl([3 5 7 9],7)=0; 
 % Set damping to zero in Noliac otherwise complex static response
 % To avoid warning due to the use of simplified piezo properties.
-mo3=p_piezo('DToSimple',mo3)
+mo3=p_piezo('DToSimple',mo3);
 
 nd=feutil('find node x==463 & y==100',model);
 elnd=floor(p_piezo('electrodedof.*',mo3)); % Nodes associated to electrodes
@@ -1234,7 +1218,6 @@ RG.list={'Name','Lam','shape'
      struct('shape','LsRect', ... % Remeshing strategy (lsutil rect here)
        'xc',RO.c+RO.a/2,'yc',RO.d+RO.b/2,'alpha',0,'tolE',.1)
        };
-
 mo1=d_piezo('MeshPlate',RG); 
 cf=feplot(mo1); fecom(';colordatapro;view3');
 cf.mdl.name='MFC plate mesh'; % Model name for title
