@@ -1837,6 +1837,7 @@ C0=struct;st1=cell(0,3);
 RO.projM=projM; 
 
 RO.getDep=@getAmp;
+% d_signal('nmap.xvec') gives the types 
 [C0,st2,st1,RO]=cdm.xvec(Time,[RO.Failed;{'WAng(t)'}],RO);% Vectors and dependencies
 if isfield(C0,'Time')
  t=double(C0.Time);ind=find(diff(t)>diff(t(1:2))*3); 
@@ -1848,6 +1849,7 @@ if isscalar(fieldnames(C0));return;end
 st1(end,:)=[]; st1(1,end+1:4)={''};RO.list=st1; RO.Linked={};
 
 for j1=1:size(RO.list,1)
+  %% Loop on desired plots 
   st2=sprintf('%s(%s,%s)',RO.list{j1,1:3});st2=strrep(st2,',)',')');
   iTyp=strcmpi(st2,RO.typ(:,1)); 
   if strcmp(st2,'()'); continue;
@@ -1947,6 +1949,9 @@ for j1=1:size(RO.list,1)
    RO.list{j1}='';iimouse('on');
 end
 if ~isempty(RO.Linked)
+  RO.Linked(~cellfun(@(x)sdtm.isValid(x.ga),RO.Linked))=[];
+end
+if length(RO.Linked)>1
   gf=cellfun(@(x)x.ga.Parent,RO.Linked);
   RO.Linked{1}.gfl=gf;
   listen={};listen{1}=addlistener(RO.Linked{1}.ga,'XLim','PostSet',@cdm.parPlot);
@@ -3502,6 +3507,8 @@ ax=cdm.plotys({C0.Time,C0.RPM,C0.Time,C0.Pressure,C0.Time,C0.TempPad},RP);
    Time.meta=sdth.sfield('addmissing',sdtm.toStruct(st3(:,[1 4])),Time.meta);
    Time.meta=sdtm.rmfield(Time.meta,{'SplitList','info','timeMeta','ci'});
    Time.meta.fs=round(1/dt); Time.meta.decimate=round(Time.meta.fs/1000);
+   if strcmpi(Time.meta.Name,'curimportmeta'); Time.meta.Name=Time.name;
+   end
    title(ax(1),sprintf('%s %s RPM %s Bar',Time.meta.Name,Time.meta.RPM,Time.meta.Pressure))
    set(findobj(ax,'type','line'),'linewidth',2)
    out=Time; 
