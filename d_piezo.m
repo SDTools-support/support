@@ -1991,7 +1991,7 @@ d_piezo('SetPlotwd');
 % See full example as MATLAB code in d_piezo('ScriptTutoPzPatchNumIDE')
 d_piezo('DefineStyles');
 
-%% Step 1 - Build mesh
+%% Step 1 - Build mesh and compute static response
 % Meshing script can be viewed with sdtweb d_piezo('MeshIDEPatch')
 % Build mesh, electrodes and actuation
 model=d_piezo(['MeshIDEPatch nx=10 ny=5 nz=14 lx=400e-6' ...
@@ -2001,7 +2001,7 @@ model.Node(:,5:7)=model.Node(:,5:7)*1000; % From m to mm
 model.unit='mm';
 % Convert material properties
 model.pl = fe_mat('convert SI mm',model.pl);
-%% Step 2 - Compute response due to V and visualize
+% Compute response due to V and visualize
 model=fe_case(model,'pcond','Piezo','d_piezo(''Pcond'')');
 % low freq response to avoid rigid body modes
 model=stack_set(model,'info','Freq',10);
@@ -2010,14 +2010,14 @@ def=fe_simul('dfrf',model);
 cf=feplot(model,def); fecom('view3'); fecom('viewy-90'); fecom('viewz+90')
 fecom('undef line'); fecom('triax') ; iimouse('zoom reset')
 cf.mdl.name='patch_IDE_deformed';d_piezo('SetStyle',cf); feplot(cf);
-%% Step 3 - visualize electric field
+%% Step 2 - visualize electric field
 cf.sel(1)={'groupall','colorface none -facealpha0 -edgealpha.1'};
 p_piezo('viewElec EltSel "matid1" DefLen 50e-3 reset',cf);
 fecom('scd 1e-10')
 p_piezo('electrodeview -fw',cf); % to see the electrodes on the mesh
 iimouse('zoom reset')
 cf.mdl.name='patch_IDE_EField';d_piezo('SetStyle',cf); feplot(cf);
-%% Step 4 - Compare effective values of constitutive law
+%% Step 3 - Compare effective values of constitutive law
 % Decompose constitutive law
 CC=p_piezo('viewdd -struct',cf); %
 % Compute mean value of fields and deduce equivalent d_ij
@@ -2027,7 +2027,7 @@ fprintf('Relation between mean strain on free structure and d_3i\n');
 E3=a.Y(9,1); disp({'E3 mean' a.Y(9,1) -1/700e-3 'E3 analytic'})
 disp([{'Sx/E3';'Sy/E3';'Sz/E3'} num2cell([a.Y(1:3,1)/E3 CC.d(3,1:3)']) ...
 {'d_31(mm/muV)';'d_32(mm/muV)';'d_33(mm/muV)'}])
-%% Step 5 - Charge visualisation and total on electrodes
+%% Step 4 - Charge visualisation and capacitance
 p_piezo('electrodeTotal',cf)
 % charge density on the electrodes
 feplot(model,def);
@@ -2035,13 +2035,13 @@ cut=p_piezo('electrodeviewcharge',cf,struct('EltSel','matid 1'));
 fecom('view3'); fecom('viewy-90'); fecom('viewz+90'); iimouse('zoom reset');
 iimouse('trans2d 0 0 0 1.6 1.6 1.6')
 cf.mdl.name='patch_IDE_charge_elec';d_piezo('SetStyle',cf); feplot(cf);
-%% Step 6 - Theoretical capacitance for uniform field
+% - Theoretical capacitance for uniform field
 Ct=model.pl(1,22)*400e-3*300e-3/700e-3;
 % total charge on the electrodes = capacitance (1 muV actuation)
 C=p_piezo('electrodeTotal',cf);
 % Differences are due to non-uniform field, this is to be expected
 disp({'C_{IDE}' cell2mat(C(2,2)) Ct 'C analytic'})
-%% Step 7 - Stress  visualisation
+%% Step 5 - Stress and strain  visualisation
 % Stress field using fe_stress
 c1=fe_stress('stressAtInteg -gstate',model,def);
 cf.sel='reset';cf.def=fe_stress('expand',model,c1);
@@ -2049,7 +2049,7 @@ cf.def.lab={'T11';'T22';'T33';'T23';'T13';'T12';'D1';'D2';'D3'}; %
 fecom('colordata 99 -edgealpha.1');
 fecom('colorbar',d_imw('get','CbTR','String','Stress/Voltage [kPa/muV]'));
 iimouse('trans2d 0 0 0 1.6 1.6 1.6')
-%% Step 8 - Strain  visualisation
+%- Strain  visualisation
 % Replace with 'PiezoStrain' material
 mo2=model; mo2.pl=m_piezo('dbval 1 PiezoStrain')
 % Now represent strain fields using fe_stress
@@ -2147,6 +2147,7 @@ out=struct('X',{{rho0,{'E_T','E_L','nu_{LT}','G_{LT}','G_{Tz}','G_{Lz}', ...
     'e_{31}','e_{32}','d_{31}','d_{32}','epsilon_{33}^T'}'}},'Xlab',...
     {{'\rho','Component'}},'Y',[E1' E2' nu21' G12' G13' G23' e32' e31' ...
     d32' d31' eps33t'/8.854e-12]);
+
 ci=iiplot; iicom('CurveReset');
 iicom(ci,'CurveInit','P2-MFC homogenization',out);
 d_piezo('setstyle',ci);
@@ -2261,7 +2262,7 @@ d_piezo('DefineStyles');
 % Meshing script,open with sdtweb d_piezo('MeshMFCplate')
 model=d_piezo('MeshMFCplate -cantilever');  % creates the model
 cf=feplot(model); fecom('colordatagroup-EdgeAlpha.1');
-%% Step 2 - Define actuators and sensors
+%- Define actuators and sensors
 r1=p_piezo('electrodedof',model);
 data.def=[1 -1;1 1]'; % Define combinations for actuators
 data.lab={'V-bend';'V-Tract'};
@@ -2276,12 +2277,12 @@ nd2=feutil('find node x==463 & y==0',model);
 model=fe_case(model,'SensDof','Tipt-z',nd1+.03); % Z-disp
 model=fe_case(model,'SensDof','Tip-x',nd1+.01); % X-disp
 model=fe_case(model,'SensDof','Tipb-z',nd2+.03); % Z-disp
-%% Step 3 - Compute static response
+%- Compute static response
 d0=fe_simul('dfrf',stack_set(model,'info','Freq',0)); %
 cf=feplot(model,d0); sens=fe_case(model,'sens');
 C1=fe_case('SensObserve -dim 2 3 1',sens,d0);
-fecom(';view3;scd 20;colordataEvalA -edgealpha.1;undefline')
-%% Step 4 - Rotate fibers
+fecom(';view3;scd 20;colordataEvalA;undefline')
+%% Step 2 - Rotate fibers
 model.il(2,[20 44])=[45 -45];
 d1=fe_simul('dfrf',stack_set(model,'info','Freq',0)); % static response
 cf.def=d1; fecom('scd 10');  C2=fe_case('SensObserve - dim 2 3 1',sens,d1);
@@ -2305,17 +2306,17 @@ d_piezo('DefineStyles');
 % --- requires gmsh
 model=d_piezo('MeshTrianglePlate');
 cf=feplot(model); fecom('colordatapro'); fecom('view2')
-%% Step 2 - Define actuators and sensors
+%% Step 2 - Define actuators and sensors - static response
 model=fe_case(model,'SensDof','Tip',7.03); % Displ sensor
 model=fe_case(model,'DofSet','V-Act', ...
   struct('def',[-1; 1],'DOF',[100001; 100002]+.21));
-%% Step 3 - Compute static response to voltage actuation
+% - Compute static response to voltage actuation
 d0=fe_simul('dfrf',stack_set(model,'info','Freq',0));
 cf.def=d0; fecom('colordataz -alpha .8 -edgealpha .1')
 fecom('scd -.03'); fecom('view3');
-%% Step 4 - Compute dynamic response with state-space model
+%% Step 3 - Compute dynamic response with state-space model
 [sys,TR]=fe2ss('free 5 20 0 -dterm',model);
-C1=qbode(sys,linspace(0,500,1000)'*2*pi,'struct'); C1.name='.';
+C1=qbode(sys,linspace(0,500,500)'*2*pi,'struct-lab'); C1.name='SS20modes';
 
 %% Point load actuation
 model=fe_case(model,'Remove','V-Act'); % remove piezo actuator
@@ -2339,11 +2340,10 @@ ind=fe_c(d1.DOF,7.03,'ind'); d1p=d1.def(ind);
 
 % Dynamic response (reduced modal model)
 [sys,TR]=fe2ss('free 5 20 0 -dterm',model);
-C2=qbode(sys,linspace(0,500,1000)'*2*pi,'struct'); C2.name='-';
+C2=qbode(sys,linspace(0,500,1000)'*2*pi,'struct-lab'); C2.name='SS20modes';
 % Compare frequency responses
 ci=iiplot;
-C1.X{2}={'dtip'}; C1.X{3}={'Vin'}; C1.name='RESP';
-C2.X{2}={'dtip'}; C2.X{3}={'Ftip'}; C2.name='RESP';
+C1.X{2}={'dtip'}; C2.X{2}={'dtip'}; 
 iicom(ci,'curveinit',{'curve',C1.name,C1;'curve',C2.name,C2});
 iicom('submagpha'); d_piezo('setstyle',ci)
 % End of script
