@@ -1277,18 +1277,17 @@ end
 out1=cta*U; out2=cta*(T*Ur);
 
 % Change output format to be compatible with iicom
-C1=d_piezo('BuildC1',w'/(2*pi),out1','d-top','F-top'); C1.name='Full';
-C2=d_piezo('BuildC1',w'/(2*pi),out2','d-top','F-top'); C2.name='3md';
-ci=iiplot;iicom(ci,'curveinit',{'curve',C1.name,C1;'curve',C2.name,C2}); 
+C0m=d_piezo('BuildC1',w'/(2*pi),out1.','d-top','F-top'); C0m.name='Full';
+C1m=d_piezo('BuildC1',w'/(2*pi),out2.','d-top','F-top'); C1m.name='3md';
+ci=iiplot;iicom(ci,'curveinit',{'curve',C0m.name,C0m;'curve',C1m.name,C1m}); 
 iicom('submagpha')
 d_piezo('setstyle',ci); set(gca,'XLim',[0 10])
 %% Step 3 - Compute with fe_simul Full/3md
 
 % Full model response
-d0=fe_simul('dfrf',stack_set(model,'info','Freq',w/(2*pi))); % Dynamic response
-sens=fe_case(model,'sens'); 
-% to build observation matrix taking into account TR
-out0=sens.cta*d0.def;
+C0=fe_simul('dfrf -sens',stack_set(model,'info','Freq',w/(2*pi)));
+% -sens option projects result on sensors only
+C0.name='Full'; C0.X{2}={'d-top'}; C1.X{3}={'F-top'};
 
 % With reduced basis 3 modes
 model = stack_set(model,'info','EigOpt',[5 3 0]); % To keep 3 modes
@@ -1304,14 +1303,9 @@ mo1=fe_case(mo1,'SensDOF','Output',21.01);
 mo1=fe_case(mo1,'DofLoad','Input',21+.01,1);
 
 % Compute response with fe_simul 
-d1=fe_simul('dfrf',stack_set(mo1,'info','Freq',w/(2*pi))); % Dynamic response
-%Project on sensors and represent
-sens=fe_case(mo1,'sensSE'); 
-% to build observation matrix taking into account TR
-out1=sens.cta*d1.def;
-C1=d_piezo('BuildC1',w'/(2*pi),out0','d-top','F-top'); C1.name='Full';
-C2=d_piezo('BuildC1',w'/(2*pi),out1','d-top','F-top'); C2.name='3md-SE';
-ci=iiplot;iicom(ci,'curveinit',{'curve',C1.name,C1;'curve',C2.name,C2}); 
+C1=fe_simul('dfrf -sens',stack_set(mo1,'info','Freq',w/(2*pi))); 
+C1.name='3md+SE'; C1.X{2}={'d-top'};
+ci=iiplot;iicom(ci,'curveinit',{'curve',C0.name,C0;'curve',C1.name,C1}); 
 iicom('submagpha')
 d_piezo('setstyle',ci);
 set(gca,'XLim',[0 10])
@@ -1330,30 +1324,19 @@ end
 
 out3=cta*(T*Ur2);
 
-C3=d_piezo('BuildC1',w'/(2*pi),out3','d-top','F-top'); C3.name='3md+Stat';
-iicom(ci,'curveinit',{'curve',C1.name,C1;'curve',C3.name,C3}); 
+C2m=d_piezo('BuildC1',w'/(2*pi),out3.','d-top','F-top'); C2m.name='3md+Stat';
+iicom(ci,'curveinit',{'curve',C0m.name,C0m;'curve',C2m.name,C2m}); 
 iicom('submagpha'); d_piezo('setstyle',ci);
 %% Step 5 with fe_simul
-
 model=d_piezo('meshtower');
 model = stack_set(model,'info','EigOpt',[5 3 0]); % To keep 3 modes
-% Build super-element with 3 modes and static correction
-SE1=fe_reduc('free -SE -matdes 2 1 3 4',model); 
 
-% Make model with a single super-element
-SE0 = struct('Node',[],'Elt',[]);
-mo1 = fesuper('SEAdd 1 -1 -unique -initcoef -newID se1',SE0,SE1) ;
-
-% Define input/output
-mo1=fe_case(mo1,'SensDOF','Output',21.01);
-mo1=fe_case(mo1,'DofLoad','Input',21+.01,1);
-
+% Reduce model with 3 modes and static correction
+mo1=fe_reduc('free -matdes -SE 2 1 3 4 -bset',model); 
 % Compute response with fe_simul and represent
-d1=fe_simul('dfrf',stack_set(mo1,'info','Freq',w/(2*pi))); % Dynamic response
-sens=fe_case(mo1,'sensSE'); % to build observation matrix taking into account TR
-out1=sens.cta*d1.def;
-C2=d_piezo('BuildC1',w'/(2*pi),out1','d-top','F-top'); C2.name='3md+Stat-SE';
-ci=iiplot;iicom(ci,'curveinit',{'curve',C1.name,C1;'curve',C2.name,C2}); 
+C2=fe_simul('dfrf -sens',stack_set(mo1,'info','Freq',w/(2*pi))); % 
+C2.name='3md+Stat-SE'; C2.X{2}={'d-top'};
+ci=iiplot;iicom(ci,'curveinit',{'curve',C0.name,C0;'curve',C2.name,C2}); 
 iicom('submagpha'); d_piezo('setstyle',ci);
 % End of script
 
@@ -2375,13 +2358,14 @@ model=p_piezo('ElectrodeMPC Top sensor -matid 2 -vout',model,'z==0.004');
 % -ground generates a v=0 FixDof case entry
 model=p_piezo('ElectrodeMPC Bottom sensor -ground',model,'z==0.003');
 % Add a displacement sensor for the basis
-model=fe_case(model,'SensDof','Base-displ',1.03);
+%model=fe_case(model,'SensDof','Base-displ',1.03);
 % Add an acceleration sensor for the basis
-% model = fe_case(model,'SensDOF','Sensors',{'1:z';'1:vz';'1:az'});
+ model = fe_case(model,'SensDOF','Sensors',{'1:az'});
 % XXXEB I need an acceleration sensor on the basis but this is not working.
 %% Step 3 - Response with imposed displacement
-% Remove the charge sensor (not needed)
+% Remove the charge and displ sensor (not needed)
 model=fe_case(model,'remove','Q-Top sensor');
+model=fe_case(model,'remove','Base-displ');
 
 % Link dofs of base and impose unit vertical displacement
 n1=feutil('getnode z==0',model);
@@ -2396,7 +2380,7 @@ model=stack_set(model,'info','Freq',f); % freq. for computation
  % Reduced ss-model
 [sys,TR1]=fe2ss('free 5 10 0 -dterm',model,5e-3); %
 
-C1=qbode(sys,f(:)*2*pi,'struct');C1.name='SS-voltage';
+C1=qbode(sys,f(:)*2*pi,'struct-lab');C1.name='SS-voltage';
 C1.X{3}={'Uimp'}; % input
 C1.X{2}={'Sensor output(V)';'Base Acc(m/s^2)';'Sensitivity (V/m/s^2)'}; %outputs
 
@@ -2464,7 +2448,7 @@ d_piezo('DefineStyles');
 model=d_piezo('MeshPiezoShaker');
 cf=feplot(model); fecom('colordatapro');
 set(gca,'cameraposition',[-0.0604   -0.0787    0.0139])
-iimouse('resetview'); %fecom(cf,'imwrite',RO)
+iimouse('resetview'); 
 cf.mdl.name='Acc_Shaker_Mesh'; % Model name for title
 d_piezo('SetStyle',cf); feplot(cf);
 %% Step 2 - Define actuators and sensors
@@ -2474,26 +2458,26 @@ model=p_piezo('ElectrodeMPC Top Actuator -input "Vin-Shaker"',model,'z==-0.01');
 model=p_piezo('ElectrodeMPC Bottom Actuator -ground',model,'z==-0.012');
 % Voltage sensor will be used - remove charge sensor
 model=fe_case(model,'remove','Q-Top sensor');
-% Frequencies for computation
+
+% Replace by an acceleration sensor for the basis
+model=fe_case(model,'remove','Base-displ');
+model = fe_case(model,'SensDOF','Accel',{'1:az'});
+%% Step 3 - Compute response, voltage input on shaker
 f=linspace(1e3,2e5,200)';
 model=stack_set(model,'info','Freq',f);
 
-%% Step 3 - Compute response, voltage input on shaker
 % Reduced ss-model
 model=fe_case(model,'pcond','Piezo','d_piezo(''Pcond'')');
 [sys,TR1]=fe2ss('free 5 45 0 -dterm ',model,1e-3); %
 
-C1=qbode(sys,f(:)*2*pi,'struct');C1.name='SS-voltage';
-C1.X{3}={'Vin-Shaker'}; % input
+C1=qbode(sys,f(:)*2*pi,'struct-lab');C1.name='SS-voltage';
 C1.X{2}={'Sensor output(V)';'Base Acc(m/s^2)';'Sensitivity (V/m/s^2)'}; %outputs
 
-% C1 compute accel and sensitivity
- C1.Y(:,2)=C1.Y(:,2).*(-(C1.X{1}*2*pi).^2); % Base acc
- C1.Y(:,3)=C1.Y(:,1)./C1.Y(:,2);% Sensitivity
+% Compute sensitivity
+C1.Y(:,3)=C1.Y(:,1)./C1.Y(:,2);% Sensitivity
  
-
- ci=iiplot; iicom(ci,'curveinit',{'curve',C1.name,C1});  iicom('ch3');
- d_piezo('setstyle',ci)
+ci=iiplot; iicom(ci,'curveinit',{'curve',C1.name,C1});  iicom('ch3');
+d_piezo('setstyle',ci)
 
 %% EndSource EndTuto
 
