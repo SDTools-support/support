@@ -1239,7 +1239,8 @@ d_piezo('DefineStyles');
 
 %% Step 1 : Build the model and define actuator and sensor
 model=d_piezo('MeshTower');
-%% Step 2 : Build Reduced basis 1 : 3 modes
+%% Step 2 : Build Reduced basis (3 modes) and compute TF
+
 % M and K matrices have been built with fe_mknl in d_piezo('MeshTower')
 M=model.K{1}; K=model.K{2};
 % Excitation
@@ -1258,41 +1259,40 @@ def.def=Case.T'*def.def; def.DOF=Case.T'*def.DOF;
 % Build reduced basis on three modes
 T=def.def(:,1:3);
 
-%% Step 3 : Reduce matrices and compute response - explicit computation
+% Reduce matrices and compute response - explicit computation
 Kr=T'*K*T; Mr=T'*M*T; br=T'*b;
 
 % Define frequency vector for computations
-w=linspace(0,30*2*pi,2048);% Extended frequency range
+w=linspace(0,30*2*pi,512);% Extended frequency range
 
 % Solution with full and reduced matrices - explicit computation
 % Use loss factor =0.02 = default for SDT (1% modal damping)
 for i1=1:length(w)
     U(:,i1)=(K*(1+0.02*1i)-w(i1)^2*M)\b; 
     %Default loss factor is 0.02 in SDT
-    Ur(:,i1)=(Kr*(1+0.02*1i)-w(i1)^2*Mr)\br;
+    Ur(:,i1)=(Kr*(1+0.02*1i)-w(i1)^2*Mr)\br; %Reduced basis
 end
 
-%% Step 4 : Extract response on sensor and visualize in iicom
+% Extract response on sensor and visualize in iicom
 out1=cta*U; out2=cta*(T*Ur);
 
 % Change output format to be compatible with iicom
-C1=d_piezo('BuildC1',w'/(2*pi),out1','d-top','F-top'); C1.name='Full';
-C2=d_piezo('BuildC1',w'/(2*pi),out2','d-top','F-top'); C2.name='3md';
-ci=iiplot;iicom(ci,'curveinit',{'curve',C1.name,C1;'curve',C2.name,C2}); 
+C0m=d_piezo('BuildC1',w'/(2*pi),out1.','d-top','F-top'); C0m.name='Full';
+C1m=d_piezo('BuildC1',w'/(2*pi),out2.','d-top','F-top'); C1m.name='3md';
+ci=iiplot;iicom(ci,'curveinit',{'curve',C0m.name,C0m;'curve',C1m.name,C1m}); 
 iicom('submagpha')
 d_piezo('setstyle',ci); set(gca,'XLim',[0 10])
-%% Step 5 - Compute with fe_simul Full/3md
+%% Step 3 - Compute with fe_simul Full/3md
 
 % Full model response
-d0=fe_simul('dfrf',stack_set(model,'info','Freq',w/(2*pi))); % Dynamic response
-sens=fe_case(model,'sens'); 
-% to build observation matrix taking into account TR
-out0=sens.cta*d0.def;
+C0=fe_simul('dfrf -sens',stack_set(model,'info','Freq',w/(2*pi)));
+% -sens option projects result on sensors only
+C0.name='Full'; C0.X{2}={'d-top'}; C1.X{3}={'F-top'};
 
 % With reduced basis 3 modes
 model = stack_set(model,'info','EigOpt',[5 3 0]); % To keep 3 modes
-SE1=fe_reduc('call d_piezo@modal -matdes 2 1 3 4',model); 
 % Build super-element with 3 modes
+SE1=fe_reduc('call d_piezo@modal -matdes 2 1 3 4',model); 
 
 % Make model with a single super-element
 SE0 = struct('Node',[],'Elt',[]);
@@ -1302,21 +1302,17 @@ mo1 = fesuper('SEAdd 1 -1 -unique -initcoef -newID se1',SE0,SE1) ;
 mo1=fe_case(mo1,'SensDOF','Output',21.01);
 mo1=fe_case(mo1,'DofLoad','Input',21+.01,1);
 
-% Compute response with fe_simul and represent
-d1=fe_simul('dfrf',stack_set(mo1,'info','Freq',w/(2*pi))); % Dynamic response
-sens=fe_case(mo1,'sensSE'); 
-% to build observation matrix taking into account TR
-out1=sens.cta*d1.def;
-C1=d_piezo('BuildC1',w'/(2*pi),out0','d-top','F-top'); C1.name='Full';
-C2=d_piezo('BuildC1',w'/(2*pi),out1','d-top','F-top'); C2.name='3md-SE';
-ci=iiplot;iicom(ci,'curveinit',{'curve',C1.name,C1;'curve',C2.name,C2}); 
+% Compute response with fe_simul 
+C1=fe_simul('dfrf -sens',stack_set(mo1,'info','Freq',w/(2*pi))); 
+C1.name='3md+SE'; C1.X{2}={'d-top'};
+ci=iiplot;iicom(ci,'curveinit',{'curve',C0.name,C0;'curve',C1.name,C1}); 
 iicom('submagpha')
 d_piezo('setstyle',ci);
 set(gca,'XLim',[0 10])
-%% Step 6 : Reduced basis 2 : 3 modes + static corr - explicit 
+%% Step 4 : Reduced basis 2 : 3 modes + static corr - explicit 
 
 Tstat=K\b;
-T=fe_norm([def.def(:,1:3) Tstat],M,K); % 3 is a traction mode
+T=fe_norm([def.def(:,1:3) Tstat],M,K); % Orthonormalize vectors
 
 % Reduced matrices
 Kr=T'*K*T; Mr=T'*M*T; br=T'*b;
@@ -1328,36 +1324,19 @@ end
 
 out3=cta*(T*Ur2);
 
-C3=d_piezo('BuildC1',w'/(2*pi),out3','d-top','F-top'); C3.name='3md+Stat';
-iicom(ci,'curveinit',{'curve',C1.name,C1;'curve',C3.name,C3}); 
+C2m=d_piezo('BuildC1',w'/(2*pi),out3.','d-top','F-top'); C2m.name='3md+Stat';
+iicom(ci,'curveinit',{'curve',C0m.name,C0m;'curve',C2m.name,C2m}); 
 iicom('submagpha'); d_piezo('setstyle',ci);
-%% Step 7 with fe_simul
+%% Step 5 with fe_simul
 model=d_piezo('meshtower');
-
-% Full model response
-d0=fe_simul('dfrf',stack_set(model,'info','Freq',w/(2*pi))); % Dynamic response
-sens=fe_case(model,'sens'); % to build observation matrix taking into account TR
-out0=sens.cta*d0.def;
-
 model = stack_set(model,'info','EigOpt',[5 3 0]); % To keep 3 modes
-SE1=fe_reduc('free -SE -matdes 2 1 3 4',model); 
-% Build super-element with 3 modes and static correction
 
-% Make model with a single super-element
-SE0 = struct('Node',[],'Elt',[]);
-mo1 = fesuper('SEAdd 1 -1 -unique -initcoef -newID se1',SE0,SE1) ;
-
-% Define input/output
-mo1=fe_case(mo1,'SensDOF','Output',21.01);
-mo1=fe_case(mo1,'DofLoad','Input',21+.01,1);
-
+% Reduce model with 3 modes and static correction
+mo1=fe_reduc('free -matdes -SE 2 1 3 4 -bset',model); 
 % Compute response with fe_simul and represent
-d1=fe_simul('dfrf',stack_set(mo1,'info','Freq',w/(2*pi))); % Dynamic response
-sens=fe_case(mo1,'sensSE'); % to build observation matrix taking into account TR
-out1=sens.cta*d1.def;
-C1=d_piezo('BuildC1',w'/(2*pi),out0','d-top','F-top'); C1.name='Full';
-C2=d_piezo('BuildC1',w'/(2*pi),out1','d-top','F-top'); C2.name='3md+Stat-SE';
-ci=iiplot;iicom(ci,'curveinit',{'curve',C1.name,C1;'curve',C2.name,C2}); 
+C2=fe_simul('dfrf -sens',stack_set(mo1,'info','Freq',w/(2*pi))); % 
+C2.name='3md+Stat-SE'; C2.X{2}={'d-top'};
+ci=iiplot;iicom(ci,'curveinit',{'curve',C0.name,C0;'curve',C2.name,C2}); 
 iicom('submagpha'); d_piezo('setstyle',ci);
 % End of script
 
@@ -1381,10 +1360,10 @@ model=d_piezo('MeshTower');
 [sys,TR] = fe2ss('free 5 3 0 -dterm',model);
 [sys2,TR2] = fe2ss('free 5 3 0 ',model);
 
-w=linspace(0,30*2*pi,2048);% Extended frequency range
+w=linspace(0,30*2*pi,512);% Frequency range
 % Convert to curve object and rebel X (fe2ss uses dofs and not sens/act names)
-C1=qbode(sys,w,'struct');C1.name='SS-dterm'; C1.X{2}={'d-top'}; C1.X{3}={'F-top'};
-C2=qbode(sys2,w,'struct');C2.name='SS-mode';  C2.X{2}={'d-top'}; C2.X{3}={'F-top'};
+C1=qbode(sys,w,'struct-lab');C1.name='SS-dterm'; C1.X{2}={'d-top'}; 
+C2=qbode(sys2,w,'struct-lab');C2.name='SS-mode'; C2.X{2}={'d-top'}; 
 ci=iiplot;
 iicom(ci,'curveinit',{'curve',C1.name,C1;'curve',C2.name,C2}); iicom('submagpha')
 d_piezo('setstyle',ci);
@@ -1409,9 +1388,7 @@ model=d_piezo('MeshTower');
 model=d_avc('meshtower');
 model=fe_case(model,'FixDof','Clamped',[1.06]); % Leave x free for imposed displ
 model=fe_case(model,'Remove','F-top'); % Remove point force
-model=fe_case(model,'DOFSet','UImp',[1.01]); % Imposed horizontal displ
-
-
+model=fe_case(model,'DOFSet','Uimp',[1.01]); % Imposed horizontal displ
 %% Step 2 : Reference method - exact solution + Inertial term neglected - full model
 % Build matrices
 [model,Case] = fe_case('assemble NoT -matdes 2 1 Case -SE',model) ;
@@ -1422,7 +1399,7 @@ F1 = -Case.T'*model.K{2}*Case.TIn; % Loading due to imposed displacement
 F2 = -Case.T'*model.K{1}*Case.TIn; % Inertial term
 %
 % compute response in freq domain
-w=logspace(-2,2,2048);
+w=linspace(0,100,512);
 for i=1:length(w)
     U0(:,i)=Case.T*((K0{2}*(1+0.02*1i)-w(i)^2*K0{1})\(F1-w(i)^2*F2)); 
     % Take into account mass term
@@ -1458,19 +1435,18 @@ model=d_piezo('MeshTower');
 model=fe_case(model,'FixDof','Clamped',[1.06]); % Leave x free for imposed displ
 model=fe_case(model,'Remove','F-top'); % Remove point force
 model=fe_case(model,'DOFSet','UImp',[1.01]); % Set an imposed displacement
-
 %% Step 2 : Regular method with RHS M*Tin (relative displacement)
-
 % --------- full model
 [model,Case] = fe_case('assemble NoT -matdes 2 1 Case -SE',model) ;
 
 K0 = feutilb('tkt',Case.T,model.K); % Assemble matrices taking into account BCs
 TIn=fe_simul('static',model); TIn=TIn.def; 
+
 % Compute TIn as static response to imposed displacement
 F = -Case.T'*model.K{1}*TIn; % Loading due to imposed displacement
 
 % compute response in freq domain (relative displacement)
-w=logspace(-2,2,2048);
+w=linspace(1,100,512);
 for i=1:length(w)
     U0r(:,i)=Case.T*((K0{2}*(1+0.02*1i)-w(i)^2*K0{1})\F);
 end
@@ -1493,27 +1469,24 @@ model2=fe_case(model2,'Remove','F-top'); % Remove point force
 
 [model2,Case2] = fe_case('assemble NoT -matdes 2 1 Case -SE',model2) ;
 
-SET.DOF=model2.DOF; SET.def=Case2.T*F;
-model2=fe_case(model2,'DofLoad','AccImp',SET); % 
+SET.DOF=model2.DOF; SET.def=Case2.T*F; % Load when using relative displacements
+model2=fe_case(model2,'DofLoad','Aimp',SET); % 
 
 sysr=fe2ss('free 5 5 0 -dterm',model2);
-sysr.InputName={'Aimp'};sysr.OutputName={'dr-top'};
-C2=d_piezo('BuildC1',sysr(1,1),w); C2.name='fe2ss 5md+st';
-
+C2=qbode(sysr,w,'struct-lab');C2.name='fe2ss-5md+st'; C2.X{2}={'dr-top'}; 
 ci=iiplot;iicom(ci,'curveinit',{'curve',C1.name,C1;'curve',C2.name,C2}); 
-iicom('submagpha');d_piezo('setstyle',ci); 
-%% Step 4 : state-space model for absolute displacements
+iicom('submagpha')
+d_piezo('setstyle',ci);
+%% Step 4 : state-space model for absolute displacements - Aimp
+
 TR2 = fe2ss('craigbampton 5 5 -basis',model); 
 % This is a CB basis which is renormalized (so free BCs and rigid body mode)
 % TR2.data is needed for nor2ss hence the normalization.
+
 KCB    = feutilb('tkt',TR2.def,model.K);
 sysu= nor2ss(TR2,model) ;
-sysu.InputName={'Aimp'};sysu.OutputName={'d-top'};
-
-%C3=qbode(sysu,w,'struct');C3.name='fereduc+nor2ss'; 
-C3.X{2}={'d-top'}; C3.X{3}={'Aimp'};
-
-C3=d_piezo('BuildC1',sysu(1,1),w); C3.name='fereduc+nor2ss';
+C3=qbode(sysu,w,'struct-lab');C3.name='fereduc+nor2ss'; 
+C3.X{2}={'d-top'}; C3.X{3}={'Aimp'}
 ci=iiplot;iicom(ci,'curveinit',{'curve',C0.name,C0;'curve',C3.name,C3}); 
 iicom('submagpha');d_piezo('setstyle',ci); 
 % End of script
@@ -1549,8 +1522,7 @@ model=p_piezo(sprintf('ElectrodeSensQ  %i Q-S2',i1(3)),model);
 model=p_piezo(sprintf('ElectrodeSensQ  %i Q-S3',i1(4)),model);
 % Fix ElectrodeSensQ dofs to measure resultant (charge)
 model=fe_case(model,'FixDof','SC*S1-S3',i1(2:end)+.21);
-
-%% Step 3 Compute dynamic response full/state-space and compare
+%% Step 2 Compute dynamic response full/state-space and compare
 model=stack_set(model,'info','oProp',mklserv_utils('oprop','CpxSym'));
 f=linspace(1,100,400); % in Hz
 
@@ -1559,12 +1531,12 @@ d1=fe_simul('dfrf',stack_set(model,'info','Freq',f(:))); % direct refer frf
 sens=fe_case(model,'sens'); 
 C1=fe_case('SensObserve -DimPos 2 3 1',sens,d1); 
 C1.X{2}(1)={'Tip'};C1.name='Full';
-C1=sdsetprop(C1,'PlotInfo','sub','magpha','scale','xlin;ylog');
+%C1=sdsetprop(C1,'PlotInfo','sub','magpha','scale','xlin;ylog');
 
 % state-space model
 [sys,TR1]=fe2ss('free 5 10 0 -dterm',model); %
-C2=qbode(sys,f(:)*2*pi,'struct');C2.name='SS 10 modes+static';
-C2.X{2}=C1.X{2}; C2.X{3}=C1.X{3}
+C2=qbode(sys,f(:)*2*pi,'struct-lab');C2.name='SS 10 modes+static';
+C2.X{2}(1)={'Tip'};
 
 % Compare the two curves
 ci=iiplot;
@@ -1586,18 +1558,18 @@ d_piezo('SetPlotwd');
 % See full example in d_piezo('ScriptTutoPzPlate4PztSSComb')
 d_piezo('DefineStyles');
 
-%% Step 1 - Build model and define actuator combinations
+%% Step 1 - Build model and define actuator combinations + sttatic response
 model=d_piezo('MeshULBplate cantilever');  % creates the model
 model=stack_set(model,'info','DefaultZeta',0.01); % Set modal damping zeta = 0.01
 edofs=p_piezo('electrodeDOF.*',model);
 model=fe_case(model,'DofSet','V1+2', ...
     struct('def',[1;-1],'DOF',edofs(1:2)));
-%% Step 2 - Compute static response
+% Static response
 d0=fe_simul('dfrf',stack_set(model,'info','Freq',0)); % direct refer frf
 cf=feplot(model); cf.def=d0;
 fecom(';view3;scd .1;colordatagroup;undefline')
 cf.mdl.name='Plate_4pzt_Comb_static'; d_piezo('SetStyle',cf); feplot(cf);
-%% Step 3 - Define sensor combinations
+%% Step 2 - Define sensor combinations
 % Combined charge output (SC electrodes) % difference of charge 1684-1685
 r1=struct('cta',[1 -1],'DOF',edofs(3:4),'name','QS3+4');
 model=p_piezo('ElectrodeSensQ',model,r1);
@@ -1605,16 +1577,18 @@ model=p_piezo('ElectrodeSensQ',model,r1);
 r1=struct('cta',[1 -1],'DOF',edofs(3:4),'name','VS3+4');
 model=fe_case(model,'SensDof',r1.name,r1);
 model=fe_case(model,'pcond','Piezo','d_piezo(''Pcond 1e8'')');
-%% Step 4 - Compute dynamic response with state-space model
+%% Step 3 - Compute dynamic response with state-space model
 [sys,TR]=fe2ss('free 5 10 0 -dterm',model);
- C1=qbode(sys(2,1),linspace(1,100,400)'*2*pi,'struct'); C1.name='OC';
- C1.X{3}={'V1+2'}; C1.X{2}={'VS3+4'};
+w=linspace(1,100,400)*2*pi;
+C1=qbode(sys,w,'struct-lab'); C1.name='OC';
 
 % Now you need to SC 1057 and 1058 to measure charge resultant
 model=fe_case(model,'FixDof','SC*3-4',edofs(3:4));
 [sys2,TR2]=fe2ss('free 5 10 0 -dterm',model);
-C2=qbode(sys2(1,1),linspace(1,100,400)'*2*pi,'struct');C2.name='SC';
-C2.X{3}={'V1+2'}; C2.X{2}={'QS3+4'};
+C2=qbode(sys2,w,'struct-lab');C2.name='SC';
+
+% Flip channels for C1
+C1.Y=fliplr(C1.Y); C1.X{2}(1)={'VS3+4'}; C1.X{2}(2)={'QS3+4'}
 
 % Scale to compare
 C2.Y(:,1)=C2.Y(:,1)*C1.Y(1,1)/C2.Y(1,1);
@@ -2000,7 +1974,7 @@ d_piezo('SetPlotwd');
 % See full example as MATLAB code in d_piezo('ScriptTutoPzPatchNumIDE')
 d_piezo('DefineStyles');
 
-%% Step 1 - Build mesh
+%% Step 1 - Build mesh and compute static response
 % Meshing script can be viewed with sdtweb d_piezo('MeshIDEPatch')
 % Build mesh, electrodes and actuation
 model=d_piezo(['MeshIDEPatch nx=10 ny=5 nz=14 lx=400e-6' ...
@@ -2010,7 +1984,7 @@ model.Node(:,5:7)=model.Node(:,5:7)*1000; % From m to mm
 model.unit='mm';
 % Convert material properties
 model.pl = fe_mat('convert SI mm',model.pl);
-%% Step 2 - Compute response due to V and visualize
+% Compute response due to V and visualize
 model=fe_case(model,'pcond','Piezo','d_piezo(''Pcond'')');
 % low freq response to avoid rigid body modes
 model=stack_set(model,'info','Freq',10);
@@ -2019,14 +1993,14 @@ def=fe_simul('dfrf',model);
 cf=feplot(model,def); fecom('view3'); fecom('viewy-90'); fecom('viewz+90')
 fecom('undef line'); fecom('triax') ; iimouse('zoom reset')
 cf.mdl.name='patch_IDE_deformed';d_piezo('SetStyle',cf); feplot(cf);
-%% Step 3 - visualize electric field
+%% Step 2 - visualize electric field
 cf.sel(1)={'groupall','colorface none -facealpha0 -edgealpha.1'};
 p_piezo('viewElec EltSel "matid1" DefLen 50e-3 reset',cf);
 fecom('scd 1e-10')
 p_piezo('electrodeview -fw',cf); % to see the electrodes on the mesh
 iimouse('zoom reset')
 cf.mdl.name='patch_IDE_EField';d_piezo('SetStyle',cf); feplot(cf);
-%% Step 4 - Compare effective values of constitutive law
+%% Step 3 - Compare effective values of constitutive law
 % Decompose constitutive law
 CC=p_piezo('viewdd -struct',cf); %
 % Compute mean value of fields and deduce equivalent d_ij
@@ -2036,7 +2010,7 @@ fprintf('Relation between mean strain on free structure and d_3i\n');
 E3=a.Y(9,1); disp({'E3 mean' a.Y(9,1) -1/700e-3 'E3 analytic'})
 disp([{'Sx/E3';'Sy/E3';'Sz/E3'} num2cell([a.Y(1:3,1)/E3 CC.d(3,1:3)']) ...
 {'d_31(mm/muV)';'d_32(mm/muV)';'d_33(mm/muV)'}])
-%% Step 5 - Charge visualisation and total on electrodes
+%% Step 4 - Charge visualisation and capacitance
 p_piezo('electrodeTotal',cf)
 % charge density on the electrodes
 feplot(model,def);
@@ -2044,13 +2018,13 @@ cut=p_piezo('electrodeviewcharge',cf,struct('EltSel','matid 1'));
 fecom('view3'); fecom('viewy-90'); fecom('viewz+90'); iimouse('zoom reset');
 iimouse('trans2d 0 0 0 1.6 1.6 1.6')
 cf.mdl.name='patch_IDE_charge_elec';d_piezo('SetStyle',cf); feplot(cf);
-%% Step 6 - Theoretical capacitance for uniform field
+% - Theoretical capacitance for uniform field
 Ct=model.pl(1,22)*400e-3*300e-3/700e-3;
 % total charge on the electrodes = capacitance (1 muV actuation)
 C=p_piezo('electrodeTotal',cf);
 % Differences are due to non-uniform field, this is to be expected
 disp({'C_{IDE}' cell2mat(C(2,2)) Ct 'C analytic'})
-%% Step 7 - Stress  visualisation
+%% Step 5 - Stress and strain  visualisation
 % Stress field using fe_stress
 c1=fe_stress('stressAtInteg -gstate',model,def);
 cf.sel='reset';cf.def=fe_stress('expand',model,c1);
@@ -2058,7 +2032,7 @@ cf.def.lab={'T11';'T22';'T33';'T23';'T13';'T12';'D1';'D2';'D3'}; %
 fecom('colordata 99 -edgealpha.1');
 fecom('colorbar',d_imw('get','CbTR','String','Stress/Voltage [kPa/muV]'));
 iimouse('trans2d 0 0 0 1.6 1.6 1.6')
-%% Step 8 - Strain  visualisation
+%- Strain  visualisation
 % Replace with 'PiezoStrain' material
 mo2=model; mo2.pl=m_piezo('dbval 1 PiezoStrain')
 % Now represent strain fields using fe_stress
@@ -2156,6 +2130,7 @@ out=struct('X',{{rho0,{'E_T','E_L','nu_{LT}','G_{LT}','G_{Tz}','G_{Lz}', ...
     'e_{31}','e_{32}','d_{31}','d_{32}','epsilon_{33}^T'}'}},'Xlab',...
     {{'\rho','Component'}},'Y',[E1' E2' nu21' G12' G13' G23' e32' e31' ...
     d32' d31' eps33t'/8.854e-12]);
+
 ci=iiplot; iicom('CurveReset');
 iicom(ci,'CurveInit','P2-MFC homogenization',out);
 d_piezo('setstyle',ci);
@@ -2270,7 +2245,7 @@ d_piezo('DefineStyles');
 % Meshing script,open with sdtweb d_piezo('MeshMFCplate')
 model=d_piezo('MeshMFCplate -cantilever');  % creates the model
 cf=feplot(model); fecom('colordatagroup-EdgeAlpha.1');
-%% Step 2 - Define actuators and sensors
+%- Define actuators and sensors
 r1=p_piezo('electrodedof',model);
 data.def=[1 -1;1 1]'; % Define combinations for actuators
 data.lab={'V-bend';'V-Tract'};
@@ -2285,12 +2260,12 @@ nd2=feutil('find node x==463 & y==0',model);
 model=fe_case(model,'SensDof','Tipt-z',nd1+.03); % Z-disp
 model=fe_case(model,'SensDof','Tip-x',nd1+.01); % X-disp
 model=fe_case(model,'SensDof','Tipb-z',nd2+.03); % Z-disp
-%% Step 3 - Compute static response
+%- Compute static response
 d0=fe_simul('dfrf',stack_set(model,'info','Freq',0)); %
 cf=feplot(model,d0); sens=fe_case(model,'sens');
 C1=fe_case('SensObserve -dim 2 3 1',sens,d0);
-fecom(';view3;scd 20;colordataEvalA -edgealpha.1;undefline')
-%% Step 4 - Rotate fibers
+fecom(';view3;scd 20;colordataEvalA;undefline')
+%% Step 2 - Rotate fibers
 model.il(2,[20 44])=[45 -45];
 d1=fe_simul('dfrf',stack_set(model,'info','Freq',0)); % static response
 cf.def=d1; fecom('scd 10');  C2=fe_case('SensObserve - dim 2 3 1',sens,d1);
@@ -2314,17 +2289,17 @@ d_piezo('DefineStyles');
 % --- requires gmsh
 model=d_piezo('MeshTrianglePlate');
 cf=feplot(model); fecom('colordatapro'); fecom('view2')
-%% Step 2 - Define actuators and sensors
+%% Step 2 - Define actuators and sensors - static response
 model=fe_case(model,'SensDof','Tip',7.03); % Displ sensor
 model=fe_case(model,'DofSet','V-Act', ...
   struct('def',[-1; 1],'DOF',[100001; 100002]+.21));
-%% Step 3 - Compute static response to voltage actuation
+% - Compute static response to voltage actuation
 d0=fe_simul('dfrf',stack_set(model,'info','Freq',0));
 cf.def=d0; fecom('colordataz -alpha .8 -edgealpha .1')
 fecom('scd -.03'); fecom('view3');
-%% Step 4 - Compute dynamic response with state-space model
+%% Step 3 - Compute dynamic response with state-space model
 [sys,TR]=fe2ss('free 5 20 0 -dterm',model);
-C1=qbode(sys,linspace(0,500,1000)'*2*pi,'struct'); C1.name='.';
+C1=qbode(sys,linspace(0,500,500)'*2*pi,'struct-lab'); C1.name='SS20modes';
 
 %% Point load actuation
 model=fe_case(model,'Remove','V-Act'); % remove piezo actuator
@@ -2348,11 +2323,10 @@ ind=fe_c(d1.DOF,7.03,'ind'); d1p=d1.def(ind);
 
 % Dynamic response (reduced modal model)
 [sys,TR]=fe2ss('free 5 20 0 -dterm',model);
-C2=qbode(sys,linspace(0,500,1000)'*2*pi,'struct'); C2.name='-';
+C2=qbode(sys,linspace(0,500,1000)'*2*pi,'struct-lab'); C2.name='SS20modes';
 % Compare frequency responses
 ci=iiplot;
-C1.X{2}={'dtip'}; C1.X{3}={'Vin'}; C1.name='RESP';
-C2.X{2}={'dtip'}; C2.X{3}={'Ftip'}; C2.name='RESP';
+C1.X{2}={'dtip'}; C2.X{2}={'dtip'}; 
 iicom(ci,'curveinit',{'curve',C1.name,C1;'curve',C2.name,C2});
 iicom('submagpha'); d_piezo('setstyle',ci)
 % End of script
@@ -2384,13 +2358,14 @@ model=p_piezo('ElectrodeMPC Top sensor -matid 2 -vout',model,'z==0.004');
 % -ground generates a v=0 FixDof case entry
 model=p_piezo('ElectrodeMPC Bottom sensor -ground',model,'z==0.003');
 % Add a displacement sensor for the basis
-model=fe_case(model,'SensDof','Base-displ',1.03);
+%model=fe_case(model,'SensDof','Base-displ',1.03);
 % Add an acceleration sensor for the basis
-% model = fe_case(model,'SensDOF','Sensors',{'1:z';'1:vz';'1:az'});
+ model = fe_case(model,'SensDOF','Sensors',{'1:az'});
 % XXXEB I need an acceleration sensor on the basis but this is not working.
 %% Step 3 - Response with imposed displacement
-% Remove the charge sensor (not needed)
+% Remove the charge and displ sensor (not needed)
 model=fe_case(model,'remove','Q-Top sensor');
+model=fe_case(model,'remove','Base-displ');
 
 % Link dofs of base and impose unit vertical displacement
 n1=feutil('getnode z==0',model);
@@ -2405,7 +2380,7 @@ model=stack_set(model,'info','Freq',f); % freq. for computation
  % Reduced ss-model
 [sys,TR1]=fe2ss('free 5 10 0 -dterm',model,5e-3); %
 
-C1=qbode(sys,f(:)*2*pi,'struct');C1.name='SS-voltage';
+C1=qbode(sys,f(:)*2*pi,'struct-lab');C1.name='SS-voltage';
 C1.X{3}={'Uimp'}; % input
 C1.X{2}={'Sensor output(V)';'Base Acc(m/s^2)';'Sensitivity (V/m/s^2)'}; %outputs
 
@@ -2473,7 +2448,7 @@ d_piezo('DefineStyles');
 model=d_piezo('MeshPiezoShaker');
 cf=feplot(model); fecom('colordatapro');
 set(gca,'cameraposition',[-0.0604   -0.0787    0.0139])
-iimouse('resetview'); %fecom(cf,'imwrite',RO)
+iimouse('resetview'); 
 cf.mdl.name='Acc_Shaker_Mesh'; % Model name for title
 d_piezo('SetStyle',cf); feplot(cf);
 %% Step 2 - Define actuators and sensors
@@ -2483,26 +2458,26 @@ model=p_piezo('ElectrodeMPC Top Actuator -input "Vin-Shaker"',model,'z==-0.01');
 model=p_piezo('ElectrodeMPC Bottom Actuator -ground',model,'z==-0.012');
 % Voltage sensor will be used - remove charge sensor
 model=fe_case(model,'remove','Q-Top sensor');
-% Frequencies for computation
+
+% Replace by an acceleration sensor for the basis
+model=fe_case(model,'remove','Base-displ');
+model = fe_case(model,'SensDOF','Accel',{'1:az'});
+%% Step 3 - Compute response, voltage input on shaker
 f=linspace(1e3,2e5,200)';
 model=stack_set(model,'info','Freq',f);
 
-%% Step 3 - Compute response, voltage input on shaker
 % Reduced ss-model
 model=fe_case(model,'pcond','Piezo','d_piezo(''Pcond'')');
 [sys,TR1]=fe2ss('free 5 45 0 -dterm ',model,1e-3); %
 
-C1=qbode(sys,f(:)*2*pi,'struct');C1.name='SS-voltage';
-C1.X{3}={'Vin-Shaker'}; % input
+C1=qbode(sys,f(:)*2*pi,'struct-lab');C1.name='SS-voltage';
 C1.X{2}={'Sensor output(V)';'Base Acc(m/s^2)';'Sensitivity (V/m/s^2)'}; %outputs
 
-% C1 compute accel and sensitivity
- C1.Y(:,2)=C1.Y(:,2).*(-(C1.X{1}*2*pi).^2); % Base acc
- C1.Y(:,3)=C1.Y(:,1)./C1.Y(:,2);% Sensitivity
+% Compute sensitivity
+C1.Y(:,3)=C1.Y(:,1)./C1.Y(:,2);% Sensitivity
  
-
- ci=iiplot; iicom(ci,'curveinit',{'curve',C1.name,C1});  iicom('ch3');
- d_piezo('setstyle',ci)
+ci=iiplot; iicom(ci,'curveinit',{'curve',C1.name,C1});  iicom('ch3');
+d_piezo('setstyle',ci)
 
 %% EndSource EndTuto
 
