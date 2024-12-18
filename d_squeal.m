@@ -557,7 +557,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
 
    if isfield(def,'TR') % expressed in real basis, orth and restit
     TR=orth([real(def.def(:,i1)) imag(def.def(:,i1))]);
-    TR=struct('DOF',def.TR.DOF,'def',feutilb('a*b',def.TR.def,TR),'data',def.data(i1,:));
+    TR=struct('DOF',sdth.GetData(def.TR.DOF),'def',feutilb('a*b',def.TR.def,TR),'data',def.data(i1,:));
 
    else % xxx need renorm
     def=fe_def('subdef',def,i1);
