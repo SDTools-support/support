@@ -1526,7 +1526,7 @@ model=stack_set(model,'info','oProp',mklserv_utils('oprop','CpxSym'));
 f=linspace(1,100,400); % in Hz
 
 % Full model
-d1=fe_simul('dfrf -sens',stack_set(model,'info','Freq',f(:))); % direct refer frf
+C1=fe_simul('dfrf -sens',stack_set(model,'info','Freq',f(:))); % direct refer frf
 C1.X{2}(1)={'Tip'};C1.name='Full';
 
 % state-space model
@@ -1841,108 +1841,63 @@ model=fe_case(model,'FixDof','Cantilever','x==0'); % Clamp plate
 % Set modal default zeta = 0.01
 model=stack_set(model,'info','DefaultZeta',0.01);
 
-nd=feutil('find node x==463 & y==100',model);
-model=fe_case(model,'SensDof','Tip',{[num2str(nd) ':z']}); % Displ sensor
-ind1=p_piezo('TabInfo',model);ind1=ind1.Electrodes(:,1);
-model=fe_case(model,'DofSet','V-Act',struct('def',1,'DOF',ind1(1)+.21, ...%Act
-    'Elt',feutil('selelt proid 104',model))); % Elt defined for display
-% Charge sensors
-li={ind1(1),'Q-Act';ind1(2),'Q-S1';ind1(3),'Q-S2';ind1(4),'Q-S3'};
-model=p_piezo('ElectrodeSensQ',model,li)
-%Fix ElectrodeSensQ dofs to measure resultant (charge)
-model=fe_case(model,'FixDof','SC*S1-S3',ind1(2:end)+.21);
+% Define sensors and actuators
+nd=feutil('find node x==463 & y==100',model); % Tip node 
+i1=p_piezo('TabInfo',model);i1=i1.Electrodes(:,1); % Electrode info
+scell={'Tip:z{unit,*1e3=\mu m}'; ...
+    'Act:q{unit,*1e12=pC}';'S1:q{unit,*1e12=pC}';'S2:q{unit,*1e12=pC}';'S3:q{unit,*1e12=pC}'};
+dIn=struct('def',[1;0;0;0],'DOF',i1+.21,'lab',{{'Act:v'}}, ...%Act
+    'Elt',feutil('selelt proid 104',model));
 
-%  Compute dynamic response full/state-space and compare
-model=stack_set(model,'info','oProp',mklserv_utils('oprop','CpxSym'));
+% Define Node names 
+model=sdth.urn('nmap.Node.set',model, ...
+    {'Tip',nd;'Act',i1(1);'S1',i1(2);'S2',i1(3);'S3',i1(4)});
+% Define sensors 
+model=fe_case(model,'SensDof','Sensors',scell);
+% Define input (and 0 tension to measure charge)
+model=fe_case(model,'DofSet','In',dIn); % Elt defined for display
+
+% Ref solution with state-space 10 modes+static
 f=linspace(1,100,400); % in Hz
-
-% Ref solution with fe2ss
 s0=fe2ss('free 5 10 0 -dterm',model); %
-C0=qbode(s0(1,1),f(:)*2*pi,'struct');C0.name='fe2ss'; ...
-	 C0.X{2}={'Tip'}; C0.X{3}={'V-Act'};
-%% Step 2 - Craig-Bampton 
-model=d_piezo('MeshULBplate');  % creates the model
-model=fe_case(model,'FixDof','Cantilever','x==0'); % Clamp plate
-% Set modal default zeta = 0.01
-model=stack_set(model,'info','DefaultZeta',0.01);
-
-% Dofset for CB - Keep 4 electrical dofs and 1 mechanical one
-nd=feutil('find node x==463 & y==100',model);
-ind1=p_piezo('TabInfo',model);ind1=ind1.Electrodes(:,1);
-model=fe_case(model,'DOFSet','CB',[nd+.03; ind1+.21]); 
-% Leave x free for imposed displ
-model=p_piezo('ElectrodeSensQ',model,li)
+C0=qbode(s0,f(:)*2*pi,'struct-lab');C0.name='Free+Static';
+%% Step 2 - CB reduction
+model=fe_case(model,'DOFSet','In',[nd+.03; i1+.21]); % 
 
 % Build CB matrices
 model = stack_set(model,'info','EigOpt',[5 10 0]);
-model.DOF = feutil('getdof',model);
-SE1= fe_reduc('CraigBampton -SE -matdes 2 1 3 4 -NeedSens',model); 
-% Just a CB reduction
-
-% DOFS are numbered with -1.001, which is not a 
-% supported format for fe_eig, so you need to renumber 
-SE1.DOF(SE1.DOF<0) = 1000.99+(1:numel(SE1.DOF(SE1.DOF<0))); %
-SE1 = rmfield(SE1,{'Node','Elt','il','pl','Stack','TR'}) ; 
+SE1= fe_reduc('CraigBampton -SE -matdes 2 1 3 4 -bset',model); % 
 % To keep only the matrices
-%[s2,TR]=fe2ss('CraigBampton -matdes 2 1 3 4',model)
+SE1 = rmfield(SE1,{'il','pl','Stack','TR'}) ; 
+SE1.Node=feutil('getnode',SE1,unique(fix(SE1.DOF)));SE1.Elt=[];
 
-% Initialize the reduced model (using super-elements to define matrices)
-SE0 = struct('Node',[],'Elt',[]);
-model2 = fesuper('SEAdd 1 -1 -unique -initcoef -newID se1',SE0,SE1) ;
+% Define node names
+SE1=sdth.urn('nmap.Node.set',SE1, ...
+    {'Tip',nd;'Act',i1(1);'S1',i1(2);'S2',i1(3);'S3',i1(4)});
 
 % Define input/output
-model2=fe_case(model2,'DofSet','V-Act',struct('def',1,'DOF',ind1(1)+.21))
-%, ...%Act
-%    'Elt',feutil('selelt proid 104',model))); % Elt defined for display
-% model2=p_piezo(sprintf('ElectrodeSensQ  %i Q-Act',ind1(1)),model2); 
-% Charge sensors
-% model2=p_piezo(sprintf('ElectrodeSensQ  %i Q-S1',ind1(2)),model2);
-% model2=p_piezo(sprintf('ElectrodeSensQ  %i Q-S2',ind1(3)),model2);
-% model2=p_piezo(sprintf('ElectrodeSensQ  %i Q-S3',ind1(4)),model2);
-% Fix ElectrodeSensQ dofs to measure resultant (charge)
-model2=fe_case(model2,'FixDof','SC*S1-S3',ind1(2:end)+.21);
-model2=fe_case(model2,'SensDof','Tip',{[num2str(nd) ':z']}); % Displ sensor
+SE1=fe_case(SE1,'SensDof','Sensors',scell);
+SE1=fe_case(SE1,'DofSet','In',rmfield(dIn,'Elt')); % Elt defined for display
+SE1=stack_set(SE1,'info','DefaultZeta',1e-2);
 
 % Build state-space model based on reduced CB matrices
-s1=fe2ss('free 5 10 0 -dterm',model2); 
-C1=qbode(s1(1,1),f(:)*2*pi,'struct');C1.name='fe2ss after CB'; ...
-	 C1.X{2}={'Tip'}; C1.X{3}={'V-Act'};
-ci=iiplot;iicom(ci,'curveinit',{'curve',C0.name,C0;'curve',C1.name,C1}); 
-d_piezo('setstyle',ci);
+s1=fe2ss('free 5 10 0 -dterm',SE1);
 %% Step 3: Now with Raze's transform, using -noMCI option in fe_reduc
-SE1= fe_reduc('CraigBampton -SE -matdes 2 1 3 4 -noMCI',model);
-%Removes M-coupling using Raze's transform
-% DOFS are numbered with -1.001, which is not a supported 
-% format for fe_eig, so you need to renumber 
-SE1.DOF(SE1.DOF<0) = 1000.99+(1:numel(SE1.DOF(SE1.DOF<0))); %
-SE1 = rmfield(SE1,{'Node','Elt','il','pl','Stack','TR'}) ; 
+SE2= fe_reduc('CraigBampton -SE -matdes 2 1 3 4 -noMCI',model); % Removes M-coupling 
 % To keep only the matrices
+SE2 = rmfield(SE2,{'il','pl','Stack','TR'}) ; 
+SE2.Node=feutil('getnode',SE2,unique(fix(SE2.DOF)));SE2.Elt=[];
 
-% Initialize the reduced model (using super-elements to define matrices)
-SE0 = struct('Node',[],'Elt',[]);
-model3 = fesuper('SEAdd 1 -1 -unique -initcoef -newID se1',SE0,SE1) ;
-
+%Define node names
+SE2=sdth.urn('nmap.Node.set',SE2, ...
+    {'Tip',nd;'Act',i1(1);'S1',i1(2);'S2',i1(3);'S3',i1(4)});
 % Define input/output
-ind1=p_piezo('TabInfo',model);ind1=ind1.Electrodes(:,1);
-model3=fe_case(model3,'DofSet','V-Act',struct('def',1,'DOF',ind1(1)+.21))
-%, ...%Act
-%    'Elt',feutil('selelt proid 104',model))); % Elt defined for display
-% model2=p_piezo(sprintf('ElectrodeSensQ  %i Q-Act',ind1(1)),model2); 
-% Charge sensors
-% model2=p_piezo(sprintf('ElectrodeSensQ  %i Q-S1',ind1(2)),model2);
-% model2=p_piezo(sprintf('ElectrodeSensQ  %i Q-S2',ind1(3)),model2);
-% model2=p_piezo(sprintf('ElectrodeSensQ  %i Q-S3',ind1(4)),model2);
-% Fix ElectrodeSensQ dofs to measure resultant (charge)
-model3=fe_case(model3,'FixDof','SC*S1-S3',ind1(2:end)+.21);
-model3=fe_case(model3,'SensDof','Tip',{[num2str(nd) ':z']}); % Displ sensor
+SE2=fe_case(SE2,'SensDof','Sensors',scell);
+SE2=fe_case(SE2,'DofSet','In',rmfield(dIn,'Elt')); % Elt defined for display
+SE2=stack_set(SE2,'info','DefaultZeta',1e-2);
 
 % Build state-space model based on reduced CB matrices
-s2=fe2ss('free 5 10 0 -dterm',model3);
-C2=qbode(s2(1,1),f(:)*2*pi,'struct');C2.name='fe2ss after CB+Raze transform'; ...
-	 C2.X{2}={'Tip'}; C2.X{3}={'V-Act'}
-ci=iiplot;iicom(ci,'curveinit',{'curve',C0.name,C0;'curve',C2.name,C2}); 
-
-d_piezo('setstyle',ci);
+s2=fe2ss('free 5 10 0 -dterm',SE2);
 % End of script
 
 %% EndSource EndTuto
