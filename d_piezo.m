@@ -1385,7 +1385,7 @@ d_piezo('DefineStyles');
 
 %% Step 1 : Build the model and define actuator and sensor
 model=d_piezo('MeshTower');
-model=d_avc('meshtower');
+model=d_piezo('meshtower');
 model=fe_case(model,'FixDof','Clamped',[1.06]); % Leave x free for imposed displ
 model=fe_case(model,'Remove','F-top'); % Remove point force
 model=fe_case(model,'DOFSet','Uimp',[1.01]); % Imposed horizontal displ
@@ -1440,10 +1440,10 @@ model=fe_case(model,'DOFSet','UImp',[1.01]); % Set an imposed displacement
 [model,Case] = fe_case('assemble NoT -matdes 2 1 Case -SE',model) ;
 
 K0 = feutilb('tkt',Case.T,model.K); % Assemble matrices taking into account BCs
-TIn=fe_simul('static',model); TIn=TIn.def; 
-
 % Compute TIn as static response to imposed displacement
-F = -Case.T'*model.K{1}*TIn; % Loading due to imposed displacement
+TIn=fe_simul('static',model); TIn=TIn.def; 
+% Loading due to imposed acceleration
+F = -Case.T'*model.K{1}*TIn; 
 
 % compute response in freq domain (relative displacement)
 w=linspace(1,100,512);
@@ -1466,12 +1466,13 @@ C1=d_piezo('BuildC1',w'/(2*pi),u0r.','dr-top','Aimp'); C1.name='Full';
 model2=d_piezo('Meshtower');
 model2=fe_case(model2,'FixDof','Clamped',[1.01 1.06]); % Block all interface dofs
 model2=fe_case(model2,'Remove','F-top'); % Remove point force
-
 [model2,Case2] = fe_case('assemble NoT -matdes 2 1 Case -SE',model2) ;
 
-SET.DOF=model2.DOF; SET.def=Case2.T*F; % Load when using relative displacements
+% Load when using relative displacements
+SET.DOF=model2.DOF; SET.def=Case2.T*F; 
 model2=fe_case(model2,'DofLoad','Aimp',SET); % 
 
+% state-space model
 sysr=fe2ss('free 5 5 0 -dterm',model2);
 C2=qbode(sysr,w,'struct-lab');C2.name='fe2ss-5md+st'; C2.X{2}={'dr-top'}; 
 ci=iiplot;iicom(ci,'curveinit',{'curve',C1.name,C1;'curve',C2.name,C2}); 
@@ -1479,11 +1480,9 @@ iicom('submagpha')
 d_piezo('setstyle',ci);
 %% Step 4 : state-space model for absolute displacements - Aimp
 
-TR2 = fe2ss('craigbampton 5 5 -basis',model); 
 % This is a CB basis which is renormalized (so free BCs and rigid body mode)
 % TR2.data is needed for nor2ss hence the normalization.
-
-KCB    = feutilb('tkt',TR2.def,model.K);
+TR2 = fe2ss('craigbampton 5 5 -basis',model); 
 sysu= nor2ss(TR2,model) ;
 C3=qbode(sysu,w,'struct-lab');C3.name='fereduc+nor2ss'; 
 C3.X{2}={'d-top'}; C3.X{3}={'Aimp'}
@@ -1527,11 +1526,8 @@ model=stack_set(model,'info','oProp',mklserv_utils('oprop','CpxSym'));
 f=linspace(1,100,400); % in Hz
 
 % Full model
-d1=fe_simul('dfrf',stack_set(model,'info','Freq',f(:))); % direct refer frf
-sens=fe_case(model,'sens'); 
-C1=fe_case('SensObserve -DimPos 2 3 1',sens,d1); 
+d1=fe_simul('dfrf -sens',stack_set(model,'info','Freq',f(:))); % direct refer frf
 C1.X{2}(1)={'Tip'};C1.name='Full';
-%C1=sdsetprop(C1,'PlotInfo','sub','magpha','scale','xlin;ylog');
 
 % state-space model
 [sys,TR1]=fe2ss('free 5 10 0 -dterm',model); %
@@ -1622,27 +1618,25 @@ d_piezo('SetPlotwd');
 % See full example as MATLAB code in d_piezo('ScriptTutoPzTowerSSUimpCB')
 d_piezo('DefineStyles');
 
-%% Step 1 : Build Model with imposed displacement
-model=d_avc('meshtower');
+%% Step 1 : Build Model, CB reduction, explicit response
+model=d_piezo('meshtower');
 model=fe_case(model,'FixDof','Clamped',[1.06]); % Leave x free for imposed displ
 model=fe_case(model,'Remove','F-top'); % Remove point force
-model=fe_case(model,'DOFSet','UImp',[1.01]); % Leave x free for imposed displ
+model=fe_case(model,'DOFSet','UImp',[1.01]); % Set imposed displ
 
-%% Step 2 : reduce model using CB
-% Build matrices
+%Full model matrices
 [model,Case] = fe_case('assemble NoT -matdes 2 1 Case -SE',model) ;
-
-% Build CB matrices
-CB    = fe_reduc('craigbampton 5 5',model);
-TR = CB.TR;
-
-KCB    = feutilb('tkt',TR.def,model.K); % CB
 K0 = feutilb('tkt',Case.T,model.K); % Full-model
 
+% CB matrices and T matrix
+CB    = fe_reduc('craigbampton 5 5',model); TR = CB.TR; KCB=CB.K;
+
+% Build loads full and reduced models
 F = -Case.T'*model.K{2}*Case.TIn;
-F1=-KCB{2}(2:end,1);
-F2=-KCB{1}(2:end,1);
-w=logspace(-2,2,2048);
+F1=-CB.K{2}(2:end,1);
+F2=-CB.K{1}(2:end,1);
+
+w=linspace(1,100,512);
 
 for i=1:length(w)
  U0(:,i)=Case.T*((K0{2}*(1+0.02*1i)-w(i)^2*K0{1})\F); % full model
@@ -1670,40 +1664,30 @@ iicom('submagpha')
 d_piezo('setstyle',ci);
 %% Step 2: keep bottom and top translation in the CB basis
 
-% Mesh and set dofs to be kept
-model=d_avc('meshtower');
-model=fe_case(model,'FixDof','Clamped',[1.06]); 
-% Leave x free for imposed displ
-model=fe_case(model,'Remove','F-top'); % Remove point force
-SET.DOF=[1.01; 21.01]; SET.def=eye(2); 
+% Ss from full model - 5 modes + static
+sys0=fe2ss('free 5 5 0 -dterm',model);
+C0=qbode(sys0,w,'struct-lab');C0.name='fe2ss'; C0.X{2}={'d-top'}
+
 % Top and bottom DOF to be kept in CB reduction
+SET.DOF=[1.01; 21.01]; SET.def=eye(2); 
 model=fe_case(model,'DOFSet','UImp',SET); 
-% To retain in CB matrices input and output
 
-% Build CB matrices
+% Build CB reduced model
 model = stack_set(model,'info','EigOpt',[5 5 0]);
-model.DOF = feutil('getdof',model);
-SE1= fe_reduc('CraigBampton -SE -matdes 2 1 3 4 ',model); % Do not use -USEDOF
-% DOFS are numbered with -1.001, 
-%which is not a supported format for fe_eig, so you need to renumber 
-SE1.DOF(SE1.DOF<0) = 1000.99+(1:numel(SE1.DOF(SE1.DOF<0))); %
-SE1 = rmfield(SE1,{'Node','Elt','il','pl','Stack','mdof','TR'}) ; 
+SE1= fe_reduc('CraigBampton -SE -matdes 2 1 3 4 ',model); % 
 % To keep only the matrices
-
-% Initialize the reduced model (using super-elements to define matrices)
-SE0 = struct('Node',[],'Elt',[]);
-model2 = fesuper('SEAdd 1 -1 -unique -initcoef -newID se1',SE0,SE1) ;
+SE1 = rmfield(SE1,{'il','pl','Stack','TR','mdof'}) ; 
+SE1.Node=feutil('getnode',SE1,unique(fix(SE1.DOF)));SE1.Elt=[];
 
 % Define input/output
-model2=fe_case(model2,'SensDOF','Output',21.01);
-model2=fe_case(model2,'DOFSet','UImp',[1.01]); % Leave x free for imposed displ
+SE1=fe_case(SE1,'SensDOF','d-top',21.01);
+SE1=fe_case(SE1,'DOFSet','UImp',[1.01]); % 
 
-% Build state-space model based on reduced CB matrices
-sys=fe2ss('free 5 5 0 -dterm',model2);
-C5=qbode(sys,w,'struct');C5.name='fe2ss CB'; 
+% Build state-space based on CB reduced model
+sys=fe2ss('free 5 5 0 -dterm',SE1);
+C5=qbode(sys,w,'struct-lab');C5.name='fe2ss CB'; 
 C5.X{2}={'d-top'}; C5.X{3}={'Uimp'};
-ci=iiplot;iicom(ci,'curveinit',{'curve',C1.name,C1;'curve',C5.name,C5}); 
-
+ci=iiplot;iicom(ci,'curveinit',{'curve',C0.name,C0;'curve',C5.name,C5}); 
 iicom('submagpha')
 d_piezo('setstyle',ci);
 %% Step 3 : Apply Raze transform before making the state-space model
@@ -1717,14 +1701,31 @@ Mr=T1'*(KCB{1})*T1;
 Kr=T1'*(KCB{2})*T1;
 
 % Replace matrices in the CB model
-model3=model2;
-model3.Stack{1,3}.K{1}=Mr;
-model3.Stack{1,3}.K{2}=Kr;
+SE2=SE1;
+SE2.K{1}=Mr;
+SE2.K{2}=Kr;
 
-sys2=fe2ss('free 5 5 0 -dterm',model3); 
-C6=qbode(sys2,w,'struct');C6.name='fe2ss CB+Raze'; 
+sys2=fe2ss('free 5 5 0 -dterm',SE2); 
+
+% Make CB matrices with Raze's transform directly -noMCI
+SE3= fe_reduc('CraigBampton -SE -matdes 2 1 3 4 -noMCI',model);
+
+% To keep only the matrices
+SE3 = rmfield(SE3,{'il','pl','Stack','TR','mdof'}) ; 
+SE3.Node=feutil('getnode',SE3,unique(fix(SE3.DOF)));SE3.Elt=[];
+
+% Define input/output
+SE3=fe_case(SE3,'SensDOF','d-top',21.01);
+SE3=fe_case(SE3,'DOFSet','UImp',[1.01]); % 
+
+% Build state-space based on CB reduced model
+sys3=fe2ss('free 5 5 0 -dterm',SE3);
+C6=qbode(sys2,w,'struct-lab');C6.name='fe2ss CB+Raze'; 
 C6.X{2}={'d-top'}; C6.X{3}={'Uimp'};
-ci=iiplot;iicom(ci,'curveinit',{'curve',C1.name,C1;'curve',C6.name,C6}); 
+C7=qbode(sys3,w,'struct-lab');C7.name='fe2ss CB+Raze-direct'; 
+C7.X{2}={'d-top'}; C7.X{3}={'Uimp'};
+
+ci=iiplot;iicom(ci,'curveinit',{'curve',C0.name,C0;'curve',C6.name,C6;'curve',C7.name,C7}); 
 
 iicom('submagpha')
 d_piezo('setstyle',ci);
@@ -1741,26 +1742,29 @@ elseif comstr(Cam,'tutopztowerssaimpcb')
 
 % Init working directory for figure generation
 d_piezo('SetPlotwd');
-% See full example as MATLAB code in d_piezo('ScriptTutoPzTowerSSAimpCB')
-d_piezo('DefineStyles');
-
 %% Step 1: reference solution
-% build model
-model=d_avc('meshtower');
+
+% Build model
+model=d_piezo('meshtower');
 model=fe_case(model,'FixDof','Clamped',[1.06]); 
 % Leave x free for imposed displ
 model=fe_case(model,'Remove','F-top'); % Remove point force
 model=fe_case(model,'DOFSet','UImp',[1.01]); % 
 
+% Full model matrices
 [model,Case] = fe_case('assemble NoT -matdes 2 1 Case -SE',model) ;
 K0 = feutilb('tkt',Case.T,model.K); % Full-model
 
-CB    = fe_reduc('craigbampton 5 5',model);
+% CB matrices and T matrix
+CB    = fe_reduc('craigbampton 5 5',model); TR = CB.TR; KCB=CB.K;
+
+% Build loads
 TIn= CB.TR.def(:,1);
 F = -Case.T'*model.K{1}*TIn;
 
-w=logspace(-2,2,2048);
+w=linspace(1,100,512);
 
+% Reference solution - full model
 for i=1:length(w)
     U0(:,i)=Case.T*((K0{2}*(1+0.02*1i)-w(i)^2*K0{1})\F);
 end
@@ -1769,65 +1773,46 @@ CTA = fe_c(model.DOF,21.01); u0 = CTA*U0;
 % Change output format to be compatible with iicom
 C0=d_piezo('BuildC1',w'/(2*pi),u0.','dr-top','Aimp'); C0.name='Full';
 
-%% Step 2: State-space model using a dofload (relative displ)
+%% Step 2: State-space model using CB and dofload (relative displ)
 
-% Create super-element type model
-model=d_avc('meshtower');
-model=fe_case(model,'FixDof','Clamped',[1.06]); 
-% Leave x free for imposed displ
-model=fe_case(model,'Remove','F-top'); % Remove point force
-SET.DOF=[1.01; 21.01]; SET.def=eye(2);
+% Top and bottom DOF to be kept in CB reduction
+SET.DOF=[1.01; 21.01]; SET.def=eye(2); 
 model=fe_case(model,'DOFSet','UImp',SET); 
-% To retain in CB matrices input and output
+
+% Build CB reduced model
 model = stack_set(model,'info','EigOpt',[5 5 0]);
-model.DOF = feutil('getdof',model);
-SE1= fe_reduc('CraigBampton -SE -matdes 2 1 3 4 ',model); 
-% Do not use -USEDOF
-
-SE1.DOF(SE1.DOF<0) = 1000.99+(1:numel(SE1.DOF(SE1.DOF<0))); 
-% round(SE1.DOF(SE1.DOF<0)+1000)+[0.01:0.01:0.05]'
-SE1 = rmfield(SE1,{'Node','Elt','il','pl','Stack','mdof','TR'}) ; 
+SE1= fe_reduc('CraigBampton -SE -matdes 2 1 3 4 ',model); % 
+SE0=SE1;
 % To keep only the matrices
+SE1 = rmfield(SE1,{'il','pl','Stack','TR','mdof'}) ; 
+SE1.Node=feutil('getnode',SE1,unique(fix(SE1.DOF)));SE1.Elt=[];
 
-% Initialize the Model
-SE0 = struct('Node',[],'Elt',[]);
-model2 = fesuper('SEAdd 1 -1 -unique -initcoef -newID se1',SE0,SE1) ;
-model0=model2; 
-% Save super-element model without any load BC (2 dofs retained)
-
-% Extract matrices and compute static response 
-% to imposed displacement at the base
-KCB=model2.Stack{1,3}.K;
+KCB=SE1.K;
 TIn= [1; -KCB{2}(2:end,2:end)\KCB{2}(2:end,1)];
 
 % Compute forcing vector
 FCB= -KCB{1}*TIn; FCB=FCB(2:end);
 
 % Block 1.01 and define a DofLoad and a new observation matrix instead
-model2=fe_case(model2,'FixDOF','BC',1.01); % BC for relative displacement
-SET.DOF=model2.Stack{1,3}.DOF(2:end); SET.def= FCB;
-model2=fe_case(model2,'DOFLoad','AImp',SET); % Equivalent load
-model2=fe_case(model2,'SensDOF','Output',SET.DOF(1));
+SE1=fe_case(SE1,'FixDOF','BC',1.01); % BC for relative displacement
+SET.DOF=SE1.DOF(2:end); SET.def= FCB;
+SE1=fe_case(SE1,'DOFLoad','AImp',SET); % Equivalent load
+SE1=fe_case(SE1,'SensDOF','Output',SET.DOF(1));
 
-sys=fe2ss('free 5 5 0 -dterm',model2);
-w=logspace(-2,2,2048);
-C1=qbode(sys,w,'struct');C1.name='fe2ss 5md+st';
-C1.X{2}={'dr-top'}; C1.X{3}={'Aimp'};
-ci=iiplot;iicom(ci,'curveinit',{'curve',C0.name,C0;'curve',C1.name,C1}); 
-iicom('submagpha')
-d_piezo('setstyle',ci); 
-%%Step 3: State-space with absolute displacement
+sys=fe2ss('free 5 5 0 -dterm',SE1);
+%% Step 3: State-space model with absolute displacement
 
-model3=model0; % Initial model without BCs
-TR2=fe_eig(model3,[5 7 0]); % Compute modes with CB matrices
+SE2=SE0; % Initial model without BCs
+TR2=fe_eig(SE2,[5 7 0]); % Compute all7  modes of reduced model
+
+% Imposed acceleration at base
 SET.DOF=[1.01]; SET.def=eye(1); %
-model3=fe_case(model3,'DOFSet','UImp',SET); % Impose acc at bottom
-model3=fe_case(model3,'SensDOF','Output',21+.01); % sensor
+SE2=fe_case(SE2,'DOFSet','UImp',SET); % Impose acc at bottom
 
-sys2= nor2ss(TR2,model3) ;
-C2=qbode(sys2(1,1),w,'struct');C2.name='nor2ss';
-C2.X{2}={'d-top'}; C2.X{3}={'Aimp'};
-u2=freqresp(sys2(1,1),w); u2=u2(:);
+% build state-space model with nor2ss
+sys2= nor2ss(TR2,SE2) ;
+C2=qbode(sys2,w,'struct-lab');C2.name='nor2ss';
+C2.X{2}={'d-top'};  C2.X{3}={'Aimp'}; 
 
 % convert reference solution to absolute displacement
 u0a=u0-1./w.^2;
