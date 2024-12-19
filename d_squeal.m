@@ -2263,7 +2263,7 @@ if ~isempty(st); d_squeal(['viewpar' st]);end
        Time.Xlab{1}(i1,:)=[];
    end
  end
- if ~isfield(Time.meta,'Name')
+ if ~isfield(Time.meta,'Name')&&isfield(evt,'meta')
    Time.meta=sdth.sfield('addmissing',evt.meta,Time.meta);
  end
  if isfield(Time.meta,'Squeal');
