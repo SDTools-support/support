@@ -1785,7 +1785,7 @@ SET.DOF=[1.01; 21.01]; SET.def=eye(2);
 model=fe_case(model,'DOFSet','UImp',SET); 
 
 % Build CB reduced model
-model = stack_set(model,'info','EigOpt',[5 5 0]); % Np mass shift!
+model = stack_set(model,'info','EigOpt',[5 5 0]); % No mass shift!
 SE1= fe_reduc('CraigBampton -SE -matdes 2 1 3 4 -bset ',model); % 
 
 SE0=SE1; % Save superelement model
@@ -1797,7 +1797,7 @@ SE1.Node=feutil('getnode',SE1,unique(fix(SE1.DOF)));SE1.Elt=[];
 % Force vector using CB matrices
 KCB=SE1.K;
 TInCB= [1; -KCB{2}(2:end,2:end)\KCB{2}(2:end,1)];
-FCB= -KCB{1}*TInCB; % This is wrong, not sure why ...
+FCB= -KCB{1}*TInCB; % From CB matrices only
 
 
 % Block 1.01 and define a DofLoad and a new observation matrix instead
