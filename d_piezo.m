@@ -1742,61 +1742,68 @@ elseif comstr(Cam,'tutopztowerssaimpcb')
 
 % Init working directory for figure generation
 d_piezo('SetPlotwd');
-%% Step 1: reference solution
+%% Step 1: reference solution -direct computation
 
 % Build model
 model=d_piezo('meshtower');
 model=fe_case(model,'FixDof','Clamped',[1.06]); 
 % Leave x free for imposed displ
 model=fe_case(model,'Remove','F-top'); % Remove point force
+
+% Initial matrices without imposed displacements
+[model0,Case0] = fe_case('assemble NoT -matdes 2 1 Case -SE',model) ;
+K0 = feutilb('tkt',Case0.T,model0.K); % Full-model 41x41
+
+% Matrices with Block displ at basis
 model=fe_case(model,'DOFSet','UImp',[1.01]); % 
 
 % Full model matrices
 [model,Case] = fe_case('assemble NoT -matdes 2 1 Case -SE',model) ;
-K0 = feutilb('tkt',Case.T,model.K); % Full-model
+Kcc = feutilb('tkt',Case.T,model.K); % Blocked at basis 40x40
 
-% CB matrices and T matrix
-CB    = fe_reduc('craigbampton 5 5',model); TR = CB.TR; KCB=CB.K;
+% Put manually unitary values to be exact
+TIn=zeros(40,1); TIn(1:2:end)=1;
 
-% Build loads
-TIn= CB.TR.def(:,1);
-F = -Case.T'*model.K{1}*TIn;
+% The load is built after applying the boundary condition to the matrices.
+F = -(Kcc{1}*TIn);
 
-w=linspace(1,100,512);
+w=linspace(0,100,512);
+eta=0.02;
 
 % Reference solution - full model
 for i=1:length(w)
-    U0(:,i)=Case.T*((K0{2}*(1+0.02*1i)-w(i)^2*K0{1})\F);
+    U0(:,i)=Case.T*((Kcc{2}*(1+eta*1i)-w(i)^2*Kcc{1})\F);
 end
 
 CTA = fe_c(model.DOF,21.01); u0 = CTA*U0;
 % Change output format to be compatible with iicom
 C0=d_piezo('BuildC1',w'/(2*pi),u0.','dr-top','Aimp'); C0.name='Full';
+%% Step 2 : state-space model based on CB reduction
 
-%% Step 2: State-space model using CB and dofload (relative displ)
-
-% Top and bottom DOF to be kept in CB reduction
+% CB reduction on two DOFs
 SET.DOF=[1.01; 21.01]; SET.def=eye(2); 
 model=fe_case(model,'DOFSet','UImp',SET); 
 
 % Build CB reduced model
-model = stack_set(model,'info','EigOpt',[5 5 0]);
-SE1= fe_reduc('CraigBampton -SE -matdes 2 1 3 4 ',model); % 
-SE0=SE1;
+model = stack_set(model,'info','EigOpt',[5 5 0]); % Np mass shift!
+SE1= fe_reduc('CraigBampton -SE -matdes 2 1 3 4 -bset ',model); % 
+
+SE0=SE1; % Save superelement model
+
 % To keep only the matrices
 SE1 = rmfield(SE1,{'il','pl','Stack','TR','mdof'}) ; 
 SE1.Node=feutil('getnode',SE1,unique(fix(SE1.DOF)));SE1.Elt=[];
 
+% Force vector using CB matrices
 KCB=SE1.K;
-TIn= [1; -KCB{2}(2:end,2:end)\KCB{2}(2:end,1)];
+TInCB= [1; -KCB{2}(2:end,2:end)\KCB{2}(2:end,1)];
+FCB= -KCB{1}*TInCB; % This is wrong, not sure why ...
 
-% Compute forcing vector
-FCB= -KCB{1}*TIn; FCB=FCB(2:end);
 
 % Block 1.01 and define a DofLoad and a new observation matrix instead
 SE1=fe_case(SE1,'FixDOF','BC',1.01); % BC for relative displacement
-SET.DOF=SE1.DOF(2:end); SET.def= FCB;
-SE1=fe_case(SE1,'DOFLoad','AImp',SET); % Equivalent load
+SET.DOF=SE1.DOF(2:end); SET.def= FCB(2:end);
+SE1=fe_case(SE1,'DOFLoad','UImp',SET); % Equivalent load
 SE1=fe_case(SE1,'SensDOF','Output',SET.DOF(1));
 
 sys=fe2ss('free 5 5 0 -dterm',SE1);
