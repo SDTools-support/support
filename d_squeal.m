@@ -1816,10 +1816,14 @@ elseif comstr(Cam,'par')
 %% #ViewPar{fs2,f(p),xxx,cuName}
 c2=sdth.urn('Dock.Id.ci'); nmap=c2.data.nmap.nmap;projM=nmap; 
 [~,RO]=sdtm.urnPar(CAM,...
- '{}{fs%ug,u%s,cu%s,ciStoreName%s,ci%i,it%g,tmin%g,MinAmpRatio%ug,hold%s,reset%3,cm%s,xlim%g,ylim%g,zlim%g,clim%g,cleanFig%s,amp%s}');
+ ['{}{fs%ug,u%s,cu%s,ciStoreName%s,ci%i,it%g,tmin%g,' ...
+  'MinAmpRatio%ug,hold%s,reset%3,cm%s,xlim%g,ylim%g,zlim%g,clim%g,cleanFig%s,amp%s,clip%s}']);
 if ~isfield(RO,'Failed');RO.Failed={};end
 if ~isfield(RO,'cu');RO.cu='Time';end
-if isKey(nmap,RO.cu);Time=nmap(RO.cu); else; Time=c2.Stack{RO.cu};end;
+if carg<=nargin&&isfield(varargin{carg},'Y');Time=varargin{carg};carg=carg+1;
+elseif isKey(nmap,RO.cu);Time=nmap(RO.cu); 
+else; Time=c2.Stack{RO.cu};
+end;
 if isfield(RO,'ciStoreName')
   RO.ciStoreName=strrep(RO.ciStoreName,'$name',Time.name);
 end
@@ -2272,8 +2276,8 @@ if ~isempty(st); d_squeal(['viewpar' st]);end
  if ~isempty(c2)
   c2.Stack{'Time'}=Time;iiplot;
  else; out=Time; 
+   if exist('gui21','file');out=gui21('LoadCleanTime',Time);end
  end
-
  elseif comstr(Cam,'occ')
  %% #viewOcc : occurence tracking 
  c2=sdth.urn('Dock.Id.ci');projM=c2.data.nmap.nmap;
@@ -3568,8 +3572,8 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
 
   end
   if isfield(C0,'WAng') %Wang to WP
-    r2=rem(double(C0.WAng)/2/pi,1)*4;i1=(diff(r2)<-3);r2(i1,1)=NaN;
-    C0.WP=cdm({r2,'WP[0-4]',Time.name});  
+    r2=rem(double(C0.WAng)/2/pi,1)*360;i1=(diff(r2)<-3);r2(i1,1)=NaN;
+    C0.WP=cdm({r2,'WP [deg]',Time.name});  
   end
   if isfield(C0,'Amean')
    if ~isfield(RO,'amp'); RO.amp='[g]'; end
