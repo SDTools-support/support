@@ -1920,7 +1920,15 @@ for j1=1:size(RO.list,1)
    end
    h=cdm.plot(r2{:},'parent',ga,'linewidth',2);
    set(h(3:end),'linestyle',':','color','k','linewidth',.5)
-   axis tight; 
+   axis tight;
+   if 1==2 % barycentric
+    figure(110)
+    r1=[0 0;1 0;.5 sqrt(1-.25)];r1=r1-mean(r1);
+    r2=double(C0.qr(:,1:3))*r1;r3=r1([1:3 1],:)*max(C0.qr(:,1));
+    figure(110);plot(r2(:,1),r2(:,2),'-',r3(:,1),r3(:,2),':+')
+    axis equal
+
+   end
 
   else%if ~isempty(RO.list{j1,3})
    %% standard plot
