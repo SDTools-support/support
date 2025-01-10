@@ -544,6 +544,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
 
   [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
    '-minrio(#3#"strategy keep minimal damping and use real imaginary orth basis")' ...
+   '-tre(#3#"add shapes to minrio as .1 of contrib in TR if any")' ...
    '-normE(#3#"renorm with elastic matrices")' ...
    '-TimeCont(#%s#"initialize for continuation")' ...
    '-Merge(#%g#"indices of NL to be merged")' ...
@@ -557,7 +558,13 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
 
    if isfield(def,'TR') % expressed in real basis, orth and restit
     TR=orth([real(def.def(:,i1)) imag(def.def(:,i1))]);
-    TR=struct('DOF',sdth.GetData(def.TR.DOF),'def',feutilb('a*b',def.TR.def,TR),'data',def.data(i1,:));
+    TR=struct('DOF',sdth.GetData(def.TR.DOF),'def',feutilb('a*b',def.TR.def,TR),'data',def.data([i1;i1],:));
+    if RO.tre
+     % add some shapes related to dcpx
+     i2=abs(def.def(:,i1))./max(abs(def.def(:,i1)))>.1;
+     TR.def=[TR.def def.TR.def(:,i2)];
+     TR.data(end+1:end+nnz(i2),1:size(def.TR.data,2))=def.TR.data(i2,:);
+    end
 
    else % xxx need renorm
     def=fe_def('subdef',def,i1);
@@ -566,7 +573,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
 
    end
 
-  elseif isfield(def,'TR'); TR=def.TR;
+  elseif isfield(def,'TR'); TR=sdthdf('hdfreadref',def.TR); % xxx omat memcpy ?
   else; error('Need to define a reduction basis')
   end % stra
 
@@ -634,6 +641,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
 
    % check with chandle and evalFNL
    SE3.NL{1,3}=feval(nl_contact('@legToChandle'),SE3.NL{1,3},SE3);
+  % SE3.NL{2,3}=feval(nl_contact('@legToChandle'),SE3.NL{2,3},SE3);
    [dd]=d_squeal('SolveModes',SE3,RC); SE3t=dd.SE; dd=dd.Mode
    [dd.data(:,1:2) ddr.data(:,1:2)]
    
