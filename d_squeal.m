@@ -1586,7 +1586,7 @@ line(RO.tlim(2)*[1 1],get(ga,'YLim'),'color','k','linewidth',2,'tag','now')
 %text(RO.tlim*[.9;.1],ga.YLim*[.95;.05],'y_{Harm}');
 text(RO.tlim*[-.1;1.1],ga.YLim*[.95;.05],'y_{Broad}');
 
-c2=sdth.urn('Dock.Id.ci'); projM=sdtroot('param.nmap',c2); C1=projM('SqShape');
+c2=sdth.urn('Dock.Id.ci'); projM=sdtroot('param.nmap',c2); C1=projM('ParShape');
 [C0,st2,st1]=cdm.xvec(C1,{'iFreq(t),Amp(t)'},struct);
 t=double(C0.Time)-C2.Source.Edit.tmin;
 it3=t>=RO.tlim(1)&t<=RO.tlim(2);
@@ -1838,7 +1838,7 @@ end
 RO.back=0;
 if carg<=nargin;RO=sdth.sfield('addmissing',varargin{carg},RO);end
 if isfield(RO,'it');RO.tmin=RO.it;end
-if isfield(RO,'tmin')% d_squeal('viewpar{a(f,p),cuSqShape,it4 7}')
+if isfield(RO,'tmin')% d_squeal('viewpar{a(f,p),cuParShape,it4 7}')
    Time=fe_def('subdef',Time,@(x)x(:,1)>RO.tmin(1)&x(:,1)<RO.tmin(2));
 end
 if ~isfield(Time,'name');Time.name='Time';end
@@ -2119,10 +2119,10 @@ if any(i1);RO.Failed(i1)=[];
   RO.back=1;
 end
 if any(sdtm.Contains(lower(RO.Failed),'at'))
-  %% #ViewPar.at : harmonic modulation d_squeal('viewpar{at,cuSqShape}',C1) -3
+  %% #ViewPar.at : harmonic modulation d_squeal('viewpar{at,cuParShape}',C1) -3
   gf=202;figure(gf); 
   [r1,i2,st]=omethod('xvec',Time,1,{'Time','iFreq','TR'});
-  % d_squeal('viewpar{at{5000},cuSqShape}',C1)
+  % d_squeal('viewpar{at{5000},cuParShape}',C1)
   [~,r2]=sdtm.urnPar(RO.Failed{sdtm.Contains(lower(RO.Failed),'at')},'{N%g}{harm%g,dh%g,der%g}');
   if ~isfield(r2,'dh');r2.dh=1;end
   r1=interp1(r1(:,1),r1,linspace(r1(1),r1(end,1),r2.N),'linear','extrap');
@@ -2216,13 +2216,13 @@ omethod=sdth.eMethods.omethod;
 if ~isequal(projM,c2.data.nmap.nmap);sdtw('_ewt','report problem');end
 if ~isempty(projM) % Store in standard map 
  projM('SqLastSpec')=RO;
- projM('SqShape')=out;% Store result 
+ projM('ParShape')=out;% Store result 
 end
 st=regexprep(RO.do,'(ReEstY[,]?|outy[,]?)',''); %'{ReEstY}'
 if isequal(st,'{}');st='';end
-if ~isempty(st);st=strrep(st,'}',',cuSqShape}');end
+if ~isempty(st);st=strrep(st,'}',',cuParShape}');end
 if ~isempty(st); d_squeal(['viewpar' st]);end
-%if sdtm.Contains(lower(RO.do),'f(t)'); d_squeal('viewpar{f(t),cuSqShape}');end
+%if sdtm.Contains(lower(RO.do),'f(t)'); d_squeal('viewpar{f(t),cuParShape}');end
  elseif comstr(Cam,'bandpass')
  %% #viewBandPass
  RO=varargin{carg};carg=carg+1;
@@ -2410,7 +2410,7 @@ if any(i1);
 end
 if sdtm.Contains(RC.Failed,'old')
  %% #ViewOccOld -3
- C2=projM('SqShape');RO=projM('SqLastSpec');
+ C2=projM('ParShape');RO=projM('SqLastSpec');
 %r2=C2.Y;r2=r2./r2(:,1);r2=z*r2;r2=r2.*sum(abs(r2).^2,2).^(-.5);
 [~,RO]=sdtm.urnPar(CAM,'{tref%ug}:{xlim%ug}');
 RO.iref=sdtm.indNearest(C2.X{1}(:,1),RO.tref);
@@ -2461,7 +2461,7 @@ if comstr(Cam,'mkva')
  c13=get(13,'userdata');ci=get(22,'userdata');
  i3=sdtm.indNearest(c20.def.data(:,1),[.14;.18]);
  c2=sdth.urn('dock.Id.ci'); projM=c2.data.nmap.nmap;
- C3=projM('SqShape');
+ C3=projM('ParShape');
 
  RO.tOff=c13.Stack{'spec'}.Source.Edit.tmin;
 
@@ -2498,7 +2498,7 @@ elseif comstr(Cam,'mkvb')
  c13=get(13,'userdata');ci=get(22,'userdata');
  i3=sdtm.indNearest(c20.def.data(:,1),[.14;.18]);
  c2=sdth.urn('dock.Id.ci'); projM=c2.data.nmap.nmap;
- C3=projM('SqShape');
+ C3=projM('ParShape');
 
  RO.tOff=c13.Stack{'spec'}.Source.Edit.tmin;
  c106=figure(106); ga106=get(c106,'currentaxes'); axis tight
@@ -2547,7 +2547,7 @@ end
  li=dir(varargin{2});% xxx generic
  RO=varargin{3}; c2=sdth.urn('Dock.Id.ci'); projM=c2.data.nmap.nmap;
  for j1=1:length(li)
-   load(li(j1).name,'Demod');projM('SqShape')=Demod;
+   load(li(j1).name,'Demod');projM('ParShape')=Demod;
    r2=d_squeal(['ViewPar' RO.ViewPar]);r2.ColumnName{1,end+1}='name';
    r2.table=num2cell(r2.table);
    r2.table(:,size(r2.ColumnName,2))={Demod.meta.Name};
@@ -2748,7 +2748,7 @@ end
 
    if 1==2
     d_squeal('ViewHBV{dmBand100,harm1,do{ReEstY,f(t),a(t)},f 1500,ifBand100,aeBand100,clipBand500 3k,,tclip .01 .01}');
-    c3=iiplot(3,';');nmap=c3.data.nmap.nmap;C4=nmap('SqShape');
+    c3=iiplot(3,';');nmap=c3.data.nmap.nmap;C4=nmap('ParShape');
     c14=sdth.urn('iiplot(3).clone(14)');iicom(c14,'curveinit','A1',C4);
     iicom(c3,'polarx2');
     %cdm.urnVec(C4,'{tlim1 100}{x,2}{y,l1,abs}{gf404,tight}');
