@@ -545,6 +545,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
   [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
    '-minrio(#3#"strategy keep minimal damping and use real imaginary orth basis")' ...
    '-tre(#3#"add shapes to minrio as .1 of contrib in TR if any")' ...
+   '-tjsnap(#3#"add snapshot shapes")' ...
    '-normE(#3#"renorm with elastic matrices")' ...
    '-TimeCont(#%s#"initialize for continuation")' ...
    '-Merge(#%g#"indices of NL to be merged")' ...
@@ -593,14 +594,41 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    end
   end
 
+  if 0&&RO.tjsnap
+   dbstack,keyboard
+   %[q01,r1]=nl_solve('deffnl-getRes',SE,q0)
+   emj=feutilb('dtkt',fe_c(TR.DOF,SE.DOF)*TR.def,SE.K{1});
+   q1=q0; q1.def=TR.def(:,1:2)*1e-5; 
+   %diag(exp(1i*2*pi*TR.data(1)*linspace(0,1/TR.data(1),10)))
+   q1.def=1e-4*real(TR.def(:,1)*exp(1i*2*pi*TR.data(1)*linspace(0,1/TR.data(1),10)));
+   q1.q0=q0.def;
+   q1.data=linspace(0,1/TR.data(1),10)';
+   q1.def=fe_c(TR.DOF,SE.DOF)*q1.def; q1.q0=fe_c(TR.DOF,SE.DOF)*q1.q0;
+   q1.DOF=SE.DOF;
+   [q11,r1]=nl_solve('deffnl-getRes',SE,q1);
+
+
+   r1d=ofact(SE.K{3}.GetData,r1);
+   TR.def=[TR.def SE.Case.T*r1d]; TR.data(size(TR.def,2),end)=0
+   % generate trajectory shape snapshots
+   
+   %  get FNL from snapshots
+
+   % compute static uplift response
+
+   % add to reduction basis
+
+
+  end
+
   if RO.normE % xxx post renorm with elastic matrices only
    % I guess this is needed for diagonal modal newmark -> xxxeb move to
    % hrRedNL
    TR=feutilb('placeindof',SE.DOF,TR);
    K=feutilb('tkt',TR.def,SE.K);
    d1=fe_eig({K{1},K{3},[]},2);
-   TR.def=TR.def*d1.def;
-   if max(max(abs(d1.def'*K{1}*d1.def-eye(size(d1.def,1)))))>1e-6
+   TR.def=TR.def*real(d1.def);
+   if max(max(abs(d1.def'*K{1}*d1.def-eye(size(d1.def,2)))))>1e-6
     [TR.def,wj]=fe_norm(TR.def,SE.K{1},SE.K{3}); TR.data=wj/2/pi;
    end
   end
