@@ -578,6 +578,38 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
   else; error('Need to define a reduction basis')
   end % stra
 
+  if RO.tjsnap
+   dbstack,keyboard
+   q0=stack_get(SE,'curve','q0','get');
+   %[q01,r1]=nl_solve('deffnl-getRes',SE,q0)
+  % emj=feutilb('dtkt',fe_c(TR.DOF,SE.DOF)*TR.def,SE.K{1});
+   q1=q0; q1.def=def.TR.def*def.def
+   %diag(exp(1i*2*pi*TR.data(1)*linspace(0,1/TR.data(1),10)))
+   q1.def=5e-1*real(q1.def(:,1)*exp(1i*2*pi*def.data(1)*linspace(0,1/def.data(1),10)));
+   q1.q0=q0.def;
+   q1.data=linspace(0,1/def.data(1),10)';
+   q1.def=fe_c(TR.DOF,SE.DOF)*q1.def; %q1.q0=fe_c(TR.DOF,SE.DOF)*q1.q0;
+   q1.DOF=SE.DOF;
+   [q11,r1]=nl_solve('deffnl-getRes',SE,q1);
+
+
+   r1d=ofact(SE.K{3}.GetData,r1);
+   TR.def=[TR.def SE.Case.T*r1d]; TR.data(size(TR.def,2),end)=0
+   TR=feutilb('placeindof',SE.DOF,TR);
+   [TR.def,wj]=fe_norm(TR.def,SE.K{1},SE.K{3},[-1 0 0 1e-12]); TR.data=wj/2/pi;
+   % generate trajectory shape snapshots
+
+   %  get FNL from snapshots
+
+   % compute static uplift response
+
+   % add to reduction basis
+
+
+   %end
+
+  end
+
   if RO.q0 % add q0 reduction basis
    q0=stack_get(SE,'curve','q0','get');
    if ~isempty(q0)
@@ -592,33 +624,6 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
     TRn.def=TRn.def-model.Case.T*(model.K{1}*c1*TR.def*TR.def'*TRn.def);
     TR.def=[TR.def TRn.def];
    end
-  end
-
-  if 0&&RO.tjsnap
-   dbstack,keyboard
-   %[q01,r1]=nl_solve('deffnl-getRes',SE,q0)
-   emj=feutilb('dtkt',fe_c(TR.DOF,SE.DOF)*TR.def,SE.K{1});
-   q1=q0; q1.def=TR.def(:,1:2)*1e-5; 
-   %diag(exp(1i*2*pi*TR.data(1)*linspace(0,1/TR.data(1),10)))
-   q1.def=1e-4*real(TR.def(:,1)*exp(1i*2*pi*TR.data(1)*linspace(0,1/TR.data(1),10)));
-   q1.q0=q0.def;
-   q1.data=linspace(0,1/TR.data(1),10)';
-   q1.def=fe_c(TR.DOF,SE.DOF)*q1.def; q1.q0=fe_c(TR.DOF,SE.DOF)*q1.q0;
-   q1.DOF=SE.DOF;
-   [q11,r1]=nl_solve('deffnl-getRes',SE,q1);
-
-
-   r1d=ofact(SE.K{3}.GetData,r1);
-   TR.def=[TR.def SE.Case.T*r1d]; TR.data(size(TR.def,2),end)=0
-   % generate trajectory shape snapshots
-   
-   %  get FNL from snapshots
-
-   % compute static uplift response
-
-   % add to reduction basis
-
-
   end
 
   if RO.normE % xxx post renorm with elastic matrices only
