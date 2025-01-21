@@ -3701,14 +3701,49 @@ function cg=initPres(cf,co2,i5)
 
 end
 
-function showCoh
- % #showCoh
+function showCoh(varargin)
+ % #showCoh : show coherence in parametric sweep
  c5=get(5,'userdata'); c2=get(2,'userdata');
  C1=c5.Stack{c5.ua.sList{1}};
- ch=remi(c5.ua.ch,size(C1.Y,2));
+ iw=C1.X{1}<c5.ua.xlim(1)|C1.X{1}>c5.ua.xlim(2);
+ it=C1.X{3}(:,5)<3e5; % above 3 bar
+
+ if nargin>0
+   %% click event
+   obj=varargin{1};evt=varargin{2}; 
+   pos=evt.ga.CurrentPoint;
+   i1=sdtm.indNearest(C1.X{3}(:,1),pos(1,2));C1.X{3}(i1,:);
+   iicom(c5,'ch',{'tstart',i1})
+   for gf=601:602
+    ga=findobj(gf,'type','axes');ga(strcmpi({ga.Tag},'ParbarV'))=[];
+    delete(findobj(ga,'tag','now'));
+    h=line(pos(1,1),pos(1,2),1,'marker','o','color','r','tag','now','parent',ga);
+   end
+
+ if ishandle(603)
+  % need to have modal filter 
+  i1=sdtm.indNearest(C1.X{1},pos(1,1));
+  [~,i2]=ind2sub([size(C1.Y,2) size(C1.Y,3) size(C1.Y,4)],c5.ua.ch);
+  if 1==1
+   [u,s,v]=vhandle.matrix.rsvd(squeeze(C1.Y(i1,:,:,1)).');%,0,'vector');
+  else
+    v=squeeze(C1.Y(i1,:,i2,1));v=v(:)/norm(v);
+  end
+  Y=reshape(v(:,1)'*reshape(permute(C1.Y(:,:,~it,1),[2 1 3 4]),size(C1.Y,2),[]),[size(C1.Y,1) nnz(~it)]); 
+  Y(iw,:)=[];x=C1.X{1};x(iw)=[];
+  figure(603);h=pcolor(x,C1.X{3}(~it,1),log10(abs(Y))');set(h,'edgecolor','none');
+  figure(603);h=semilogy(x,(abs(Y))');
+ end
+
+
+   return;
+ end
+
+ InGf=gcf;
+ ch=remi(c5.ua.ch(1),size(C1.Y,2));
  C2=fe_def('subchcurve',C1,{'DOF',ch;'TF',3});
  C2.X(2)=[];C2.Xlab(2)=[];C2.Y=log10(squeeze(C2.Y));
- iw=C2.X{1}<c5.ua.xlim(1)|C2.X{1}>c5.ua.xlim(2);C2.X{1}(iw,:)=[];C2.Y(iw,:)=[];
+ C2.X{1}(iw,:)=[];C2.Y(iw,:)=[];
  C2.Ylab=C1.X{2}(ch,:);
  gf=figure(601);clf;gf.Name='1-COH';cdm.pcolor(C2);
  if size(C2.X{2},2)>1
@@ -3719,7 +3754,7 @@ function showCoh
   end
  end
  h=[];
- i1=size(C1.Y);i1(1)=[];[i1,i2,i3]=ind2sub(i1,c5.ua.ch);
+ i1=size(C1.Y);i1(1)=[];[i1,i2,i3]=ind2sub(i1,c5.ua.ch(1));
  coh=log10(squeeze(C1.Y(:,i1,i2,3)));r2=[min(coh) max(coh)];coh(end+1)=NaN;
   prop={'CData',coh,'EdgeColor','Flat','linewidth',2};
  for j1=1:size(c5.ax,1)
@@ -3734,4 +3769,25 @@ function showCoh
   if j1==1; h=go;else;h(j1)=go;end
  end
  cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImToFigN','ImSw80{@line,""}','WrW49c'});
+ iimouse('InteractUrnShow',601,'InPlace.@surface{d_squeal@showCoh,"Change tStart in iiplot(5)"}')
+
+ if ishandle(602)
+  C2=fe_def('subchcurve',C1,{'DOF',ch;'TF',1});
+  %it=[1:10 size(C2.Y,3)+(-9:0)];C2.X{3}(it,:)=[];C2.Y(:,:,it,:)=[];
+  %it=abs(gradient(C2.X{3}(:,5))/1e5)>.2;C2.X{3}(it,:)=[];C2.Y(:,:,it,:)=[];
+  C2.X{3}(it,:)=[];C2.Y(:,:,it,:)=[];
+  C2.X{1}(iw,:)=[];C2.Y(iw,:)=[];
+  C2.Ylab=C1.X{2}(ch,:); C2.Ylab{1}=['H1 ' C2.Ylab{1}];
+  C2.X(2)=[];C2.Xlab(2)=[];
+  C2.Y=(squeeze(abs(C2.Y)));
+  ip=1;
+  C2.X{2}=C2.X{2}(:,ip);C2.Xlab{2}=C2.Xlab{2}(ip,:);
+  gf=figure(602);clf;gf.Name='H1';cdm.pcolor(C2);
+   cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImToFigN','ImSw80{@line,""}','WrW49c'});
+
+  iimouse('InteractUrnShow',602,'InPlace.@surface{d_squeal@showCoh,"Change tStart in iiplot(5)"}')
+ end
+
+
+ if length(dbstack)>1;  figure(InGf);end
 end
