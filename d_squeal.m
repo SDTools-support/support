@@ -1961,6 +1961,11 @@ for j1=1:size(RO.list,1)
    if isfield(RO,'clim');prop{end}(end+(1:2))={'clim',RO.clim};end
    uf.do(end+1,1:2)={'os',prop};
    cdm.parPlot(uf)
+   if strncmpi(uf.do{1},'wp',2)
+     go=findobj(ga,'type','patch');
+     x=go.XData;ind=find(x(1:end-1)<=x(1)&x(2:end)>x(1));
+     text(go.XData(ind),go.YData(ind),max(go.ZData(ind))*ones(size(ind)),cellfun(@(x)sprintf('t=%.2f s',x),num2cell(C0.Time(ind)),'uni',0))
+   end
    RO.Linked{end+1}=uf;
   end
   if any(gf==[300 106 108]);hold off;end
@@ -2544,9 +2549,11 @@ end
  elseif comstr(Cam,'summary')
  %% #viewSummary : 
 
- li=dir(varargin{2});% xxx generic
- RO=varargin{3}; c2=sdth.urn('Dock.Id.ci'); projM=c2.data.nmap.nmap;
- for j1=1:length(li)
+ c2=sdth.urn('Dock.Id.ci'); projM=c2.data.nmap.nmap;
+ if nargin>1&&ischar(varargin{2})
+  li=dir(varargin{2});% xxx generic
+  RO=varargin{3}; 
+  for j1=1:length(li)
    load(li(j1).name,'Demod');projM('ParShape')=Demod;
    r2=d_squeal(['ViewPar' RO.ViewPar]);r2.ColumnName{1,end+1}='name';
    r2.table=num2cell(r2.table);
@@ -2554,22 +2561,44 @@ end
    if j1==1; ua=r2;
    else; ua.table=[ua.table;r2.table];
    end
- end
- ub=vhandle.tab(ua);asTab(ub);
- C0=struct;
- for j1=1:size(ua.ColumnName,2);
+  end
+  ub=vhandle.tab(ua);asTab(ub);
+  C0=struct;
+  for j1=1:size(ua.ColumnName,2);
    try; C0.(ua.ColumnName{1,j1})=vertcat(ua.table{:,j1});end
+  end
+  wt=C0.WAng/{2*pi,'Wheel Turn'};
+ else
+  %% generate parameter summary
+  %C1=projM('ParShape');
+  C1=c2.Stack{'Time'};
+  C0=d_squeal('ViewPar{TempPad(t),Pressure(t),Mic(t)}',C1);
+  ind=double(C0.Pressure)<2; 
+  st=fieldnames(C0);
+  x=C0.WAng/{2*pi,'Wheel Turn'};wt=ceil(double(x)+eps);
+  r1=sparse(wt,1,1);
+  for j1=1:length(st) % Average per wheet turn
+   r2=C0.(st{j1}).Source;
+   r2.data=full(sparse(wt,1,r2.data)./r1); 
+   if j1==1;
+    i2=1:length(r2.data);%[~,i2]=sort(r2.data);
+    i2(r2.data(i2)<2)=[];
+   end
+   r2.data=r2.data(i2);
+   C0.(st{j1})=cdm({r2.data,r2.label});
+  end
+  wt=cdm({1:nnz(i2),'Wheel Turn index'});
  end
 
- gf=sdth.urn('figure(201).os{@Dock,{name,SqSig},name,201 WT Summary,NumberTitle,off}');
- figure(double(gf));clf;
- cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImSw80','WrW49c'});
+ gf=sdth.urn('figure(201)');%.os{@Dock,{name,SqSig},name,201 WT Summary,NumberTitle,off}
+ figure(double(gf));clf;cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImSw80','WrW49c'});
  
  yyaxis('left');
- plot(1:length(C0.Pressure),C0.Pressure,'.')
- xlabel('Wheel Turn');ylabel('Pressure [Bar]');
+ cdm.plot(wt,C0.Pressure,'.');axis tight
+ %xlabel('Wheel Turn');ylabel('Pressure [Bar]');
  yyaxis('right');
- plot(1:length(C0.Pressure),C0.TempPad,'.');ylabel('TempPad [C]');
+ cdm.plot(wt,C0.TempPad,'.');
+
  elseif comstr(Cam,'pt')
  %% #viewPT : post-processing of time simulations
 
@@ -3577,12 +3606,12 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
       r3=C0.Amax{j1,1};
       r3(r3/norm(r3,'inf')<RO.MinAmpRatio,1)=NaN;C0.Amax{j1,1}=r3;% hide certain areas
       if sdtm.regContains(C0.Amax{j1,2},'([g]|Amax)') 
-       % Growth estimation / decay rate estimation
+       % Growth estimation / decay ratio estimation
        % figure(1); plot(gradient(log(C0.Amean{1}))./C0.iFreq{1}/diff(Time.X{1}(1:2))*100)
        coef=1; 
        if contains(C0.iFreq.label,'kHz');coef=1e-3;end
        if ~isfield(C0,'iFreq');[C1,~,~]=cdm.xvec(Time,{'f(t)'},RO);end
-       C0.dr=cdm({[ze(r2) ]*coef,'Decay rate [%]'},Time.name);
+       C0.dr=cdm({[ze(r2) ]*coef,'Decay ratio [%]'},Time.name);
       end
      end
 
