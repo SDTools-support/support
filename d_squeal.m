@@ -762,8 +762,8 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    %% #SolveTimeContinue transient continuation and display
    if carg<=nargin;RT=varargin{carg};carg=carg+1;else;RT=evalin('caller','RO');end
    co2=RT.nmap('LastContinue'); %mo2=RT.nmap('CurModel'); co2=mo2.nmap('LastContinue');
-   [~,R2]=sdtm.urnPar(CAM,'{}{RandF%ug,Flab%s}');if ~isfield(R2,'Failed');R2.Failed={''};end
-   if ~any(co2.u)&&~any(co2.v)||any(strcmpi(R2.Failed,'randv'));
+   [~,R2]=sdtm.urnPar(CAM,'{}{RandF%ug,Flab%s}');if ~isfield(R2,'Failed');R2.Other={''};end
+   if ~any(co2.u)&&~any(co2.v)||any(strcmpi(R2.Other,'randv'));
        co2.v=rand(size(co2.v))*.1*1000; % xxx factor too high when unstable
    end
    if isfield(R2,'RandF'); % xxx steq (atm), or piston force ?
@@ -1706,10 +1706,10 @@ if isempty(Cam)
 else
   [st,RO]=sdtm.urnPar(CAM,'{Spec%s}:{ci%g,jframe%g,ChSel%s,name%s,jPar%g,fi%s,cleanFig%s,cm%s,filtf%g}');  
 end
-  if ~isfield(RO,'Failed');RO.Failed={};end
-  i1=~cellfun(@isempty,regexpi(RO.Failed,'[ft](min|max)'));
+  if ~isfield(RO,'Failed');RO.Other={};end
+  i1=~cellfun(@isempty,regexpi(RO.Other,'[ft](min|max)'));
   if any(i1)
-    RO.Spec=horzcat(RO.Spec,RO.Failed{i1});RO.Failed(i1)=[];
+    RO.Spec=horzcat(RO.Spec,RO.Other{i1});RO.Other(i1)=[];
   end
   if isfield(RO,'jPar')&&RO.jPar  % Analyze a evt split
     r2=stack_get(c2,'curve','Split','g');
@@ -1786,12 +1786,12 @@ if RO.ci==13; setappdata(13,'SdtName','Spec');end
 if new % Place in same tile as iiplot 
  cingui('objset',c13,{'@Dock',{'Name','Id','tile',c2.opt(1)}})
 end
-if any(strncmpi(RO.Failed,'suma',4))
+if any(strncmpi(RO.Other,'suma',4))
   %% Suma : Sum Time freq amplitudes
   % suma : sum all channels
   % suma[unit] : sum only channel with asked unit
-  i2=find(strncmpi(RO.Failed,'suma',4));
-  name=RO.Failed{i2};
+  i2=find(strncmpi(RO.Other,'suma',4));
+  name=RO.Other{i2};
   unit=regexp(name,'suma\[(.*)\]','tokens','ignorecase');
   if ~isempty(unit); 
    unit=unit{1}{1};
@@ -1819,7 +1819,7 @@ if strcmpi(RO.type,'fft') % #guess_cycle_freq -3
  r2=sum(abs(C2.Y),2);if C2.X{1}(1)==0; r2(1:2)=0;end
  [~,i2]=max(r2);RO.f=C2.X{1}(i2); out=RO; 
 else;% If spectro
- if ~isfield(RO,'Failed')||~any(strcmpi(RO.Failed,'zlog'));
+ if ~isfield(RO,'Failed')||~any(strcmpi(RO.Other,'zlog'));
   c13.ua.YFcn='r3=abs(r3);';
  % cb=colorbar;cb.Label.String='Amplitude (lin)';
  %else; cb=colorbar;cb.Label.String='Amplitude [log_{10}]';
@@ -1859,7 +1859,7 @@ c2=sdth.urn('Dock.Id.ci'); nmap=c2.data.nmap.nmap;projM=nmap;
 [~,RO]=sdtm.urnPar(CAM,...
  ['{}{fs%ug,u%s,cu%s,ciStoreName%s,ci%i,it%g,tmin%g,' ...
   'MinAmpRatio%ug,hold%s,reset%3,cm%s,xlim%g,ylim%g,zlim%g,clim%g,cleanFig%s,amp%s,clip%s}']);
-if ~isfield(RO,'Failed');RO.Failed={};end
+if ~isfield(RO,'Failed');RO.Other={};end
 if ~isfield(RO,'cu');RO.cu='Time';end
 if carg<=nargin&&isfield(varargin{carg},'Y');Time=varargin{carg};carg=carg+1;
 elseif isKey(nmap,RO.cu);Time=nmap(RO.cu); 
@@ -1883,7 +1883,7 @@ RO.projM=projM;
 
 RO.getDep=@getAmp;
 % d_signal('nmap.xvec') gives the types 
-[C0,st2,st1,RO]=cdm.xvec(Time,[RO.Failed;{'WAng(t)'}],RO);% Vectors and dependencies
+[C0,st2,st1,RO]=cdm.xvec(Time,[RO.Other;{'WAng(t)'}],RO);% Vectors and dependencies
 if isfield(C0,'Time')
  t=double(C0.Time);ind=find(diff(t)>diff(t(1:2))*3); 
  if ~isempty(ind);ind=unique([ind;ind+1]);
@@ -2033,7 +2033,7 @@ if isfield(RO,'ciStoreName')&&size(Time.X{1},2)>1
   iicom(c12,'curveinit',RO.ciStoreName,C1);
   r1=[.13 .2 .8 .75];c12.ax(1,6:9)=r1;set(c12.ga,'position',r1);iiplot(c12);
  end
- if any(strcmpi(RO.Failed,'polar'))
+ if any(strcmpi(RO.Other,'polar'))
      'xxx'
      dbstack; keyboard; 'not failed'
   c12=get(12,'userdata');iicom(c12,'polar Comp(2)')
@@ -2052,7 +2052,7 @@ if all(cellfun(@isempty,RO.list(:,1))); return;end
 
 dbstack; keyboard;
 %% obsolete commands 
-if any(sdtm.Contains(lower(RO.Failed),'pr(temp)'))
+if any(sdtm.Contains(lower(RO.Other),'pr(temp)'))
    r2=stack_get(c2,'','#^p');
    gf=sdth.urn(sprintf('figure(%i).os{@Dock,{name,SqSig},name,%i P(T),NumberTitle,off}',300*[1 1]));
    figure(gf);clf; hold on;
@@ -2065,13 +2065,13 @@ if any(sdtm.Contains(lower(RO.Failed),'pr(temp)'))
    hold off;axis tight; title('');legend('location','best');grid on
    cleanFig(gf,Time,c2,RO);  RO.back=1;
 end
-i1=sdtm.Contains(lower(RO.Failed),'a(f)');
+i1=sdtm.Contains(lower(RO.Other),'a(f)');
 if any(i1)
   %% #ViewPar.a(f) amplitude as function of frequency -3
-  [r1,i2,st]=omethod('xvec',Time,1,{'Time','iFreq'});RO.Failed(i1)=[];
+  [r1,i2,st]=omethod('xvec',Time,1,{'Time','iFreq'});RO.Other(i1)=[];
   [r1,st]=getAmp(r1,Time,st,RO);r1(:,4:end)=[];
-  if strncmp(RO.Failed{2},'{',1)
-    [~,RP]=sdtm.urnPar(RO.Failed{2},'{}{lp%g}');
+  if strncmp(RO.Other{2},'{',1)
+    [~,RP]=sdtm.urnPar(RO.Other{2},'{}{lp%g}');
     if ~isfield(RP,'dt');RP.dt=diff(r1(1:2),1);end
     RP.lp=sdtpy(sprintf('lowpass{8,%f %f,pa 5 .8,dososfiltfilt}',RP.lp,1/RP.dt));
     r1(:,4:5)=r1(:,2:3);
@@ -2100,22 +2100,22 @@ if any(i1)
   axis tight; 
   cleanFig(gf,Time,c2,RO);  RO.back=1;
 end
-i1=find(sdtm.regContains(RO.Failed,'(a.f,p.|a.wp.f.)','i'));
+i1=find(sdtm.regContains(RO.Other,'(a.f,p.|a.wp.f.)','i'));
 if ~isempty(i1)
   %% #ViewPar.a(f,p) Display instant freq as function of time attempt to show wheel pos -3
   st={'Pres','iFreq'}; i3=1:3;RO.aProp={'alim',[-.05 1]};
-  if sdtm.regContains(RO.Failed{i1},'wp','i')
+  if sdtm.regContains(RO.Other{i1},'wp','i')
      h=cdm.pline(C0.Time{1},C0.iFreq{1},C0.Amean{1},'parent',ga,'edgecolor','interp','tag','iFreq', ...
        'facevertexalphadata',y/max(y),'edgealpha','interp','linewidth',2);
       st1={'WAng','iFreq'};i3=[2 1 3]; RO.aProp={'alim',[-.05 1],'yscale','log'};
   end
-  RO.Failed(i1)=[];
+  RO.Other(i1)=[];
 
 dbstack; keyboard; 
   [r1,i2,st]=omethod('xvec',Time,1,st1);
   [r1,st]=getAmp(r1,Time,st,RO);r1=r1(:,i3);st=st(i3,:);
 
-  gf=sdth.urn(sprintf('figure(104).os{@Dock,{name,SqSig},name,104 %s,NumberTitle,off}',RO.Failed{i1}));
+  gf=sdth.urn(sprintf('figure(104).os{@Dock,{name,SqSig},name,104 %s,NumberTitle,off}',RO.Other{i1}));
   figure(gf);clf;ga=get(gf,'CurrentAxes'); if isempty(ga);ga=axes('parent',gf);end
    st1={[r1(:,2);NaN],[r1(:,3);NaN],[r1(:,1);NaN],[r1(:,1);NaN],'edgecolor','interp','tag','iFreq', ...
        'linewidth',2};
@@ -2127,8 +2127,8 @@ dbstack; keyboard;
   axis tight; wheelPosLines(c2);
   cleanFig(gf,Time,c2,RO);  RO.back=1;
 end
-i1=sdtm.Contains(lower(RO.Failed),'a(t)');
-if any(i1);RO.Failed(i1)=[];
+i1=sdtm.Contains(lower(RO.Other),'a(t)');
+if any(i1);RO.Other(i1)=[];
   %% #ViewPar.a_t Display amplitude as function of time and instant freq -3
   [r1,i2,st]=omethod('xvec',Time,1,{'Time','iFreq'});
   [r1,st]=getAmp(r1,Time,st);
@@ -2156,12 +2156,12 @@ if any(i1);RO.Failed(i1)=[];
   end
   RO.back=1;
 end
-if any(sdtm.Contains(lower(RO.Failed),'at'))
+if any(sdtm.Contains(lower(RO.Other),'at'))
   %% #ViewPar.at : harmonic modulation d_squeal('viewpar{at,cuParShape}',C1) -3
   gf=202;figure(gf); 
   [r1,i2,st]=omethod('xvec',Time,1,{'Time','iFreq','TR'});
   % d_squeal('viewpar{at{5000},cuParShape}',C1)
-  [~,r2]=sdtm.urnPar(RO.Failed{sdtm.Contains(lower(RO.Failed),'at')},'{N%g}{harm%g,dh%g,der%g}');
+  [~,r2]=sdtm.urnPar(RO.Other{sdtm.Contains(lower(RO.Other),'at')},'{N%g}{harm%g,dh%g,der%g}');
   if ~isfield(r2,'dh');r2.dh=1;end
   r1=interp1(r1(:,1),r1,linspace(r1(1),r1(end,1),r2.N),'linear','extrap');
   phi=r1(:,3)*pi/2;t=r1(:,1);
@@ -2353,9 +2353,9 @@ if ~isempty(obj)
  return
 
 end
-[~,RC]=sdtm.urnPar(CAM,'{}{yy%s}');if ~isfield(RC,'Failed');RC.Failed={};end
+[~,RC]=sdtm.urnPar(CAM,'{}{yy%s}');if ~isfield(RC,'Failed');RC.Other={};end
 
-i1=sdtm.Contains(RC.Failed,'DirScan');
+i1=sdtm.Contains(RC.Other,'DirScan');
 if any(i1);% d_squeal('ViewOcc{DirScan}')
  li=cell(projM);
  li(cellfun(@(x)~isfield(x,'fOcc'),li(:,2)),:)=[];
@@ -2385,7 +2385,7 @@ if any(i1);% d_squeal('ViewOcc{DirScan}')
  sdth.os(gf,'d.',{'ImTight','ImGrid','ImSw80'},'p.',{'ImToFigN','WrW49c'})
 
 end
-i1=sdtm.Contains(RC.Failed,'detect');
+i1=sdtm.Contains(RC.Other,'detect');
 if any(i1);
  %% #ViewOccDetect : see from spectro -3
 
@@ -2405,7 +2405,7 @@ if any(i1);
   [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
    'MinAmpRatio(0.1#%g#"Amplitude ratio below which time freq is not displayed")' ...
    sdtm.pcin('fmin') sdtm.pcin('gf')  ...
-   ],{RC,RC.Failed{i1}}); 
+   ],{RC,RC.Other{i1}}); 
   if ~strcmpi(spec.Xlab{1}{1},'Freq')
    i3=[2 1 3]; spec.Y=permute(spec.Y,i3);spec.X=spec.X(i3);spec.Xlab=spec.Xlab(i3);
   end
@@ -2446,7 +2446,7 @@ if any(i1);
 
 
 end
-if sdtm.Contains(RC.Failed,'old')
+if sdtm.Contains(RC.Other,'old')
  %% #ViewOccOld -3
  C2=projM('ParShape');RO=projM('SqLastSpec');
 %r2=C2.Y;r2=r2./r2(:,1);r2=z*r2;r2=r2.*sum(abs(r2).^2,2).^(-.5);
@@ -2639,9 +2639,9 @@ end
  d1=varargin{carg};carg=carg+1; 
  RT=varargin{carg};carg=carg+1; 
  [~,R2]=sdtm.urnPar(CAM,'{}{}');
-   i1=sdtm.regContains(R2.Failed,'ctc');
+   i1=sdtm.regContains(R2.Other,'ctc');
    if any(i1) % CtC display contact fields 
-      Cam=lower(R2.Failed{i1});
+      Cam=lower(R2.Other{i1});
       v=[];
      % Analyze the contact information EB24
       C3=feval(nlutil('@FNL2curve'),d1,struct('urn','{squeal}'));
@@ -2669,7 +2669,7 @@ end
        %set(h,'FaceVertexCData',v(:,2),'facecolor','interp')
       end
    end
-   i1=sdtm.regContains(R2.Failed,'snl');
+   i1=sdtm.regContains(R2.Other,'snl');
    if any(i1)
     %% Default display forces 
     C3=feval(nlutil('@FNL2curve'),d1,struct('drop0',1,'out','list'));
@@ -2678,7 +2678,7 @@ end
     C3.X{1}(:,1)=C3.X{1}(:,1)-C3.X{1}(1);
     c3=iiplot(3,';');iicom('curveinit','Time',C3)
    end
-   i1=sdtm.regContains(R2.Failed,'def');
+   i1=sdtm.regContains(R2.Other,'def');
    if any(i1)
     %% Default display displacement
     Time=fe_def('def2curve',d1);
@@ -2689,20 +2689,20 @@ end
    %i3=~any(C3.Y);C3.Y(:,i3)=[];C3.X{2}(i3,:)=[];
    %C3=fe_def('def2curve',d1);C3.X{1}(:,1)=C3.X{1}(:,1)-C3.X{1}(1);C3.X{2}=fe_c(d1.DOF);
    %    C3.Xlab{1}={'Time','s';'Fc0',''};
-   i1=sdtm.regContains(R2.Failed,'viewspec','i');
+   i1=sdtm.regContains(R2.Other,'viewspec','i');
    %RT.nmap('ViewSpec')='ViewSpec(BufTime .4 Overlap .8 tmin .5 -window hanning fmin 1300 1700)';
    if ~any(i1);elseif ~isKey(RT.nmap,'ViewSpec');error('Missing ViewSpec key')
    else;  d_squeal(RT.nmap('ViewSpec'));
    end
-   i1=sdtm.regContains(R2.Failed,'viewHBV','i');
+   i1=sdtm.regContains(R2.Other,'viewHBV','i');
    %RT.nmap('ViewSpec')='ViewSpec(BufTime .4 Overlap .8 tmin .5 -window hanning fmin 1300 1700)';
    if ~any(i1);elseif ~isKey(RT.nmap,'ViewHBV');error('Missing ViewHBV key')
    else;  d_squeal(RT.nmap('ViewHBV'));
    end
    i1 =1;
    while any(i1)
-    i1=sdtm.regContains(R2.Failed,'dem{','i'); if ~any(i1);break;end
-    i1=find(i1,1);CAM=R2.Failed{i1};R2.Failed(i1)=[]; [~,R3]=sdtm.urnPar(CAM,'{}{o%s,cf%i}');
+    i1=sdtm.regContains(R2.Other,'dem{','i'); if ~any(i1);break;end
+    i1=find(i1,1);CAM=R2.Other{i1};R2.Other(i1)=[]; [~,R3]=sdtm.urnPar(CAM,'{}{o%s,cf%i}');
     if ~isfield(R3,'cf');R3.cf=20;end
     c2=sdth.urn('Dock.Id.ci');projM=c2.data.nmap.nmap;RD=projM('SqLastSpec');
     
@@ -2748,7 +2748,7 @@ end
     fecom coloredgealpha.1
     if isKey(RT.nmap,'FeplotCv');iimouse('view',cg.ga,RT.nmap('FeplotCv'));end
    end
-  if any(sdtm.regContains(R2.Failed,'rla','i')) 
+  if any(sdtm.regContains(R2.Other,'rla','i')) 
      %% #ViewPt{RLa} Prepare root locus
     SE=co2.model; 
     
@@ -2795,7 +2795,7 @@ end
 
   end
 
-  if any(sdtm.regContains(R2.Failed,'tilea','i')) % Prepare dock
+  if any(sdtm.regContains(R2.Other,'tilea','i')) % Prepare dock
    c22=sdth.urn('Dock.Id.ci.Clone{22}');iicom(c22,'iixonly','Time');
    comgui('objset',[22 20 13 21],{'@dock',{'name','Pres', ...
     'arrangement',[1 2;3 4], 'position',[0 0 1280 800],...
@@ -2804,7 +2804,7 @@ end
   end
 
 
-   if any(strcmpi(R2.Failed,'store'))
+   if any(strcmpi(R2.Other,'store'))
     RT.nmap('LastContinue')=r3;
    end
 
@@ -3059,7 +3059,7 @@ elseif comstr(Cam,'load');[CAM,Cam]=comstr(CAM,5);
  elseif i1&&~strcmpi(RO.ext,'.svd') % File exist
      if isequal(RO.LoadFcn,'ufread');r1=ufread(FileName);
      elseif isfield(RO,'Failed') % xxx third arg to load a given variable only
-      r1=load(FileName,RO.Failed{1}); 
+      r1=load(FileName,RO.Other{1}); 
      else;r1=load(FileName);
      end
      if isfield(r1,'Time');Time=r1.Time;
@@ -3628,7 +3628,7 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
     [u,s,v]=vhandle.matrix.rsvd(Time.Y(:,strcmpi(Time.X{2}(:,2),'g'),1));
     u=u.*reshape(s,1,[]);C0.qr=cdm({u, sprintf('qR [g]')});
   end
-  if any(strncmpi(RO.Failed,'dr(',3))&&~isfield(RO,'MinAmpRatio')
+  if any(strncmpi(RO.Other,'dr(',3))&&~isfield(RO,'MinAmpRatio')
       RO.MinAmpRatio=1e-3;
   end
   if isfield(RO,'MinAmpRatio');
