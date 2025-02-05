@@ -545,6 +545,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
   [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
    '-minrio(#3#"strategy keep minimal damping and use real imaginary orth basis")' ...
    '-tre(#3#"add shapes to minrio as .1 of contrib in TR if any")' ...
+   '-tjsnap(#3#"add snapshot shapes")' ...
    '-normE(#3#"renorm with elastic matrices")' ...
    '-TimeCont(#%s#"initialize for continuation")' ...
    '-Merge(#%g#"indices of NL to be merged")' ...
@@ -577,6 +578,38 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
   else; error('Need to define a reduction basis')
   end % stra
 
+  if RO.tjsnap
+   dbstack,keyboard
+   q0=stack_get(SE,'curve','q0','get');
+   %[q01,r1]=nl_solve('deffnl-getRes',SE,q0)
+  % emj=feutilb('dtkt',fe_c(TR.DOF,SE.DOF)*TR.def,SE.K{1});
+   q1=q0; q1.def=def.TR.def*def.def
+   %diag(exp(1i*2*pi*TR.data(1)*linspace(0,1/TR.data(1),10)))
+   q1.def=5e-1*real(q1.def(:,1)*exp(1i*2*pi*def.data(1)*linspace(0,1/def.data(1),10)));
+   q1.q0=q0.def;
+   q1.data=linspace(0,1/def.data(1),10)';
+   q1.def=fe_c(TR.DOF,SE.DOF)*q1.def; %q1.q0=fe_c(TR.DOF,SE.DOF)*q1.q0;
+   q1.DOF=SE.DOF;
+   [q11,r1]=nl_solve('deffnl-getRes',SE,q1);
+
+
+   r1d=ofact(SE.K{3}.GetData,r1);
+   TR.def=[TR.def SE.Case.T*r1d]; TR.data(size(TR.def,2),end)=0
+   TR=feutilb('placeindof',SE.DOF,TR);
+   [TR.def,wj]=fe_norm(TR.def,SE.K{1},SE.K{3},[-1 0 0 1e-12]); TR.data=wj/2/pi;
+   % generate trajectory shape snapshots
+
+   %  get FNL from snapshots
+
+   % compute static uplift response
+
+   % add to reduction basis
+
+
+   %end
+
+  end
+
   if RO.q0 % add q0 reduction basis
    q0=stack_get(SE,'curve','q0','get');
    if ~isempty(q0)
@@ -599,8 +632,8 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    TR=feutilb('placeindof',SE.DOF,TR);
    K=feutilb('tkt',TR.def,SE.K);
    d1=fe_eig({K{1},K{3},[]},2);
-   TR.def=TR.def*d1.def;
-   if max(max(abs(d1.def'*K{1}*d1.def-eye(size(d1.def,1)))))>1e-6
+   TR.def=TR.def*real(d1.def);
+   if max(max(abs(d1.def'*K{1}*d1.def-eye(size(d1.def,2)))))>1e-6
     [TR.def,wj]=fe_norm(TR.def,SE.K{1},SE.K{3}); TR.data=wj/2/pi;
    end
   end
@@ -1586,7 +1619,7 @@ line(RO.tlim(2)*[1 1],get(ga,'YLim'),'color','k','linewidth',2,'tag','now')
 %text(RO.tlim*[.9;.1],ga.YLim*[.95;.05],'y_{Harm}');
 text(RO.tlim*[-.1;1.1],ga.YLim*[.95;.05],'y_{Broad}');
 
-c2=sdth.urn('Dock.Id.ci'); projM=sdtroot('param.nmap',c2); C1=projM('SqShape');
+c2=sdth.urn('Dock.Id.ci'); projM=sdtroot('param.nmap',c2); C1=projM('ParShape');
 [C0,st2,st1]=cdm.xvec(C1,{'iFreq(t),Amp(t)'},struct);
 t=double(C0.Time)-C2.Source.Edit.tmin;
 it3=t>=RO.tlim(1)&t<=RO.tlim(2);
@@ -1838,7 +1871,7 @@ end
 RO.back=0;
 if carg<=nargin;RO=sdth.sfield('addmissing',varargin{carg},RO);end
 if isfield(RO,'it');RO.tmin=RO.it;end
-if isfield(RO,'tmin')% d_squeal('viewpar{a(f,p),cuSqShape,it4 7}')
+if isfield(RO,'tmin')% d_squeal('viewpar{a(f,p),cuParShape,it4 7}')
    Time=fe_def('subdef',Time,@(x)x(:,1)>RO.tmin(1)&x(:,1)<RO.tmin(2));
 end
 if ~isfield(Time,'name');Time.name='Time';end
@@ -1961,6 +1994,11 @@ for j1=1:size(RO.list,1)
    if isfield(RO,'clim');prop{end}(end+(1:2))={'clim',RO.clim};end
    uf.do(end+1,1:2)={'os',prop};
    cdm.parPlot(uf)
+   if strncmpi(uf.do{1},'wp',2)
+     go=findobj(ga,'type','patch');
+     x=go.XData;ind=find(x(1:end-1)<=x(1)&x(2:end)>x(1));
+     text(go.XData(ind),go.YData(ind),max(go.ZData(ind))*ones(size(ind)),cellfun(@(x)sprintf('t=%.2f s',x),num2cell(C0.Time(ind)),'uni',0))
+   end
    RO.Linked{end+1}=uf;
   end
   if any(gf==[300 106 108]);hold off;end
@@ -2119,10 +2157,10 @@ if any(i1);RO.Failed(i1)=[];
   RO.back=1;
 end
 if any(sdtm.Contains(lower(RO.Failed),'at'))
-  %% #ViewPar.at : harmonic modulation d_squeal('viewpar{at,cuSqShape}',C1) -3
+  %% #ViewPar.at : harmonic modulation d_squeal('viewpar{at,cuParShape}',C1) -3
   gf=202;figure(gf); 
   [r1,i2,st]=omethod('xvec',Time,1,{'Time','iFreq','TR'});
-  % d_squeal('viewpar{at{5000},cuSqShape}',C1)
+  % d_squeal('viewpar{at{5000},cuParShape}',C1)
   [~,r2]=sdtm.urnPar(RO.Failed{sdtm.Contains(lower(RO.Failed),'at')},'{N%g}{harm%g,dh%g,der%g}');
   if ~isfield(r2,'dh');r2.dh=1;end
   r1=interp1(r1(:,1),r1,linspace(r1(1),r1(end,1),r2.N),'linear','extrap');
@@ -2216,13 +2254,13 @@ omethod=sdth.eMethods.omethod;
 if ~isequal(projM,c2.data.nmap.nmap);sdtw('_ewt','report problem');end
 if ~isempty(projM) % Store in standard map 
  projM('SqLastSpec')=RO;
- projM('SqShape')=out;% Store result 
+ projM('ParShape')=out;% Store result 
 end
 st=regexprep(RO.do,'(ReEstY[,]?|outy[,]?)',''); %'{ReEstY}'
 if isequal(st,'{}');st='';end
-if ~isempty(st);st=strrep(st,'}',',cuSqShape}');end
+if ~isempty(st);st=strrep(st,'}',',cuParShape}');end
 if ~isempty(st); d_squeal(['viewpar' st]);end
-%if sdtm.Contains(lower(RO.do),'f(t)'); d_squeal('viewpar{f(t),cuSqShape}');end
+%if sdtm.Contains(lower(RO.do),'f(t)'); d_squeal('viewpar{f(t),cuParShape}');end
  elseif comstr(Cam,'bandpass')
  %% #viewBandPass
  RO=varargin{carg};carg=carg+1;
@@ -2410,7 +2448,7 @@ if any(i1);
 end
 if sdtm.Contains(RC.Failed,'old')
  %% #ViewOccOld -3
- C2=projM('SqShape');RO=projM('SqLastSpec');
+ C2=projM('ParShape');RO=projM('SqLastSpec');
 %r2=C2.Y;r2=r2./r2(:,1);r2=z*r2;r2=r2.*sum(abs(r2).^2,2).^(-.5);
 [~,RO]=sdtm.urnPar(CAM,'{tref%ug}:{xlim%ug}');
 RO.iref=sdtm.indNearest(C2.X{1}(:,1),RO.tref);
@@ -2461,7 +2499,7 @@ if comstr(Cam,'mkva')
  c13=get(13,'userdata');ci=get(22,'userdata');
  i3=sdtm.indNearest(c20.def.data(:,1),[.14;.18]);
  c2=sdth.urn('dock.Id.ci'); projM=c2.data.nmap.nmap;
- C3=projM('SqShape');
+ C3=projM('ParShape');
 
  RO.tOff=c13.Stack{'spec'}.Source.Edit.tmin;
 
@@ -2498,7 +2536,7 @@ elseif comstr(Cam,'mkvb')
  c13=get(13,'userdata');ci=get(22,'userdata');
  i3=sdtm.indNearest(c20.def.data(:,1),[.14;.18]);
  c2=sdth.urn('dock.Id.ci'); projM=c2.data.nmap.nmap;
- C3=projM('SqShape');
+ C3=projM('ParShape');
 
  RO.tOff=c13.Stack{'spec'}.Source.Edit.tmin;
  c106=figure(106); ga106=get(c106,'currentaxes'); axis tight
@@ -2544,32 +2582,56 @@ end
  elseif comstr(Cam,'summary')
  %% #viewSummary : 
 
- li=dir(varargin{2});% xxx generic
- RO=varargin{3}; c2=sdth.urn('Dock.Id.ci'); projM=c2.data.nmap.nmap;
- for j1=1:length(li)
-   load(li(j1).name,'Demod');projM('SqShape')=Demod;
+ c2=sdth.urn('Dock.Id.ci'); projM=c2.data.nmap.nmap;
+ if nargin>1&&ischar(varargin{2})
+  li=dir(varargin{2});% xxx generic
+  RO=varargin{3}; 
+  for j1=1:length(li)
+   load(li(j1).name,'Demod');projM('ParShape')=Demod;
    r2=d_squeal(['ViewPar' RO.ViewPar]);r2.ColumnName{1,end+1}='name';
    r2.table=num2cell(r2.table);
    r2.table(:,size(r2.ColumnName,2))={Demod.meta.Name};
    if j1==1; ua=r2;
    else; ua.table=[ua.table;r2.table];
    end
- end
- ub=vhandle.tab(ua);asTab(ub);
- C0=struct;
- for j1=1:size(ua.ColumnName,2);
+  end
+  ub=vhandle.tab(ua);asTab(ub);
+  C0=struct;
+  for j1=1:size(ua.ColumnName,2);
    try; C0.(ua.ColumnName{1,j1})=vertcat(ua.table{:,j1});end
+  end
+  wt=C0.WAng/{2*pi,'Wheel Turn'};
+ else
+  %% generate parameter summary
+  %C1=projM('ParShape');
+  C1=c2.Stack{'Time'};
+  C0=d_squeal('ViewPar{TempPad(t),Pressure(t),Mic(t)}',C1);
+  ind=double(C0.Pressure)<2; 
+  st=fieldnames(C0);
+  x=C0.WAng/{2*pi,'Wheel Turn'};wt=ceil(double(x)+eps);
+  r1=sparse(wt,1,1);
+  for j1=1:length(st) % Average per wheet turn
+   r2=C0.(st{j1}).Source;
+   r2.data=full(sparse(wt,1,r2.data)./r1); 
+   if j1==1;
+    i2=1:length(r2.data);%[~,i2]=sort(r2.data);
+    i2(r2.data(i2)<2)=[];
+   end
+   r2.data=r2.data(i2);
+   C0.(st{j1})=cdm({r2.data,r2.label});
+  end
+  wt=cdm({1:nnz(i2),'Wheel Turn index'});
  end
 
- gf=sdth.urn('figure(201).os{@Dock,{name,SqSig},name,201 WT Summary,NumberTitle,off}');
- figure(double(gf));clf;
- cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImSw80','WrW49c'});
+ gf=sdth.urn('figure(201)');%.os{@Dock,{name,SqSig},name,201 WT Summary,NumberTitle,off}
+ figure(double(gf));clf;cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImSw80','WrW49c'});
  
  yyaxis('left');
- plot(1:length(C0.Pressure),C0.Pressure,'.')
- xlabel('Wheel Turn');ylabel('Pressure [Bar]');
+ cdm.plot(wt,C0.Pressure,'.');axis tight
+ %xlabel('Wheel Turn');ylabel('Pressure [Bar]');
  yyaxis('right');
- plot(1:length(C0.Pressure),C0.TempPad,'.');ylabel('TempPad [C]');
+ cdm.plot(wt,C0.TempPad,'.');
+
  elseif comstr(Cam,'pt')
  %% #viewPT : post-processing of time simulations
 
@@ -2748,7 +2810,7 @@ end
 
    if 1==2
     d_squeal('ViewHBV{dmBand100,harm1,do{ReEstY,f(t),a(t)},f 1500,ifBand100,aeBand100,clipBand500 3k,,tclip .01 .01}');
-    c3=iiplot(3,';');nmap=c3.data.nmap.nmap;C4=nmap('SqShape');
+    c3=iiplot(3,';');nmap=c3.data.nmap.nmap;C4=nmap('ParShape');
     c14=sdth.urn('iiplot(3).clone(14)');iicom(c14,'curveinit','A1',C4);
     iicom(c3,'polarx2');
     %cdm.urnVec(C4,'{tlim1 100}{x,2}{y,l1,abs}{gf404,tight}');
@@ -3578,12 +3640,12 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
       r3=C0.Amax{j1,1};
       r3(r3/norm(r3,'inf')<RO.MinAmpRatio,1)=NaN;C0.Amax{j1,1}=r3;% hide certain areas
       if sdtm.regContains(C0.Amax{j1,2},'([g]|Amax)') 
-       % Growth estimation / decay rate estimation
+       % Growth estimation / decay ratio estimation
        % figure(1); plot(gradient(log(C0.Amean{1}))./C0.iFreq{1}/diff(Time.X{1}(1:2))*100)
        coef=1; 
        if contains(C0.iFreq.label,'kHz');coef=1e-3;end
        if ~isfield(C0,'iFreq');[C1,~,~]=cdm.xvec(Time,{'f(t)'},RO);end
-       C0.dr=cdm({[ze(r2) ]*coef,'Decay rate [%]'},Time.name);
+       C0.dr=cdm({[ze(r2) ]*coef,'Decay ratio [%]'},Time.name);
       end
      end
 
@@ -3669,14 +3731,49 @@ function cg=initPres(cf,co2,i5)
 
 end
 
-function showCoh
- % #showCoh
+function showCoh(varargin)
+ % #showCoh : show coherence in parametric sweep
  c5=get(5,'userdata'); c2=get(2,'userdata');
  C1=c5.Stack{c5.ua.sList{1}};
- ch=remi(c5.ua.ch,size(C1.Y,2));
+ iw=C1.X{1}<c5.ua.xlim(1)|C1.X{1}>c5.ua.xlim(2);
+ it=C1.X{3}(:,5)<3e5; % above 3 bar
+
+ if nargin>0
+   %% click event
+   obj=varargin{1};evt=varargin{2}; 
+   pos=evt.ga.CurrentPoint;
+   i1=sdtm.indNearest(C1.X{3}(:,1),pos(1,2));C1.X{3}(i1,:);
+   iicom(c5,'ch',{'tstart',i1})
+   for gf=601:602
+    ga=findobj(gf,'type','axes');ga(strcmpi({ga.Tag},'ParbarV'))=[];
+    delete(findobj(ga,'tag','now'));
+    h=line(pos(1,1),pos(1,2),1,'marker','o','color','r','tag','now','parent',ga);
+   end
+
+ if ishandle(603)
+  % need to have modal filter 
+  i1=sdtm.indNearest(C1.X{1},pos(1,1));
+  [~,i2]=ind2sub([size(C1.Y,2) size(C1.Y,3) size(C1.Y,4)],c5.ua.ch);
+  if 1==1
+   [u,s,v]=vhandle.matrix.rsvd(squeeze(C1.Y(i1,:,:,1)).');%,0,'vector');
+  else
+    v=squeeze(C1.Y(i1,:,i2,1));v=v(:)/norm(v);
+  end
+  Y=reshape(v(:,1)'*reshape(permute(C1.Y(:,:,~it,1),[2 1 3 4]),size(C1.Y,2),[]),[size(C1.Y,1) nnz(~it)]); 
+  Y(iw,:)=[];x=C1.X{1};x(iw)=[];
+  figure(603);h=pcolor(x,C1.X{3}(~it,1),log10(abs(Y))');set(h,'edgecolor','none');
+  figure(603);h=semilogy(x,(abs(Y))');
+ end
+
+
+   return;
+ end
+
+ InGf=gcf;
+ ch=remi(c5.ua.ch(1),size(C1.Y,2));
  C2=fe_def('subchcurve',C1,{'DOF',ch;'TF',3});
  C2.X(2)=[];C2.Xlab(2)=[];C2.Y=log10(squeeze(C2.Y));
- iw=C2.X{1}<c5.ua.xlim(1)|C2.X{1}>c5.ua.xlim(2);C2.X{1}(iw,:)=[];C2.Y(iw,:)=[];
+ C2.X{1}(iw,:)=[];C2.Y(iw,:)=[];
  C2.Ylab=C1.X{2}(ch,:);
  gf=figure(601);clf;gf.Name='1-COH';cdm.pcolor(C2);
  if size(C2.X{2},2)>1
@@ -3687,7 +3784,7 @@ function showCoh
   end
  end
  h=[];
- i1=size(C1.Y);i1(1)=[];[i1,i2,i3]=ind2sub(i1,c5.ua.ch);
+ i1=size(C1.Y);i1(1)=[];[i1,i2,i3]=ind2sub(i1,c5.ua.ch(1));
  coh=log10(squeeze(C1.Y(:,i1,i2,3)));r2=[min(coh) max(coh)];coh(end+1)=NaN;
   prop={'CData',coh,'EdgeColor','Flat','linewidth',2};
  for j1=1:size(c5.ax,1)
@@ -3702,4 +3799,25 @@ function showCoh
   if j1==1; h=go;else;h(j1)=go;end
  end
  cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImToFigN','ImSw80{@line,""}','WrW49c'});
+ iimouse('InteractUrnShow',601,'InPlace.@surface{d_squeal@showCoh,"Change tStart in iiplot(5)"}')
+
+ if ishandle(602)
+  C2=fe_def('subchcurve',C1,{'DOF',ch;'TF',1});
+  %it=[1:10 size(C2.Y,3)+(-9:0)];C2.X{3}(it,:)=[];C2.Y(:,:,it,:)=[];
+  %it=abs(gradient(C2.X{3}(:,5))/1e5)>.2;C2.X{3}(it,:)=[];C2.Y(:,:,it,:)=[];
+  C2.X{3}(it,:)=[];C2.Y(:,:,it,:)=[];
+  C2.X{1}(iw,:)=[];C2.Y(iw,:)=[];
+  C2.Ylab=C1.X{2}(ch,:); C2.Ylab{1}=['H1 ' C2.Ylab{1}];
+  C2.X(2)=[];C2.Xlab(2)=[];
+  C2.Y=(squeeze(abs(C2.Y)));
+  ip=1;
+  C2.X{2}=C2.X{2}(:,ip);C2.Xlab{2}=C2.Xlab{2}(ip,:);
+  gf=figure(602);clf;gf.Name='H1';cdm.pcolor(C2);
+   cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImToFigN','ImSw80{@line,""}','WrW49c'});
+
+  iimouse('InteractUrnShow',602,'InPlace.@surface{d_squeal@showCoh,"Change tStart in iiplot(5)"}')
+ end
+
+
+ if length(dbstack)>1;  figure(InGf);end
 end
