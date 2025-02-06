@@ -3335,6 +3335,7 @@ function out=specMax(RO)
       if isfield(r2,'coef')
        RO.fCoef=r2.coef;RO.fUnit=r2.DispUnit;
       end
+      Z=Z/spec.Source.Edit.BlockSize; % rescale FFT
   end
   f=ob.YData;t=ob.XData;
   st1='';
