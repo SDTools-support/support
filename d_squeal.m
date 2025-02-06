@@ -1859,7 +1859,7 @@ c2=sdth.urn('Dock.Id.ci'); nmap=c2.data.nmap.nmap;projM=nmap;
 [~,RO]=sdtm.urnPar(CAM,...
  ['{}{fs%ug,u%s,cu%s,ciStoreName%s,ci%i,it%g,tmin%g,' ...
   'MinAmpRatio%ug,hold%s,reset%3,cm%s,xlim%g,ylim%g,zlim%g,clim%g,cleanFig%s,amp%s,clip%s}']);
-if ~isfield(RO,'Failed');RO.Other={};end
+if ~isfield(RO,'Other');RO.Other={};end
 if ~isfield(RO,'cu');RO.cu='Time';end
 if carg<=nargin&&isfield(varargin{carg},'Y');Time=varargin{carg};carg=carg+1;
 elseif isKey(nmap,RO.cu);Time=nmap(RO.cu); 
