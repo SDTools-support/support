@@ -305,11 +305,11 @@ dm15('ViewStabHist',h1)
   % sdtweb d_fetime simuurn
   % sdtweb d_fetime sq0
   
-  RT=d_doe('nmap','TV.Hoff{n,base.MN}') % exactly on limit cycle
+  RT=d_doe('nmap','TV.Hoff{n,base.MN}'); % exactly on limit cycle
   sdtm.range(RT);mo2=RT.nmap('CurModel');d2=RT.nmap('CurTime');
 
-  % xxx this illustrates zero damping cycle, not influence of NL on level 
-  d1=sdth.urn('dcpx',mo2);d1.data
+  %% This illustrates zero damping cycle, not influence of NL on level target frequency .7 Hz
+  d1=sdth.urn('dcpx',mo2);d1.data %
 
   %% damping variation w/ stable|unstable transition from mu on velocity
   RT=d_doe('nmap','TV.Hoff{n,Kmuv.MN}');
@@ -762,7 +762,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    %% #SolveTimeContinue transient continuation and display
    if carg<=nargin;RT=varargin{carg};carg=carg+1;else;RT=evalin('caller','RO');end
    co2=RT.nmap('LastContinue'); %mo2=RT.nmap('CurModel'); co2=mo2.nmap('LastContinue');
-   [~,R2]=sdtm.urnPar(CAM,'{}{RandF%ug,Flab%s}');if ~isfield(R2,'Failed');R2.Other={''};end
+   [~,R2]=sdtm.urnPar(CAM,'{}{RandF%ug,Flab%s}');if ~isfield(R2,'Other');R2.Other={''};end
    if ~any(co2.u)&&~any(co2.v)||any(strcmpi(R2.Other,'randv'));
        co2.v=rand(size(co2.v))*.1*1000; % xxx factor too high when unstable
    end
@@ -1706,7 +1706,7 @@ if isempty(Cam)
 else
   [st,RO]=sdtm.urnPar(CAM,'{Spec%s}:{ci%g,jframe%g,ChSel%s,name%s,jPar%g,fi%s,cleanFig%s,cm%s,filtf%g}');  
 end
-  if ~isfield(RO,'Failed');RO.Other={};end
+  if ~isfield(RO,'Other');RO.Other={};end
   i1=~cellfun(@isempty,regexpi(RO.Other,'[ft](min|max)'));
   if any(i1)
     RO.Spec=horzcat(RO.Spec,RO.Other{i1});RO.Other(i1)=[];
@@ -1819,7 +1819,7 @@ if strcmpi(RO.type,'fft') % #guess_cycle_freq -3
  r2=sum(abs(C2.Y),2);if C2.X{1}(1)==0; r2(1:2)=0;end
  [~,i2]=max(r2);RO.f=C2.X{1}(i2); out=RO; 
 else;% If spectro
- if ~isfield(RO,'Failed')||~any(strcmpi(RO.Other,'zlog'));
+ if ~isfield(RO,'Other')||~any(strcmpi(RO.Other,'zlog'));
   c13.ua.YFcn='r3=abs(r3);';
  % cb=colorbar;cb.Label.String='Amplitude (lin)';
  %else; cb=colorbar;cb.Label.String='Amplitude [log_{10}]';
@@ -2353,7 +2353,7 @@ if ~isempty(obj)
  return
 
 end
-[~,RC]=sdtm.urnPar(CAM,'{}{yy%s}');if ~isfield(RC,'Failed');RC.Other={};end
+[~,RC]=sdtm.urnPar(CAM,'{}{yy%s}');if ~isfield(RC,'Other');RC.Other={};end
 
 i1=sdtm.Contains(RC.Other,'DirScan');
 if any(i1);% d_squeal('ViewOcc{DirScan}')
@@ -3058,7 +3058,7 @@ elseif comstr(Cam,'load');[CAM,Cam]=comstr(CAM,5);
  if i1==-1 % Given in field
  elseif i1&&~strcmpi(RO.ext,'.svd') % File exist
      if isequal(RO.LoadFcn,'ufread');r1=ufread(FileName);
-     elseif isfield(RO,'Failed') % xxx third arg to load a given variable only
+     elseif isfield(RO,'Other') % xxx third arg to load a given variable only
       r1=load(FileName,RO.Other{1}); 
      else;r1=load(FileName);
      end
