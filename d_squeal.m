@@ -300,24 +300,16 @@ dm15('ViewStabHist',h1)
   % mode coupling phenomenon on a 2DOF system
   % calibrated limit cycle configuration
 
-
-  %li{2}='SimuCfg{ModalNewmark{1m,400,uva111,rt-1e-4}SQ0{vq1Amp__5}}'
-  % sdtweb d_fetime simuurn
-  % sdtweb d_fetime sq0
-  
-  RT=d_doe('nmap','TV.Hoff{n,base.MN}'); % exactly on limit cycle
+  %% base.NM 0.7 Hz frequency
+  RT=d_doe('nmap','TV.Hoff{n,base.MN}');RT.nmap('Log')='disp'; % exactly on limit cycle
   sdtm.range(RT);mo2=RT.nmap('CurModel');d2=RT.nmap('CurTime');
 
   %% This illustrates zero damping cycle, not influence of NL on level target frequency .7 Hz
   d1=sdth.urn('dcpx',mo2);d1.data %
 
   %% damping variation w/ stable|unstable transition from mu on velocity
-  RT=d_doe('nmap','TV.Hoff{n,Kmuv.MN}');
- sdtm.range(RT);mo3=RT.nmap('CurModel');d3=RT.nmap('CurTime');
-
- mo4.NL{end}
-
-'xxxEB clean figure 1 (labels) '
+  RT=d_doe('nmap','TV.Hoff{n,Kmuv.MN}');;RT.nmap('Log')='disp'; 
+  sdtm.range(RT);mo3=RT.nmap('CurModel');d3=RT.nmap('CurTime');
 
 
  %% Hoffmann with real exponential contact: use 100x kz target at unit pressure
@@ -1830,8 +1822,10 @@ else;% If spectro
  else; % Update needed
   r2=specMax;
  end
- [~,i2]=max(r2(:,1));
- RO.f=C2.X{2}(i2); out=RO; 
+ if isnumeric(r2);[~,i2]=max(r2(:,1));RO.f=C2.X{2}(i2); 
+ else; RO.f=r2.fOcc(1);
+ end
+ out=RO; 
 end 
 
 if isfield(RO,'cleanFig')
@@ -1875,6 +1869,8 @@ if isfield(RO,'tmin')% d_squeal('viewpar{a(f,p),cuParShape,it4 7}')
    Time=fe_def('subdef',Time,@(x)x(:,1)>RO.tmin(1)&x(:,1)<RO.tmin(2));
 end
 if ~isfield(Time,'name');Time.name='Time';end
+Time=cdm.cleanCurveUnits(Time);
+
 omethod=sdth.eMethods.omethod;
 
 %% #build needed quantities -3
@@ -2216,8 +2212,9 @@ if carg>nargin||comstr(Cam,'HBV{')
      RB=varargin{carg};carg=carg+1;RO=sdth.sfield('addselected',RO,RB);
  end
 else
- Time=varargin{carg};carg=carg+1;projM=[];
- RO=varargin{carg};carg=carg+1;
+ Time=varargin{carg};carg=carg+1;
+ RO=varargin{carg};carg=carg+1;projM=[];
+ if isfield(RO,'projM');projM=RO.projM;end
 end
 hfs=ii_signal('@sqSig');
 ROc=hfs('depend',RO,Time,projM,CAM); % sdtweb ii_signal sqsig.depend
@@ -3321,6 +3318,7 @@ function out=specMax(RO)
   % feval(d_squeal('@specMax'),struct('do',{'demA'},'gMin',1))
 
   if nargin==0;RO=struct('do',{''});end
+  out=[];
   if ~isfield(RO,'do');RO.do={''};end
   c13=get(13,'userdata');  ob=handle(c13.ua.ob(1));
   if isfield(RO,'filt')&&contains(RO.filt,'f50');cdm.viewFilt('f50',13);end
@@ -3384,9 +3382,14 @@ function out=specMax(RO)
      if ~isfinite(RO.max);RO.max=full(r2);end
      if length(RO.iOcc)>3||r2<.05*RO.max;break;end
      RO.fOcc(end+1,:)=full([f(i2)/RO.fCoef,r2 max(r3)]);
-     RO.stOcc='\n%.0f Hz level%9.2e meanRest %9.2e';
+     if RO.fOcc(end,1)<1
+      RO.stOcc='\n%.3f Hz level%9.2e meanRest %9.2e';
+     else
+      RO.stOcc='\n%.0f Hz level%9.2e meanRest %9.2e';
+     end
      Z(ind,:)=0; RO.iOcc(end+1,1)=i2;
     end
+    out=RO;
    end
    try
     %figure(13);h=line(r3.X{1},r3.Y(:,1),'color','r');
@@ -3471,7 +3474,7 @@ if 1==2
 
 end
 
-  if nargout>0; out=r2;end
+  if nargout>0&&isempty(out); out=r2;end
 end
 
 function out=AutoMeta(Time,RO)
@@ -3608,6 +3611,7 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
   if length(Time.Xlab)>3&&isequal(Time.Xlab{3},'hdof')
     Time.Y=Time.Y(:,:,:,1); Time.X(4)=[];Time.Xlab(4)=[]; 
   end
+  [st2,~,i2]=unique(Time.X{2}(:,2));
   if length(Time.Xlab)~=3||~isequal(Time.Xlab{3},'hdof')
   elseif isnumeric(Time.X{2});
     r1(:,3)=abs(Time.Y(:,1)); st{3,1}='princxxx'% ;
@@ -3617,7 +3621,7 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
    C0.Amax={r2,sprintf('%s [%s]',Time.X{2}{1,1:2})};
   else
    if size(Time.X{2},2)==1;Time.X{2}(:,2)={''};end
-   [st2,~,i2]=unique(Time.X{2}(:,2));
+  
    for j1=1:length(st2)
     C0.Amean(j1,1:2)={sqrt(sum(abs(Time.Y(:,i2==j1,1)).^2,2)) sprintf('Amean [%s]',st2{j1})};
     C0.Amax(j1,1:2)={max(abs(Time.Y(:,i2==j1,1)),[],2) sprintf('Amax [%s]',st2{j1})};

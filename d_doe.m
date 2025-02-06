@@ -336,7 +336,8 @@ nmap('TV.AR')=RT;
   RT=struct('nmap',vhandle.nmap);
   %RT.nmap('PostA')='nl_solve@doFreq{spec{BufTime 20 Overlap .90 Fmax 50 -window hanning},ci3}';
   RT.nmap('PostA')='d_squeal(ViewSpec{BufTime 50 Tmin 50 Overlap .90 Fmax 20 -window hanning},nameHoffKmuV)';
-  RT.nmap('PostB')='d_contact@autoCycle{tclip50 20,dmBand1.2,ci3}';
+  RT.nmap('PostB')=struct('ToolTip','Adapted for HoffMann at 0.7 Hz', ...
+     'value','d_contact@autoCycle{tclip50 20,dmBand.3,ci3}');
   RT.nmap('PostC1')='d_squeal(ViewSpec{BufTime 2 Tmin 5 Overlap .90 Fmax 50 -window hanning},nameHoffman)';
   RT.nmap('PostC2')='d_contact@autoCycle{tclip50 20,dmBand20,ci3}';
   RT.nmap('PostD1')='d_squeal(ViewSpec{BufTime .4 fmin 2700 3000 Overlap .90 -window hanning},nameHoffman)';
