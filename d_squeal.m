@@ -727,8 +727,14 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
 
   if ~isempty(RO.TimeCont)
    %% #SolveRedOpt.TimeCont prepare time continue at TimeRed exit
-   if comstr(RO.TimeCont,'{')
-    SE=d_fetime('TimeOpt',struct('urn',RO.TimeCont(2:end-1)),SE);
+   if ischar(RO.TimeCont); TimOpt=RO.TimeCont;
+   elseif isKey(nmap,'TimeOpt'); TimeOpt=nmap('TimeOpt');
+   else; TimeOpt=[];
+   end
+   if ischar(TimeOpt)&&comstr(TimeOpt,'{'); TimeOpt=struct('urn',TimeOpt(2:end-1)); end
+   
+   if ~isempty(TimeOpt);
+    SE=d_fetime('TimeOpt',TimeOpt,SE);
    end
    if ~isfield(SE,'nmap');SE.nmap=vhandle.nmap;end
    SE.nmap('LastContinue')='do';
