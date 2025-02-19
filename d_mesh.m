@@ -1722,7 +1722,8 @@ if isempty(Cam)
  otherwise; 
    if isfield(RO,'nmap')&&isKey(RO.nmap,RO.mat)
      r2=RO.nmap(RO.mat);
-     if ischar(r2); r2=sdtm.urnCb(r2);
+     if ischar(r2);sdtm.addLog(RO.nmap,r2); 
+         r2=sdtm.urnCb(r2);
          r2=feval(r2{:});
      end
    else; r2=RO.mat;
