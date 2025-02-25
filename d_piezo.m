@@ -300,15 +300,9 @@ model=fe_case(model,'FixDOF','Clamp','z==0');
 model = fe_case(model,'SensDOF','Point Sensors',{'104:x'});
 cf=feplot(model); iimouse('resetview');
 
-% Make mesh transparent :
-fecom('showfialpha') %
+fecom('showFiAlpha') % Make mesh transparent 
 
-% Visualize sensor
- fecom proviewon
- fecom curtabcases 'Point Sensors' % Shows the case 'Point Sensors'
-
-% Improve figure
-% Arrow length and thickness
+% Visualize sensor, specify arrow length and width
 sdth.urn('Tab(Cases,Point Sensors){Proview,on,deflen,.25}',cf)
 sdth.urn('Tab(Cases,Point Sensors){arProp,"linewidth,2"}',cf)
 
@@ -1807,6 +1801,11 @@ SE1=fe_case(SE1,'DOFLoad','UImp',SET); % Equivalent load
 SE1=fe_case(SE1,'SensDOF','Output',SET.DOF(1));
 
 sys=fe2ss('free 5 5 0 -dterm',SE1);
+C1=qbode(sys,w,'struct-lab');C1.name='fe2ss 5md+st';
+C1.X{2}={'dr-top'}; C1.X{3}={'Aimp'};
+ci=iiplot;iicom(ci,'curveinit',{'curve',C0.name,C0;'curve',C1.name,C1}); 
+iicom('submagpha')
+d_piezo('setstyle',ci); 
 %% Step 3: State-space model with absolute displacement
 
 SE2=SE0; % Initial model without BCs
@@ -1958,12 +1957,13 @@ E3=a.Y(9,1); disp({'E3 mean' a.Y(9,1) -1/700e-3 'E3 analytic'})
 disp([{'Sx/E3';'Sy/E3';'Sz/E3'} num2cell([a.Y(1:3,1)/E3 CC.d(3,1:3)']) ...
 {'d_31(mm/muV)';'d_32(mm/muV)';'d_33(mm/muV)'}])
 %% Step 4 - Charge visualisation and capacitance
-p_piezo('electrodeTotal',cf)
+p_piezo('electrodeTotal',cf);
 % charge density on the electrodes
 feplot(model,def);
 cut=p_piezo('electrodeviewcharge',cf,struct('EltSel','matid 1'));
 fecom('view3'); fecom('viewy-90'); fecom('viewz+90'); iimouse('zoom reset');
-iimouse('trans2d 0 0 0 1.6 1.6 1.6')
+%iimouse('trans2d 0 0 0 1.6 1.6 1.6')
+set(cf.ga,'climmode','auto');
 cf.mdl.name='patch_IDE_charge_elec';d_piezo('SetStyle',cf); feplot(cf);
 % - Theoretical capacitance for uniform field
 Ct=model.pl(1,22)*400e-3*300e-3/700e-3;
