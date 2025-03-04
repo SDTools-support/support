@@ -831,6 +831,7 @@ model.il=p_piezo(model.il,'dbval 4 shell 2 1684    1   0    1685  3 0');
 cf=feplot(model); fecom('showmap'); fecom('view3');
 % scale properly
 fecom('scalecoeff 1e-10'); fecom('showmap')
+d =  2.5244e-06
 %% Step 5 - Compute and display response to static imposed voltage
 model=fe_case(model,'FixDof','Cantilever','x==0 -DOF 1:6');
 model=fe_case(model,'DofSet','V-Act',struct('def',1,'DOF',1682.21)); %Act
@@ -844,7 +845,6 @@ d0=fe_simul('dfrf',stack_set(model,'info','Freq',0)); % direct refer frf at 0Hz
 cf=feplot(model,d0); fecom(';view3;colordatagroup;undefline');
 cf.mdl.name='Plate_4pzt'; d_piezo('SetStyle',cf); 
 d=sens.cta(4,:)*d0.def % Tip displacement is positive.
-d =  2.5244e-06
 %% Step 6 - Piezoelectric patches on the bottom only
  model=struct('Node',[1 0 0 0 0 0 0],'Elt',[]);
  model=feutil('addelt',model,'mass1',1);
@@ -1355,7 +1355,7 @@ model=d_piezo('MeshTower');
 [sys2,TR2] = fe2ss('free 5 3 0 ',model);
 
 w=linspace(0,30*2*pi,512);% Frequency range
-% Convert to curve object and rebel X (fe2ss uses dofs and not sens/act names)
+% Convert to curve object and relabel X (fe2ss uses dofs and not sens/act names)
 C1=qbode(sys,w,'struct-lab');C1.name='SS-dterm'; C1.X{2}={'d-top'}; 
 C2=qbode(sys2,w,'struct-lab');C2.name='SS-mode'; C2.X{2}={'d-top'}; 
 ci=iiplot;
@@ -1557,7 +1557,7 @@ model=fe_case(model,'DofSet','V1+2', ...
 % Static response
 d0=fe_simul('dfrf',stack_set(model,'info','Freq',0)); % direct refer frf
 cf=feplot(model); cf.def=d0;
-fecom(';view3;scd .1;colordatagroup;undefline')
+fecom(';view3;scd 20;colordatagroup;undefline')
 cf.mdl.name='Plate_4pzt_Comb_static'; d_piezo('SetStyle',cf); feplot(cf);
 %% Step 2 - Define sensor combinations
 % Combined charge output (SC electrodes) % difference of charge 1684-1685
@@ -2305,14 +2305,10 @@ model=p_piezo('ElectrodeMPC Top sensor -matid 2 -vout',model,'z==0.004');
 % -ground generates a v=0 FixDof case entry
 model=p_piezo('ElectrodeMPC Bottom sensor -ground',model,'z==0.003');
 % Add a displacement sensor for the basis
-%model=fe_case(model,'SensDof','Base-displ',1.03);
-% Add an acceleration sensor for the basis
- model = fe_case(model,'SensDOF','Sensors',{'1:az'});
-% XXXEB I need an acceleration sensor on the basis but this is not working.
+model=fe_case(model,'SensDof','Base-displ',1.03);
 %% Step 3 - Response with imposed displacement
-% Remove the charge and displ sensor (not needed)
+% Remove the charge sensor (not needed)
 model=fe_case(model,'remove','Q-Top sensor');
-model=fe_case(model,'remove','Base-displ');
 
 % Link dofs of base and impose unit vertical displacement
 n1=feutil('getnode z==0',model);
@@ -2328,14 +2324,12 @@ model=stack_set(model,'info','Freq',f); % freq. for computation
 [sys,TR1]=fe2ss('free 5 10 0 -dterm',model,5e-3); %
 
 C1=qbode(sys,f(:)*2*pi,'struct-lab');C1.name='SS-voltage';
-C1.X{3}={'Uimp'}; % input
 C1.X{2}={'Sensor output(V)';'Base Acc(m/s^2)';'Sensitivity (V/m/s^2)'}; %outputs
 
 % C1 compute accel and sensitivity
  C1.Y(:,2)=C1.Y(:,2).*(-(C1.X{1}*2*pi).^2); % Base acc
  C1.Y(:,3)=C1.Y(:,1)./C1.Y(:,2);% Sensitivity
  
-
  ci=iiplot; iicom(ci,'curveinit',{'curve',C1.name,C1});  iicom('ch3');
  d_piezo('setstyle',ci)
 
@@ -2361,7 +2355,6 @@ model=fe_case(model,'DofSet','Base',rb);
 [sys2,TR1]=fe2ss('free 5 10 0 -dterm',model,5e-3); %
 C2=qbode(sys2,f(:)*2*pi,'struct');C2.name='SS-charge';
 
-C2.X{3}={'Uimp'}; % input
 C2.X{2}={'Sensor output(V)';'Base Acc(m/s^2)';'Sensitivity (normalized)'}; %outputs
 C1.X{2}={'Sensor output(q)';'Base Acc(m/s^2)';'Sensitivity (normalized)'};
 
@@ -2466,7 +2459,7 @@ sens=fe_case(model,'sens');
  ci=iiplot;
  iicom('CurveReset');iicom('curveinit',C1); iicom(ci,'xlim[0 30]')
  d_piezo('setstyle',ci)
-%% Step 3 - Determine parameters for shunt tuning
+%% Step 4 - Determine parameters for shunt tuning
  % Extract w1 and W1 and compute alpha_1
 C=C1.Y(:,1);
 % Find poles and zeros of impedance (1/jwC)
@@ -2486,7 +2479,7 @@ dw2=w(i3)-w(i2); wCs2=w(i2)+dw2/2;
 % Tuning using Yamada's rule
 d=1; r=sqrt((3*a1^2)/(2-a1^2));
 L_Yam=1/d^2/Cs2/W1^2; R_Yam=r/Cs2/W1;
-%% Step 4 - Compute dynamic response with optimal shunt
+%% Step 5 - Compute dynamic response with optimal shunt
 w=linspace(0,40,1e3)*2*pi;
 C1=qbode(sys,w,'struct'); C1.name='no shunt';
 C1.X{2}={'Qs';'tip-displ'}; %outputs 
