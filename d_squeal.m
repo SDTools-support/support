@@ -1859,7 +1859,8 @@ c2=sdth.urn('Dock.Id.ci'); nmap=c2.data.nmap.nmap;projM=nmap;
 if strcmpi(Cam,'par');CAM=projM('ViewPar');end
 [~,RO]=sdtm.urnPar(CAM,...
  ['{}{fs%ug,u%s,cu%s,ciStoreName%s,ci%i,it%g,tmin%g,' ...
-  'MinAmpRatio%ug,hold%s,reset%3,cm%s,xlim%g,ylim%g,zlim%g,clim%g,cleanFig%s,amp%s,clip%s}']);
+  'MinAmpRatio%ug,hold%s,reset%3,cm%s,xlim%g,ylim%g,zlim%g,clim%g,cleanFig%s,amp%s,clip%s,' ...
+  'tag%s}']);
 if ~isfield(RO,'Other');RO.Other={};end
 if ~isfield(RO,'cu');RO.cu='Time';end
 if carg<=nargin&&isfield(varargin{carg},'Y');Time=varargin{carg};carg=carg+1;
@@ -1905,7 +1906,9 @@ for j1=1:size(RO.list,1)
     iTyp=size(RO.typ,1)+1;
     RO.typ(iTyp,:)={st2,st2,200,{'@axes',{'ygrid','on','xgrid','on'}, ...
         '@ylabel',{'String','Frequency [Hz]'},'@patch',{'linewidth',4}}};
-  elseif ~any(iTyp); sdtw('_nb','Missing %s',st2); %default style
+  elseif ~any(iTyp); 
+    sdtw('_nb','Missing %s from %s',st2, ...
+          sdtm.toString(RO.typ(:,1))); %default style
     iTyp=size(RO.typ,1)+1;
     RO.typ(iTyp,:)={st2,st2,100,{'@axes',{'ygrid','on','xgrid','on'}}};
   end
@@ -2005,9 +2008,15 @@ for j1=1:size(RO.list,1)
    RO.Linked{end+1}=uf;
   end
   if any(gf==[300 106 108]);hold off;end
-   cleanFig(gf,Time,c2);  RO.back=1;
-   cingui('objset',gf,RO.typ{iTyp,4})
-   RO.list{j1}='';iimouse('on');
+  cleanFig(gf,Time,c2);  RO.back=1;
+  cingui('objset',gf,RO.typ{iTyp,4})
+  if isfield(RO,'tag');IM=comgui('iminfo',gf);IM.FileName=[RO.tag '.png'];end
+  RO.list{j1}='';iimouse('on');
+  if isfield(Time,'XM')
+    %% prepare PcNav linking
+    vhandle.pcnav.limSet('init',ga,Time)
+  end
+
 end
 if ~isempty(RO.Linked)
   RO.Linked(~cellfun(@(x)sdtm.isValid(x.ga),RO.Linked))=[];
@@ -3555,6 +3564,8 @@ elseif isfield(RO,'ClipPres')
     end
    end
 end
+
+Time.XM=sdto.ivec('Xlab',Time);Time.XM.alias('Speed')='RPM';
 C0=cdm.xvec(Time,unique([RO.forInfo(2:end,1);{'Time'}]),struct); % Get Vectors
 RP=struct('gf',501,'ax',[1 1 1],'os',{{'@title',{'String',Time.name},...
     '@line',{'linewidth',2}, ...
@@ -3563,16 +3574,10 @@ RP=struct('gf',501,'ax',[1 1 1],'os',{{'@title',{'String',Time.name},...
 ax=cdm.plotys({C0.Time,C0.RPM,C0.Time,C0.Pressure,C0.Time,C0.TempPad},RP);
    %% AutoMeta 
    st3=RO.forInfo;
-   [i2,i3]=ismember(st3(:,1),Time.X{2}(:,1));
-   if nnz(i3)==0
-    [i2,i3]=ismember(st3(:,1),Time.Xlab{1}(:,1));Y=Time.X{1};
-    st1=Time.Xlab{1}(:,1);
-   else; Y=Time.Y;st1=Time.X{2}(:,1); 
-   end
-   st3(~i2,:)=[];
+   [i2,i3]=ismember(st3(:,1),fieldnames(C0));st3(~i2,:)=[];
    for j1=1:size(st3,1)
     %'xxx missing type detection decel, stops, drag, ramping, pstep' % Pressure profile
-    x=Y(:,strcmpi(st1,st3{j1}));
+    x=double(C0.(st3{j1}));%Y(:,strcmpi(st1,st3{j1}));
     if strcmpi(st3{j1,1},'RPM')
        [N,X]=hist(x,1:1:1000);
        X=X([find(N>max(N)*.1,1,'first') find(N>max(N)*.1,1,'last')]);
@@ -3583,7 +3588,6 @@ ax=cdm.plotys({C0.Time,C0.RPM,C0.Time,C0.Pressure,C0.Time,C0.TempPad},RP);
          st3{j1,4}=sprintf('Stop %i',X(2)); % dropping 
        end
     elseif strncmpi(st3{j1,1},'Pres',4)
-      x=double(C0.(st3{j1})); % Bar
       [N,X]=hist(x,1:.1:30);
       X=X([find(N>max(N)*.1,1,'first') find(N>max(N)*.1,1,'last')]);
       if diff(X)<.5
@@ -3628,7 +3632,7 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
    C0.Amax={r2,sprintf('%s [%s]',Time.X{2}{1,1:2})};
   else
    if size(Time.X{2},2)==1;Time.X{2}(:,2)={''};end
-  
+   C0.Amean={};C0.Amax={};
    for j1=1:length(st2)
     C0.Amean(j1,1:2)={sqrt(sum(abs(Time.Y(:,i2==j1,1)).^2,2)) sprintf('Amean [%s]',st2{j1})};
     C0.Amax(j1,1:2)={max(abs(Time.Y(:,i2==j1,1)),[],2) sprintf('Amax [%s]',st2{j1})};
@@ -3680,6 +3684,12 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
     C0.Amax=cdm(C0.Amax(i2,:));
    end
   end
+  if isfield(Time,'XM')&&isfield(C0,'Amean')
+    r1=sdth.sfield('addselected',struct,C0,{'Amean','Amax','dr','WP'});
+    setInX1(Time.XM.PcNav,r1);
+  end
+
+
 end
 
 function wheelPosLines(c2)
