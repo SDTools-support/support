@@ -61,7 +61,7 @@ class MatlabLexer(RegexLexer):
     #
     # taken from MATLAB version'9.6.0.1092380 (R2019a) Update 1'
     #
-    # Use command sdth.docutils('sdtfun-sdtlexer') to generate the sdtfun list below
+    # Use command sdtm.docutils('sdtfun-sdtlexer') to generate the sdtfun list below
     sdtfun = (
      "abaqus",
      "anisotropic_cristal",
