@@ -1860,7 +1860,7 @@ if strcmpi(Cam,'par');CAM=projM('ViewPar');end
 [~,RO]=sdtm.urnPar(CAM,...
  ['{}{fs%ug,u%s,cu%s,ciStoreName%s,ci%i,it%g,tmin%g,' ...
   'MinAmpRatio%ug,hold%s,reset%3,cm%s,xlim%g,ylim%g,zlim%g,clim%g,cleanFig%s,amp%s,clip%s,' ...
-  'tag%s}']);
+  'tag%s,harm%g}']);
 if ~isfield(RO,'Other');RO.Other={};end
 if ~isfield(RO,'cu');RO.cu='Time';end
 if carg<=nargin&&isfield(varargin{carg},'Y');Time=varargin{carg};carg=carg+1;
@@ -1887,7 +1887,14 @@ RO.projM=projM;
 
 RO.getDep=@getAmp;
 % d_signal('nmap.xvec') gives the types 
+if isfield(RO,'harm')
+  Time.Y=Time.Y(:,:,RO.harm);  Time.X{3}=Time.X{3}(RO.harm,:);
+end
 [C0,st2,st1,RO]=cdm.xvec(Time,[RO.Other;{'WAng(t)'}],RO);% Vectors and dependencies
+if isfield(RO,'harm')&&RO.harm>1
+ r2=C0.iFreq.Source;r2.data=r2.data*RO.harm; r2.label=sprintf('iFreq h%i [Hz]',RO.harm);
+ C0.iFreq=cdm({r2.data,r2.label,r2.name});
+end
 if isfield(C0,'Time')
  t=double(C0.Time);ind=find(diff(t)>diff(t(1:2))*3); 
  if ~isempty(ind);ind=unique([ind;ind+1]);
