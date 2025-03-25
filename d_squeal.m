@@ -570,38 +570,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
   else; error('Need to define a reduction basis')
   end % stra
 
-  if RO.tjsnap
-   dbstack,keyboard
-   q0=stack_get(SE,'curve','q0','get');
-   %[q01,r1]=nl_solve('deffnl-getRes',SE,q0)
-  % emj=feutilb('dtkt',fe_c(TR.DOF,SE.DOF)*TR.def,SE.K{1});
-   q1=q0; q1.def=def.TR.def*def.def
-   %diag(exp(1i*2*pi*TR.data(1)*linspace(0,1/TR.data(1),10)))
-   q1.def=5e-1*real(q1.def(:,1)*exp(1i*2*pi*def.data(1)*linspace(0,1/def.data(1),10)));
-   q1.q0=q0.def;
-   q1.data=linspace(0,1/def.data(1),10)';
-   q1.def=fe_c(TR.DOF,SE.DOF)*q1.def; %q1.q0=fe_c(TR.DOF,SE.DOF)*q1.q0;
-   q1.DOF=SE.DOF;
-   [q11,r1]=nl_solve('deffnl-getRes',SE,q1);
-
-
-   r1d=ofact(SE.K{3}.GetData,r1);
-   TR.def=[TR.def SE.Case.T*r1d]; TR.data(size(TR.def,2),end)=0
-   TR=feutilb('placeindof',SE.DOF,TR);
-   [TR.def,wj]=fe_norm(TR.def,SE.K{1},SE.K{3},[-1 0 0 1e-12]); TR.data=wj/2/pi;
-   % generate trajectory shape snapshots
-
-   %  get FNL from snapshots
-
-   % compute static uplift response
-
-   % add to reduction basis
-
-
-   %end
-
-  end
-
+  
   if RO.q0 % add q0 reduction basis
    q0=stack_get(SE,'curve','q0','get');
    if ~isempty(q0)
@@ -616,6 +585,41 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
     TRn.def=TRn.def-model.Case.T*(model.K{1}*c1*TR.def*TR.def'*TRn.def);
     TR.def=[TR.def TRn.def];
    end
+  end
+
+  if RO.tjsnap
+   dbstack,keyboard
+   q0=stack_get(SE,'curve','q0','get');
+   %[q01,r1]=nl_solve('deffnl-getRes',SE,q0)
+  % emj=feutilb('dtkt',fe_c(TR.DOF,SE.DOF)*TR.def,SE.K{1});
+  def=fe_def('subdef',def,i1)
+   q1=q0; q1.def=def.TR.def*def.def;
+   %diag(exp(1i*2*pi*TR.data(1)*linspace(0,1/TR.data(1),10)))
+   q1.def=5e-1*real(q1.def(:,1)*exp(1i*2*pi*def.data(1)*linspace(0,1/def.data(1),10)));
+   q1.q0=q0.def;
+   q1.data=linspace(0,1/def.data(1),10)';
+   q1.def=fe_c(TR.DOF,SE.DOF)*q1.def; q1.q0=fe_c(TR.DOF,SE.DOF)*q1.q0;
+   q1.DOF=SE.DOF;
+   [q11,r1]=nl_solve('deffnl-getRes',SE,q1);
+
+
+   r1d=ofact(sdth.GetData(SE.K{3}),r1);
+   % restrict to interface (nl) xxx
+   r1d(fe_c(SE.DOF,[SE.NL{1,3}.masterDOF;SE.NL{1,3}.slaveDOF],'ind',2),:)=0;
+   TR.def=[TR.def SE.Case.T*r1d]; TR.data(size(TR.def,2),end)=0;
+   TR=feutilb('placeindof',SE.DOF,TR);
+   [TR.def,wj]=fe_norm(TR.def,SE.K{1},SE.K{3},[-1 0 0 1e-12]); TR.data=wj/2/pi;
+   % generate trajectory shape snapshots
+
+   %  get FNL from snapshots
+
+   % compute static uplift response
+
+   % add to reduction basis
+
+
+   %end
+
   end
 
   if RO.normE % xxx post renorm with elastic matrices only
@@ -1860,7 +1864,7 @@ if strcmpi(Cam,'par');CAM=projM('ViewPar');end
 [~,RO]=sdtm.urnPar(CAM,...
  ['{}{fs%ug,u%s,cu%s,ciStoreName%s,ci%i,it%g,tmin%g,' ...
   'MinAmpRatio%ug,hold%s,reset%3,cm%s,xlim%g,ylim%g,zlim%g,clim%g,cleanFig%s,amp%s,clip%s,' ...
-  'tag%s}']);
+  'tag%s,harm%g}']);
 if ~isfield(RO,'Other');RO.Other={};end
 if ~isfield(RO,'cu');RO.cu='Time';end
 if carg<=nargin&&isfield(varargin{carg},'Y');Time=varargin{carg};carg=carg+1;
@@ -1887,7 +1891,14 @@ RO.projM=projM;
 
 RO.getDep=@getAmp;
 % d_signal('nmap.xvec') gives the types 
+if isfield(RO,'harm')
+  Time.Y=Time.Y(:,:,RO.harm);  Time.X{3}=Time.X{3}(RO.harm,:);
+end
 [C0,st2,st1,RO]=cdm.xvec(Time,[RO.Other;{'WAng(t)'}],RO);% Vectors and dependencies
+if isfield(RO,'harm')&&RO.harm>1
+ r2=C0.iFreq.Source;r2.data=r2.data*RO.harm; r2.label=sprintf('iFreq h%i [Hz]',RO.harm);
+ C0.iFreq=cdm({r2.data,r2.label,r2.name});
+end
 if isfield(C0,'Time')
  t=double(C0.Time);ind=find(diff(t)>diff(t(1:2))*3); 
  if ~isempty(ind);ind=unique([ind;ind+1]);
