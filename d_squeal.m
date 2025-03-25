@@ -1864,7 +1864,7 @@ if strcmpi(Cam,'par');CAM=projM('ViewPar');end
 [~,RO]=sdtm.urnPar(CAM,...
  ['{}{fs%ug,u%s,cu%s,ciStoreName%s,ci%i,it%g,tmin%g,' ...
   'MinAmpRatio%ug,hold%s,reset%3,cm%s,xlim%g,ylim%g,zlim%g,clim%g,cleanFig%s,amp%s,clip%s,' ...
-  'tag%s}']);
+  'tag%s,harm%g}']);
 if ~isfield(RO,'Other');RO.Other={};end
 if ~isfield(RO,'cu');RO.cu='Time';end
 if carg<=nargin&&isfield(varargin{carg},'Y');Time=varargin{carg};carg=carg+1;
@@ -1891,7 +1891,14 @@ RO.projM=projM;
 
 RO.getDep=@getAmp;
 % d_signal('nmap.xvec') gives the types 
+if isfield(RO,'harm')
+  Time.Y=Time.Y(:,:,RO.harm);  Time.X{3}=Time.X{3}(RO.harm,:);
+end
 [C0,st2,st1,RO]=cdm.xvec(Time,[RO.Other;{'WAng(t)'}],RO);% Vectors and dependencies
+if isfield(RO,'harm')&&RO.harm>1
+ r2=C0.iFreq.Source;r2.data=r2.data*RO.harm; r2.label=sprintf('iFreq h%i [Hz]',RO.harm);
+ C0.iFreq=cdm({r2.data,r2.label,r2.name});
+end
 if isfield(C0,'Time')
  t=double(C0.Time);ind=find(diff(t)>diff(t(1:2))*3); 
  if ~isempty(ind);ind=unique([ind;ind+1]);
@@ -3500,7 +3507,7 @@ end
 function out=AutoMeta(Time,RO)
 %% #AutoMeta : fill meta information from a squeal test 
 if nargin==1
-  RO=struct; 
+  RO=struct;  
 end
 if isa(Time,'vhandle.nmap')
  %% Fill database
@@ -3523,8 +3530,8 @@ if isa(Time,'vhandle.nmap')
 elseif ~isfield(RO,'forInfo')
   RO.forInfo={
       'tag','OutFmt','OutVal'
-     'RPM','%.0f %.0f',@(x)[min(x) max(x)]
     'Pressure','%.0f %.0f Bar',@(x)[min(x) max(x)]/1e5
+    'RPM','%.0f %.0f',@(x)[min(x) max(x)]
     'TempPad','%.0f %.0f C',@(x)[min(x) max(x)]
     'TempDisk','%.0f %.0f C',@(x)[min(x) max(x)]
     'Torque','%.0f %.0f Nm',@(x)[min(x) max(x)]
@@ -3577,11 +3584,25 @@ RP=struct('gf',501,'ax',[1 1 1],'os',{{'@title',{'String',Time.name},...
     '@PlotWd',{'@OsDic',{'ImSw80{@line,""}','WrW49c'}}}});
 ax=cdm.plotys({C0.Time,C0.RPM,C0.Time,C0.Pressure,C0.Time,C0.TempPad},RP);
    %% AutoMeta 
+if ~isfield(Time,'meta')||~isfield(Time.meta,'Range')
+ Time.meta.Range=struct('ColumnName',{{'fname','data','len'}}, ...
+     'table',{'?',0,size(Time.Y,1)});
+end
+RB.it0=[0;cumsum(vertcat(Time.meta.Range.table{:,3}))];
+Time.meta.fileMetaM=vhandle.nmap({double(Time.X{1}(1)),struct},[],'file meta from time');
+for jseg=1:size(Time.meta.Range.table,1)
    st3=RO.forInfo;
+   it=RB.it0(jseg)+1:RB.it0(jseg+1);RB.it=it;
+   [i2,i3]=ismember(st3(:,1),Time.X{2}(:,1));
+   if nnz(i3)==0
+    [i2,i3]=ismember(st3(:,1),Time.Xlab{1}(:,1));Y=Time.X{1};
+    st1=Time.Xlab{1}(:,1);
+   else; Y=Time.Y;st1=Time.X{2}(:,1); 
+   end
    [i2,i3]=ismember(st3(:,1),fieldnames(C0));st3(~i2,:)=[];
    for j1=1:size(st3,1)
     %'xxx missing type detection decel, stops, drag, ramping, pstep' % Pressure profile
-    x=double(C0.(st3{j1}));%Y(:,strcmpi(st1,st3{j1}));
+    x=Y(it,strcmpi(st1,st3{j1}));
     if strcmpi(st3{j1,1},'RPM')
        [N,X]=hist(x,1:1:1000);
        X=X([find(N>max(N)*.1,1,'first') find(N>max(N)*.1,1,'last')]);
@@ -3592,6 +3613,13 @@ ax=cdm.plotys({C0.Time,C0.RPM,C0.Time,C0.Pressure,C0.Time,C0.TempPad},RP);
          st3{j1,4}=sprintf('Stop %i',X(2)); % dropping 
        end
     elseif strncmpi(st3{j1,1},'Pres',4)
+      x=double(C0.(st3{j1})(it)); % Bar
+      if isfield(RO,'ClipPres')&&RO.ClipPres>1e4
+          i3=(x<RO.ClipPres/1e5);
+          it([1:find(i3==0,1,'first')-1 find(i3==0,1,'last')+1:end])=[];
+          x=double(C0.(st3{j1})(it)); % Bar
+      end
+      x=double(C0.(st3{j1})); % Bar
       [N,X]=hist(x,1:.1:30);
       X=X([find(N>max(N)*.1,1,'first') find(N>max(N)*.1,1,'last')]);
       if diff(X)<.5
@@ -3604,11 +3632,16 @@ ax=cdm.plotys({C0.Time,C0.RPM,C0.Time,C0.Pressure,C0.Time,C0.TempPad},RP);
      st3{j1,4}=sprintf(st3{j1,2},st3{j1,3}(x));
     end
    end
-
+   r1=sdtm.toStruct(st3(:,[1 4]));r1.FileName=Time.meta.Range.table{jseg,1};
+   r1.Time=Time.X{1}(it([1 end]));
+   r1.name=sprintf('%s, %s bar, %s, %s',r1.FileName,r1.Pressure,r1.Torque,r1.TempPad);
+   Time.meta.fileMetaM(Time.X{1}(RB.it(1),1))=r1;
+end
    Time.meta=sdth.sfield('addmissing',sdtm.toStruct(st3(:,[1 4])),Time.meta);
    Time.meta=sdtm.rmfield(Time.meta,{'SplitList','info','timeMeta','ci'});
    Time.meta.fs=round(1/dt); Time.meta.decimate=round(Time.meta.fs/1000);
-   if strcmpi(Time.meta.Name,'curimportmeta'); Time.meta.Name=Time.name;
+   if ~isfield(Time.meta,'Name')||strcmpi(Time.meta.Name,'curimportmeta'); 
+       Time.meta.Name=Time.name;
    end
    title(ax(1),sprintf('%s %s RPM %s Bar',Time.meta.Name,Time.meta.RPM,Time.meta.Pressure))
    set(findobj(ax,'type','line'),'linewidth',2)
