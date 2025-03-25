@@ -3569,7 +3569,7 @@ elseif isfield(RO,'ClipPres')
    end
 end
 
-Time.XM=sdto.ivec('Xlab',Time);Time.XM.alias('Speed')='RPM';
+Time.XM=sdtu.ivec('Xlab',Time);Time.XM.alias('Speed')='RPM';
 C0=cdm.xvec(Time,unique([RO.forInfo(2:end,1);{'Time'}]),struct); % Get Vectors
 RP=struct('gf',501,'ax',[1 1 1],'os',{{'@title',{'String',Time.name},...
     '@line',{'linewidth',2}, ...
