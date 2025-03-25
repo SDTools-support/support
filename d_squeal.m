@@ -3532,7 +3532,7 @@ end
 
 C0=cdm.xvec(Time,{'Time','Pressure'},struct); % Get Vectors Pressure in bar
 
-dt=diff(C0.Time(1:2));
+dt=diff(double(C0.Time(1:2)));
 if isfield(Time,'By') % Actually a time scan
   Time.meta=struct('Type','TimeScan');out=Time;return;
 
@@ -3565,7 +3565,12 @@ elseif isfield(RO,'ClipPres')
    end
 end
 
-Time.XM=sdto.ivec('Xlab',Time);Time.XM.alias('Speed')='RPM';
+Time.XM=sdto.ivec('Xlab',Time);
+r2=Time.XM.dimAliasM;
+%.aliasM
+if isKey(r2,'Speed');Time.XM.alias('Speed')='RPM';
+else;Time.XM.alias('RPM')='Speed';
+end
 C0=cdm.xvec(Time,unique([RO.forInfo(2:end,1);{'Time'}]),struct); % Get Vectors
 RP=struct('gf',501,'ax',[1 1 1],'os',{{'@title',{'String',Time.name},...
     '@line',{'linewidth',2}, ...
