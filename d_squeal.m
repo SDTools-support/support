@@ -577,6 +577,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
     if size(q0.def,2)>2; q0=fe_def('subdef',q0,[1 size(q0.def,2)]); end
     q0=feutilb('placeindof',TR.DOF,q0);
     TR.def=[TR.def q0.def]; TR.data(end+1:end+size(q0.def,2),1)=0;
+    TR.def=SE.Case.T*fe_norm(feutilb('placeindof',SE.Case.DOF,TR.DOF,TR.def),SE.K{1},SE.K{3});
    end
    RO.q0='m';
    if 1==2
@@ -602,12 +603,15 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    q1.DOF=SE.DOF;
    [q11,r1]=nl_solve('deffnl-getRes',SE,q1);
 
+   [r1,ss,vv]=svd(r1,0); ss=diag(ss)/ss(1); r1=r1(:,ss>1e-4);
 
    r1d=ofact(sdth.GetData(SE.K{3}),r1);
    % restrict to interface (nl) xxx
    r1d(fe_c(SE.DOF,[SE.NL{1,3}.masterDOF;SE.NL{1,3}.slaveDOF],'ind',2),:)=0;
-   TR.def=[TR.def SE.Case.T*r1d]; TR.data(size(TR.def,2),end)=0;
    TR=feutilb('placeindof',SE.DOF,TR);
+   %r1d=r1d-TR.def*(TR.def'*(SE.K{1}*r1d));
+   TR.def=[TR.def r1d]; TR.data(size(TR.def,2),end)=0;
+   %TR=feutilb('placeindof',SE.DOF,TR);
    [TR.def,wj]=fe_norm(TR.def,SE.K{1},SE.K{3},[-1 0 0 1e-12]); TR.data=wj/2/pi;
    % generate trajectory shape snapshots
 
