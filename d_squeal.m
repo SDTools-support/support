@@ -607,12 +607,34 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
 
    r1d=ofact(sdth.GetData(SE.K{3}),r1);
    % restrict to interface (nl) xxx
-   r1d(fe_c(SE.DOF,[SE.NL{1,3}.masterDOF;SE.NL{1,3}.slaveDOF],'ind',2),:)=0;
+   ndof=[SE.NL{1,3}.masterDOF;SE.NL{1,3}.slaveDOF];
+   inode=ndof; %feutil('findnode inelt{withnode{nodeid}}',model,unique(fix([SE.NL{1,3}.masterDOF;SE.NL{1,3}.slaveDOF])));
+   iidof=fe_c(SE.DOF,inode,'ind',1);
+   icdof=fe_c(SE.DOF,SE.DOF(iidof),'ind',2);
+   r1d(icdof,:)=0;
    TR=feutilb('placeindof',SE.DOF,TR);
+
+   if 1==1 % lets just recall CMT format here to assess what we do with KA as double layer red
+    %[model,RO]=sdth.GetData(obj,'-mdl')
+    model=sdtm.rmfield(model,'DOF','K','Klab','Opt','FNL','FNLlab','FNLDOF','NL','Case','Load');
+    model=stack_set(model,'Case','Case 1',SE.Case);
+    TR=fe_def('exp',struct('DOF',SE.Case.mDOF,'adof',SE.Case.DOF,'def',SE.Case.T),TR);
+    model=stack_set(model,'curve','TRg',TR);
+    model=fe_cmt('listgen-cut-keepNL-AMode"TRg"',model,'withnode{inelt{proid 1010} | inelt{set 1}}');
+SE1=fe_cmt('init-build-NLtime',model)
+
+   else
+
+   TR1=TR.def; TR1(iidof,:)=0; TR2=TR.def; TR2(icdof,:)=0;
+   TR1=fe_norm([TR1],SE.K{1},SE.K{3},[-1 0 0 1e-12]);
+   TR2=fe_norm([TR2 r1d],SE.K{1},SE.K{3},[-1 0 0 1e-12]);
+   TR.def=[TR1 TR2];
+   end
+   RO.normE=0;
    %r1d=r1d-TR.def*(TR.def'*(SE.K{1}*r1d));
-   TR.def=[TR.def r1d]; TR.data(size(TR.def,2),end)=0;
+   %TR.def=[TR.def r1d]; TR.data(size(TR.def,2),end)=0;
    %TR=feutilb('placeindof',SE.DOF,TR);
-   [TR.def,wj]=fe_norm(TR.def,SE.K{1},SE.K{3},[-1 0 0 1e-12]); TR.data=wj/2/pi;
+ %  [TR.def,wj]=fe_norm(TR.def,SE.K{1},SE.K{3},[-1 0 0 1e-12]); TR.data=wj/2/pi;
    % generate trajectory shape snapshots
 
    %  get FNL from snapshots
