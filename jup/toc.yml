@@ -23,7 +23,7 @@ parts:
               - file: _tuto/tuto_ExpGUI
       - file: collab
         sections: 
-          - file: collab_install
+          - file: collab_Install
           - file: collab_git
-          - file: collab_markdown
+          - file: collab_Markdown
  
