@@ -7,23 +7,15 @@ options:
   numbered: 2
 parts:
 
-- caption: SDT-support
+- caption: SDT-tuto
   numbered: 3
   chapters:
-      - file: tuto
+      - file: tuto_interact
         sections:
-          - file: tuto_interact
-            sections:
-              - file: _tuto/tuto_FeplotInteract
-          - file: tuto_test
-            sections:
-              - file: _tuto/tuto_By
-          - file: tuto_correl
-            sections:
-              - file: _tuto/tuto_ExpGUI
-      - file: collab
-        sections: 
-          - file: collab_Install
-          - file: collab_git
-          - file: collab_Markdown
- 
+          - file: _tuto_FeplotInteract
+      - file: tuto_test
+        sections:
+          - file: _tuto_By
+      - file: tuto_correl
+        sections:
+          - file: _tuto_ExpGUI 

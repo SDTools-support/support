@@ -14,7 +14,7 @@
 :link-type: any
 **EMA on parameteric transfers**
 ^^^
-![](_images/tuto_By.png)
+![](../_images/tuto_By.png)
 +++
 The following tutorial highlights the procedure identify parametric transfers on the `DemoGartBy` example in which each block of transfers depends on the temperature.
 ```

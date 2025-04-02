@@ -14,7 +14,7 @@
 :link-type: any
 **Feplot interactivity**
 ^^^
-![](_images/tuto_FeplotInteract.png)
+![](../_images/tuto_FeplotInteract.png)
 +++
 This tutorial aims at illustrating the main ways to interact with `feplot` figures.
 ```
