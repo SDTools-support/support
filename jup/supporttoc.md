@@ -1,6 +1,6 @@
 ```{include} ./header.md
 ```
-# Welcome to SDT
+# SDT-support
 
 See the table of content below to get started :
 

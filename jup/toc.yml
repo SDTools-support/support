@@ -2,7 +2,7 @@
 # Learn more at https://jupyterbook.org/customize/toc.html
 
 format: jb-book
-root: sdtjup
+root: supporttoc
 options:
   numbered: 2
 parts:
