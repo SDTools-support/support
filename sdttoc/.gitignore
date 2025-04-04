@@ -1,0 +1,13 @@
+
+## Core matlab files
+*.asv
+*.*~
+*.mex*
+*.mat*
+*.bak
+
+ *.ps
+ *.eps
+ *.pdf
+*.slx
+_tuto*
