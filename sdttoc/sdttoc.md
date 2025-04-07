@@ -28,7 +28,7 @@ Main documentation book containing base functions of SDT
 :link-type: url
 **Piezo**
 ^^^
-xxxPiezo logo
+![](_images/Logo_SDT_Piezo.png)
 +++
 Documentation book dedicated to piezoelectric elements
 ```
