@@ -13,6 +13,3 @@ toc={...
 'collab_Markdown' 3
 };
 ````
-```{tableofcontents}
-```
-
