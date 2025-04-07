@@ -131,13 +131,18 @@ Note that VSCode uses https://katex.org/docs/supported  for default Math preview
   - $\ofw$
 ````
 
+Math block reference: label and link
+
+``` markdown
 $$
   w_{t+1} = (1 + r_{t+1}) s(w_t) + y_{t+1}
+$$ (collab_equation_label)
+Ref to equation {eq}`collab_equation_label`.
+```
+
 $$
-`$$(my_other_label)` for jupyter
+  w_{t+1} = (1 + r_{t+1}) s(w_t) + y_{t+1}
+$$ (collab_equation_label)
+Ref to equation {eq}`collab_equation_label`.
 
-
-Ref to equation {eq}`my_other_label`. Has failed;
-
-Next 
 

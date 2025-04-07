@@ -44,7 +44,7 @@ Documentation book dedicated to piezoelectric elements
 Documentation section related to import/export from/to other FEM codes
 ```
 ````
-FEMLink requires an additional licence.
+SDT-FEMLink requires an additional licence to SDT-Base.
 
 (sdt-modules-toc)=
 ## Other SDT-Modules
