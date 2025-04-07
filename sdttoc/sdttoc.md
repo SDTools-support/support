@@ -4,7 +4,7 @@
 # Welcome to SDT
 
 (sdt-base-toc)=
-## SDT 7.6
+## SDT 7.6: base and standard modules
 
 The following products are included by default in all SDT distribution. 
 
@@ -47,7 +47,8 @@ Documentation section related to import/export from/to other FEM codes
 FEMLink requires an additional licence.
 
 (sdt-modules-toc)=
-## SDT-modules
+## Other SDT-modules
+SDT-base is enhanced by specific modules gathering libraries of functions around a dedicated topic:
 - [Visco](https://www.sdtools.com/software/sdt-modules/viscoelastic/)
 - [Nlsim](https://www.sdtools.com/helpcur/nlsim)
 - [JobH](https://www.sdtools.com/software/sdt-modules/jobh/)
