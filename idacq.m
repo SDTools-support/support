@@ -4,6 +4,9 @@ function [out,out1,out2,out3,out4]=idacq(varargin)
 % Old drivers : photon, id_virtual, id_nidaq
 % New drivers : mdaq (data acquisiton toolbox), vdaq (virtual),  ...
 %  pnidaq (Python NI)
+%
+% See <a href="matlab: sdtweb _taglist idacq">TagList</a>
+
 
 
 

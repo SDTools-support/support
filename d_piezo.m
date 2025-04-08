@@ -2,10 +2,12 @@ function [out,out1,out2]=d_piezo(varargin); %#ok<*STOUT>
 
 % D_PIEZO Support for demonstrations related to piezo-electricity
 %
+% See <a href="matlab: sdtweb _taglist d_piezo">TagList</a>
+%
 % Arnaud Deraemaeker, ULB and Etienne Balmes, SDTools
 
 
-%       Copyright (c) 1990-2024 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2025 by SDTools, All Rights Reserved.
 %       For revision information use d_piezo('cvs')
 
 if nargin==0

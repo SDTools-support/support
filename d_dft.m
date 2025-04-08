@@ -1,9 +1,11 @@
 function [out,out1,out2]=d_dft(varargin); %#ok<*STOUT>
 
 % D_DFT Support for demonstrations related to periodic computations in SDT
+%
+% See <a href="matlab: sdtweb _taglist d_dft">TagList</a>
 
 %       Etienne Balmes, SDTools
-%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2025 by SDTools, All Rights Reserved.
 %       For revision information use d_dft('cvs')
 
 if nargin==0

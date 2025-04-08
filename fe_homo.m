@@ -5,9 +5,12 @@ function [out,out1,out2]=fe_homo(varargin)
 %
 % EXPERIMENTAL utilities that are not included in SDT. 
 % SDTools thus does not guarantee that support will be provided.
+%
+% See <a href="matlab: sdtweb _taglist fe_homo">TagList</a>
+
 
 %       E. Balmes
-%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2025 by SDTools, All Rights Reserved.
 %       For revision information use fe_homo('cvs')
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>

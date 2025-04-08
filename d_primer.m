@@ -5,8 +5,10 @@ function [out,out1]=d_primer(varargin); %#ok<*NOSEM,*STOUT>
 % Use 
 %     sdtweb('_taglist','d_primer') to view current contents
 %     d_primer('tuto')  % to see integrated tutorials
+% See <a href="matlab: sdtweb _taglist d_primer">TagList</a>
 
-%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
+
+%       Copyright (c) 1990-2025 by SDTools, All Rights Reserved.
 %       For revision information use d_primer('cvs')
 
 if nargin==0; d_primer('tuto'); return; end

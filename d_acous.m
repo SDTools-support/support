@@ -2,10 +2,12 @@ function [out,out1]=d_acous(varargin);
 
 % D_ACOUS Support for demonstrations related to acoustics
 %
+% See <a href="matlab: sdtweb _taglist d_acous">TagList</a>
+%
 % Etienne Balmes, SDTools
 
 
-%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2025 by SDTools, All Rights Reserved.
 %       For revision information use d_acous('cvs')
 
 if nargin==0

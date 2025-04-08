@@ -4,9 +4,12 @@ function [out,out1,out2,out3]=anisotropic_cristal(varargin)
 % anisotropic_cristal('auto') % Nominal case
 %
 % Example contributed by Nicolas Ranc and Etienne Balmes
+%
+% See <a href="matlab: sdtweb _taglist anisotropic_cristal">TagList</a>
+
 
 %       Etienne Balmes
-%       Copyright (c) 2001-2011 by INRIA and SDTools, All rights reserved.
+%       Copyright (c) 2001-2025 by INRIA and SDTools, All rights reserved.
 %       Use under OpenFEM trademark.html license and LGPL.txt library license
 
 if nargin==0; [CAM,Cam]=comstr('auto',1);carg=1;
