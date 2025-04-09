@@ -1,9 +1,9 @@
 ```{include} ../header.md
 ```
-(tuto:test)=
+(tuto_test)=
 # Test analysis methods
 
-**Section [](tuto:test)** lists tutorials about test mesh building, EMA, Time demodulation...
+**Section [](tuto_test)** lists tutorials about test mesh building, EMA, Time demodulation...
 
 ````{grid}
 :gutter: 3

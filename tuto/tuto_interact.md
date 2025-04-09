@@ -1,16 +1,16 @@
 ```{include} ../header.md
 ```
-(tuto:interact)=
+(tuto_interact)=
 # GUI interactivity
 
-**Section [](tuto:interact)** lists tutorials about how to interact with main SDT figures.
+**Section [](tuto_interact)** lists tutorials about how to interact with main SDT figures.
 
 ````{grid}
 :gutter: 3
 
 ```{grid-item-card} 
 :columns: 4
-:link: tuto:FeplotInteract
+:link: tuto_FeplotInteract
 :link-type: any
 **Feplot interactivity**
 ^^^

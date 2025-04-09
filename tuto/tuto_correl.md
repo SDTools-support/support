@@ -1,9 +1,9 @@
 ```{include} ../header.md
 ```
-(tuto:correl)=
+(tuto_correl)=
 # Test/simulation correlation methods
 
-**Section [](tuto:correl)** lists tutorials that deal with topology correlation, shape correlation, model updating...
+**Section [](tuto_correl)** lists tutorials that deal with topology correlation, shape correlation, model updating...
 
 ````{grid}
 :gutter: 3
