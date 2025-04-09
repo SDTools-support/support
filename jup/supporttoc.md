@@ -1,6 +1,6 @@
 ```{include} ./header.md
 ```
-# SDT-support
+# SDT-support <book id="support">
 
 See the table of content below to get started :
 

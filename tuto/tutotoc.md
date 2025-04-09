@@ -5,14 +5,16 @@
 
 This chapter is a list of tutorials to explore the main functionalities of SDT.
 
-```{include} tuto/tuto_interact.md
-:start-line: 5
-```
 
-```{include} tuto/tuto_test.md
-:start-line: 5
-```
+````matlab
+toc={...
+'tutotoc'      1
+'tuto_interact'      2
+'tuto_FeplotInteract' 3
+'tuto_test'          2
+'tuto_By' 3
+'tuto_correl'  2
+'tuto_ExpGUI' 3
+};
+````
 
-```{include} tuto/tuto_correl.md
-:start-line: 5
-```

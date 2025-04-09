@@ -10,7 +10,7 @@
 
 ```{grid-item-card} 
 :columns: 4
-:link: tuto:By
+:link: tuto_By
 :link-type: any
 **EMA on parameteric transfers**
 ^^^

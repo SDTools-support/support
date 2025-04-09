@@ -10,7 +10,7 @@
 
 ```{grid-item-card} 
 :columns: 4
-:link: tuto:ExpGUI
+:link: tuto_ExpGUI
 :link-type: any
 **Expansion**
 ^^^
