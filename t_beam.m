@@ -2,6 +2,9 @@ function [out,out1,out2]=t_beam(varargin)
 
 % Various tests beam stress/strain validation and 
 %
+% See <a href="matlab: sdtweb _taglist t_beam">TagList</a>
+%
+%
 % Contributed by E. Balmes
 
 %#ok<*ASGLU>

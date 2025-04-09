@@ -2,6 +2,8 @@ function [out,out1,out2]=t_stress(varargin) %#ok<*STOUT>
 
 % Various stress/strain validation illustrations and tests 
 % see details in automated tests
+%
+% See <a href="matlab: sdtweb _taglist t_stress">TagList</a>
 
 % Contributed by E. Balmes
 

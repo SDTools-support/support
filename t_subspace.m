@@ -6,12 +6,13 @@ function [out,out1,out2]=t_subspace(varargin)
 % .po [freq damp order]
 % .res resisues
 %
+% See <a href="matlab: sdtweb _taglist t_subspace">TagList</a>
 % See example with t_subspace('poly')
 % 
 % Contributed by E. Balmes
 
 %       Etienne Balmes
-%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2025 by SDTools, All Rights Reserved.
 
 
 %#ok<*NOSEM,*ASGLU>

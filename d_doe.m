@@ -3,9 +3,10 @@ function [out,out1,out2]=d_doe(varargin);
 % D_DOE sample files for design of numerical experiments
 %
 %   Use d_doe('nmap') to see list  
+% See <a href="matlab: sdtweb _taglist d_doe">TagList</a>
 
 %       Etienne Balmes, Guilherme Malacrida Alves
-%       Copyright (c) 1990-2023 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2025 by SDTools, All Rights Reserved.
 %       For revision information use d_tdoe('cvs')
 
 if nargin==0

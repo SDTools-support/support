@@ -7,11 +7,12 @@ function [out,out1,out2]=start_time2frf(varargin) %#ok<STOUT>
 % sdtweb('start_time2frf.m#hammer') % Illustrates a hammer test
 % sdtweb('start_time2frf.m#fe_time') % Illustrates fe_time integration
 % 
+% See <a href="matlab: sdtweb _taglist start_time2frf">TagList</a>
 % See also : d_signal 
 
 
 %       Etienne Balmes, Guillaume Martin
-%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2025 by SDTools, All Rights Reserved.
 %       start_time2frf('cvs') for revision information
 
 %#ok<*ASGLU,*NOSEM,*NASGU>

@@ -5,11 +5,13 @@ function [out,out1,out2]=d_shm(varargin); %#ok<*STOUT>
 %
 % d_shm ScriptDocPiezo
 %
+% See <a href="matlab: sdtweb _taglist d_shm">TagList</a>
 % Currently documented in PJE/tex/doc_beam_nl.tex
+%
 
 % Marc Rebillat, Mikhail Guskov, Eric Monteiro, ENSAM/PIMM
 % Etienne Balmes, Jean-Philippe Bianchi, Guillaume Vermot des Roches, SDTools
-%       Copyright (c) 1990-2017 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2025 by SDTools, All Rights Reserved.
 %       For revision information use d_shm('cvs')
 
 if nargin==0

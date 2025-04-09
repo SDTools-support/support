@@ -6,8 +6,11 @@ function [out,out1,out2,out3] = esi2sdt(varargin)
 %       Supported files for reading are
 %         .pc   pam crash files
 %
+% See <a href="matlab: sdtweb _taglist esi2sdt">TagList</a>
+
+%
 %       E. Balmes, P. Lorong, G. Martin
-%       Copyright (c) 1990-2023 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2025 by SDTools, All Rights Reserved.
 %       Use esi2sdt('cvs') for revision information
 
 if nargin==0

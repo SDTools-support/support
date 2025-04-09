@@ -1,6 +1,8 @@
 function d_statespace(varargin)
 
 % Examples of SDT based state-space usage
+% See <a href="matlab: sdtweb _taglist d_statespace">TagList</a>
+
 %
 % ResultantDofSet : case with enforced acceleration and resultant
 % ResultantDofLoad : case with applied load an resultants at two locations
@@ -16,7 +18,7 @@ if isempty(Cam)
 % Problem with resultant response
 elseif comstr(Cam,'resultant');[CAM,Cam]=comstr(CAM,10); 
 
-if comstr(Cam,'dofset')
+if comstr(Cam,'dofset') % #dofset
 %% Our customer ask me about the sensor definition as nodal reaction force.
 %When we want to get the state space model with input as the imposed DOF
 %displacement(DofSet) excitation 
@@ -54,7 +56,7 @@ dr=fe_eig({SE.K{:},[]});dr.def=SE.TR.def*dr.def;dr.DOF=SE.TR.DOF;
 sys=nor2ss(dr,model); % Acc In to disp out
 qbode(sys,2*pi*linspace(0,2e3,1000)','iiplot "Test" -po');
 
-elseif comstr(Cam,'dofload')
+elseif comstr(Cam,'dofload') % #dofload
 %------------------------------------------------------------------
 %% Now a case with force applied at free tip (node 2) 
 % and reaction at cantilever point (node 1)

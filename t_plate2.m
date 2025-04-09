@@ -2,10 +2,12 @@ function t_plate2(varargin)
 
 % Various tests for composite shell development.
 %
+% See <a href="matlab: sdtweb _taglist t_plate2">TagList</a>
+%
 % Contributed by B. Desmorat and E. Balmes
 
 %	Etienne Balmes
-%   Copyright (c) 1990-2012 by SDTools, All Rights Reserved.
+%   Copyright (c) 1990-2025 by SDTools, All Rights Reserved.
 %   For revision see fe_norm('cvs')
 
 if nargin==0; Cam='';
