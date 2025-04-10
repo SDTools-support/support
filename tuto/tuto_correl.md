@@ -3,7 +3,7 @@
 (tuto_correl)=
 # Test/simulation correlation methods
 
-**Section [](tuto_correl)** lists tutorials that deal with topology correlation, shape correlation, model updating...
+This section lists tutorials that deal with topology correlation, shape correlation, model updating...
 
 ````{grid}
 :gutter: 3
@@ -11,7 +11,7 @@
 ```{grid-item-card} 
 :columns: 4
 :link: tuto_ExpGUI
-:link-type: any
+:link-type: doc
 **Expansion**
 ^^^
 Need expansion illustration here

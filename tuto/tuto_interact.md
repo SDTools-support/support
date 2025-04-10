@@ -3,7 +3,7 @@
 (tuto_interact)=
 # GUI interactivity
 
-**Section [](tuto_interact)** lists tutorials about how to interact with main SDT figures.
+This section lists tutorials about how to interact with main SDT figures.
 
 ````{grid}
 :gutter: 3
@@ -11,7 +11,7 @@
 ```{grid-item-card} 
 :columns: 4
 :link: tuto_FeplotInteract
-:link-type: any
+:link-type: doc
 **Feplot interactivity**
 ^^^
 ![](../_images/tuto_FeplotInteract.png)

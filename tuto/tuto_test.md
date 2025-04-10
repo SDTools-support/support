@@ -3,7 +3,7 @@
 (tuto_test)=
 # Test analysis methods
 
-**Section [](tuto_test)** lists tutorials about test mesh building, EMA, Time demodulation...
+This section lists tutorials about test mesh building, EMA, Time demodulation...
 
 ````{grid}
 :gutter: 3
@@ -11,7 +11,7 @@
 ```{grid-item-card} 
 :columns: 4
 :link: tuto_By
-:link-type: any
+:link-type: doc
 **EMA on parameteric transfers**
 ^^^
 ![](../_images/tuto_By.png)
