@@ -34,17 +34,12 @@ Other Python installs of interest
 If using Python / Jupyter book to generate this documentation
 
 - First setup Python for MATLAB following instructions in 
-- Install Jupyter book for Python by executing the commands listed by the call below in a Windows batch  
+- Install Jupyter book for Python by executing the commands listed by the call below in a Windows CMD/unix terminal   
 {m}`sdtpy.install('jup')`
 - Update the matlab lexer used by `Pygments` to color code to add SDT flavor.  
 Use command {m}`sdtm.jup('sdtlexer')`
-- Create symbolic links to organize your directories
-  - {m}`mklink /d sdt.cur\_jup   target` where {m}`target` is typically tempdir\_jup 
-  - {m}`mklink /d target\base sdt.cur\support\jup` to link files of the SDT support as base. 
-  - {m}`mklink /d target\proj sdt.git\proj\jup` to add any project to the building tree. 
-  - within the  `sdt.git\proj\jup directory` use {m}`mklink /d _images ..\tex\plots`  to link the expected jup/_images to actual location
- `mklink /d _icons ..\tex\icons`  if appropriate
 
+- {m}`lat('jup{support}')`
 
 (collab-install-VSCode)=
 ## VSCode as Markdown editor
