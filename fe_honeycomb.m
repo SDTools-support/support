@@ -6,7 +6,7 @@ function out=fe_honeycomb(varargin)
 
 
 %       Etienne Balmes, Jean-Michel Leclere
-%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2025 by SDTools, All Rights Reserved.
 %       For revision information use fe_honeycomb('cvs')
 
 if nargin==0; CAM=''; carg=1; else;CAM=varargin{1}; carg=2;  end

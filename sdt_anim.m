@@ -4,7 +4,7 @@ function sdt_anim(block)
 %
 %
 % Based on Level-2 MATLAB file S-Function for continuous time variable step demo.
-%   Copyright 1990-2009 The MathWorks, Inc.
+%   Copyright 1990-2025 The MathWorks, Inc.
 
   setup(block);
   
