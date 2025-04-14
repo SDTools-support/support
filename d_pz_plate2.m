@@ -1,6 +1,6 @@
 
 %% Example answering the test case of Gerard Coffignal
-%       Copyright (c) 2014-2015 by SDTools, All Rights Reserved.
+%       Copyright (c) 2014-2025 by SDTools, All Rights Reserved.
 
 
 %% Generic meshing : see documentation 
