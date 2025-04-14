@@ -3,7 +3,7 @@ function [out,out1,out2]=pak2sdt(varargin)
 % 
 
 %       Etienne Balmes, Jean-Philippe Bianchi
-%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2025 by SDTools, All Rights Reserved.
 %       $Revision: 1.29 $  $Date: 2015/10/06 16:36:20 $
 
 obj=[]; evt=[];
