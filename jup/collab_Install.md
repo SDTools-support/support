@@ -71,7 +71,7 @@ Use command {m}`sdtm.jup('sdtlexer')`
             },
 ```
 
-Note that an execution bug may require to manually edit the extensions.js file to contain `shell:true`. See https://github.com/valentjn/vscode-ltex/issues/886.
+Note that an execution bug may require to manually edit the @user/.vscode/extensions/valentjn.vscode-ltex-13.1.0/dist/extensions.js file to contain `shell:true`. See https://github.com/valentjn/vscode-ltex/issues/886.
 ```
         const executableOptions = {
                 encoding: 'utf-8',
