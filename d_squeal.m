@@ -16,7 +16,7 @@ function [out,out1,out2]=d_squeal(varargin)
 %
 
 %       Guillaume Vermot des Roches, Etienne Balmes
-%       Copyright (c) 1990-2024 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2025 by SDTools, All Rights Reserved.
 %       For revision information use d_squeal('cvs')
 
 if nargin==0

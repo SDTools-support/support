@@ -8,7 +8,7 @@ function [out,out1]=d_nlstatic(varargin)
 %       See also : fe_time, nl_solve, fe_case, mattyp
 
 %	Etienne Balmes, Guillaume Vermot des Roches
-%       Copyright (c) 1990-2021 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2025 by SDTools, All Rights Reserved.
 
 
 if nargin==0; return; end % auto test skip
