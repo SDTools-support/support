@@ -57,7 +57,10 @@ https://myst-parser.readthedocs.io/en/latest/syntax/cross-referencing.html
 
 ````
 
-## Tables 
+Test of going to [labeled dropdow](collab_Markdown.macro.opt)
+
+(macro)=
+## Tables / dropdowns
 
 Using pipes and - 
 
@@ -66,8 +69,15 @@ Using pipes and -
  | $+-$ right | left | center |
  | $ -$ right | left | center |
 
+(collab_Markdown.macro.opt)=
+````{dropdown} Title of dropdown Expand to display source code.
+ - List within dropdow
+   - Item2
+   - Item3
+````
 
-<img src="../images/fun-fish.png" alt="fishy" width="200px">
+
+<img src="../images/id.png" alt="id.png" width="200px">
 
 (markdown_Math)=
 ## Math
