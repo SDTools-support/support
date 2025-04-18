@@ -1,13 +1,8 @@
-```{include} ../header.md
-```
 
-```{tableofcontents}
-```
-
-(collab-install)=
+(collab_install)=
 # Installation / upgrade
 
-(collab-install-MATLAB+SDT)=
+(collab_install_MATLAB_SDT)=
 ## MATLAB+SDT
 With MATLAB you need 
 - SDT : www.sdtools.com/sdtcur
@@ -28,7 +23,7 @@ Other Python installs of interest
 - {m}`sdtpy.install('scipy')` lists command to install SciPy. Verify `import scipy; scipy.signal.butter(1,.1,"lowpass")`
 - {m}`sdtpy.install('gmsh')` lists command to install GMSH. Verify using `import gmsh; gmsh.initialize(); gmsh.fltk.run(); gmsh.finalize()`
 	
-(collab-install-JupyterBook)=
+(collab_install.JupyterBook)=
 ## Build Jupyter book documentation
 
 If using Python / Jupyter book to generate this documentation
@@ -39,13 +34,15 @@ If using Python / Jupyter book to generate this documentation
 - Update the matlab lexer used by `Pygments` to color code to add SDT flavor.  
 Use command {m}`sdtm.jup('sdtlexer')`
 
-- {m}`lat('jup{support}')`
+- {m}`sdtpy.install(''jup'')`) provides download instructions 
+- {m}`sdtm.jup('build{support}')` generates the documentation of a specific book
 
-(collab-install-VSCode)=
+
+(collab_install_VSCode)=
 ## VSCode as Markdown editor
 
 - VSCode (Visual Studio Code) is a modern open source code editor
-- It integrates with {m}`sdtweb` if you set it as the editor for markdown
+- It integrates with {m}`sdtu.f.open` if you set it as the editor for Markdown
   {m}`sdtdef('SDTools.MdEdt-setpref',{'VScode','c:\Users\$USER$\AppData\Local\Programs\Microsoft VS Code\Code.exe'})`
 - You can possibly define this as text editor instead of the SDTools standard NotePad++ sdtdef('SDTools.TxtEdt-setpref',{'notepad++','D:\APP\win64\npp\notepad++.exe'})
 - `Ctrl+k  v` opens the preview editor side by side 
@@ -79,6 +76,21 @@ Note that an execution bug may require to manually edit the @user/.vscode/extens
                 shell: true
               };
 ```
+
+
+VSCode is now the preferred editor for MarkDown (used to open files when calling {m}`sdtu.f.open(''File.md'')`). 
+
+ Preview side-by-side (Ctrl+K V) 
+ Install jupyter notebook support
+
+
+ python3 
+
+!"C:\Program Files (x86)\Microsoft Visual Studio\Shared\Python39_64\python.exe" -m pip install jupyter-book
+
+Note that VSCode uses https://katex.org/docs/supported  for default Math preview which is not yet compatible with SDT math macros. 
+
+
 (collab-install-GitHub)=
 ## GitHub desktop as git interface
 

@@ -1,20 +1,15 @@
-```{include} ../header.md
-```
 (markdown)=
 # Markdown examples (as used in documentation)
 
-```{tableofcontents}
-```
-
-(markdown-SDT)=
+(markdown_SDT)=
 ## SDT 
 
 - ``{m}`function('hello','python')`:`` or 
-{m}`function('hello','python')` : the `{m}` gives a [role](https://www.sphinx-doc.org/en/master/usage/restructuredtext/roles.html) that is a python function, defined here on the fly in the `header.md`, where Sphinx generates a directive  a code block is then generated that allow pygments calling)
+{m}`function('hello','python')` : the `{m}` gives a [role](https://www.sphinx-doc.org/en/master/usage/restructuredtext/roles.html) that is a python function, defined here on the fly in the `header.md`, where Sphinx generates a directive a code block is then generated that allow `pygments` calling)
 A role generates a directive ` ``` :language: matlab ``` ` which is then interpreted as usual. 
 
 
-- ``{s}`MATLAB` ``  forces usage of class `s` (string command for SDT) in the HTML for coloring in the  `_static\sdt.css`  : for example {s}`MATLAB`. 
+- ``{s}`MATLAB` `` forces usage of class `s` (string command for SDT) in the HTML for coloring in the `_static\sdt.css` : for example {s}`MATLAB`. 
 
 - Code block
 ``` matlab
@@ -40,7 +35,7 @@ model=feutil('Extrude 0  1.0 0.0 0.0',model,...
 ```
 {bluecolor}`<font color="blue">BlueColor custom role</font>`
 
-(collab-cross)=
+(collab_cross)=
 ## Cross references
 
 https://myst-parser.readthedocs.io/en/latest/syntax/cross-referencing.html
@@ -62,7 +57,10 @@ https://myst-parser.readthedocs.io/en/latest/syntax/cross-referencing.html
 
 ````
 
-## Tables 
+Test of going to [labeled dropdow](collab_Markdown.macro.opt)
+
+(macro)=
+## Tables / dropdowns
 
 Using pipes and - 
 
@@ -71,31 +69,18 @@ Using pipes and -
  | $+-$ right | left | center |
  | $ -$ right | left | center |
 
-Using Jupyter :::
-
-xxx need documentation
-
-
-<img src="../images/fun-fish.png" alt="fishy" width="200px">
-
-(markdown-VS)=
-## VScode shortcuts 
-
-VSCode is now the preferred xxx 
-
- Preview side-by-side (Ctrl+K V) 
- Install jupyter notbook support
+(collab_Markdown.macro.opt)=
+````{dropdown} Title of dropdown Expand to display source code.
+ - List within dropdow
+   - Item2
+   - Item3
+````
 
 
- python3 
+<img src="../images/id.png" alt="id.png" width="200px">
 
-!"C:\Program Files (x86)\Microsoft Visual Studio\Shared\Python39_64\python.exe" -m pip install jupyter-book
-
-Note that VSCode uses https://katex.org/docs/supported  for default Math preview which is not yet compatible with SDT math macros. 
-
-(markdown-Math)=
+(markdown_Math)=
 ## Math
-
 
 ````{list-table} SDT math macros
 :widths: auto
