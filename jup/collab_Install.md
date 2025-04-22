@@ -1,7 +1,7 @@
 ```{include} ../header.md
 ```
 
-```{tableofcontents}
+```{contents}
 ```
 
 (collab-install)=
@@ -32,13 +32,11 @@ Other Python installs of interest
 ## Build Jupyter book documentation
 
 If using Python / Jupyter book to generate this documentation
-
 - First setup Python for MATLAB following instructions in 
 - Install Jupyter book for Python by executing the commands listed by the call below in a Windows CMD/unix terminal   
 {m}`sdtpy.install('jup')`
 - Update the matlab lexer used by `Pygments` to color code to add SDT flavor.  
 Use command {m}`sdtm.jup('sdtlexer')`
-
 - {m}`lat('jup{support}')`
 
 (collab-install-VSCode)=

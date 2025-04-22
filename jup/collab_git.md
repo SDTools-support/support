@@ -1,7 +1,7 @@
 ```{include} ../header.md
 ```
 
-```{tableofcontents}
+```{contents}
 ```
 
 (collab-git)=

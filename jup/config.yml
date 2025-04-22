@@ -76,7 +76,7 @@ parse:
      fig: |
        ````{figure} ../_images/%s
        ---
-       width: auto
+       width: 50%%
        name: fig-%s
        ---
        %s

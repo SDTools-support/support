@@ -3,14 +3,14 @@
 (markdown)=
 # Markdown examples (as used in documentation)
 
-```{tableofcontents}
+```{contents}
 ```
 
 (markdown-SDT)=
 ## SDT 
 
-- ``{m}`function('hello','python')`:`` or 
-{m}`function('hello','python')` : the `{m}` gives a [role](https://www.sphinx-doc.org/en/master/usage/restructuredtext/roles.html) that is a python function, defined here on the fly in the `header.md`, where Sphinx generates a directive  a code block is then generated that allow pygments calling)
+- ``{m}`funname('hello','python')`:`` or 
+{m}`funname('hello','python')` : the `{m}` gives a [role](https://www.sphinx-doc.org/en/master/usage/restructuredtext/roles.html) that is a python function, defined here on the fly in the `header.md`, where Sphinx generates a directive  a code block is then generated that allow pygments calling)
 A role generates a directive ` ``` :language: matlab ``` ` which is then interpreted as usual. 
 
 
@@ -55,10 +55,10 @@ https://myst-parser.readthedocs.io/en/latest/syntax/cross-referencing.html
   - Reference result
 * - `{{fig % ("id.png","FigID","caption")}}`
   - {{fig % ("id.png","FigID","caption")}}
-  - `{refnum}`FigID``  
+  - `{numref}`FigID``  
   `{ref}`FigID``
-  - {refnum}`FigID`  
-  {ref}`FigID`
+  - {numref}`fig-FigID`  
+  {ref}`fig-FigID`
 
 ````
 
@@ -70,8 +70,6 @@ Using pipes and -
  | ---: | :--- | :---: |
  | $+-$ right | left | center |
  | $ -$ right | left | center |
-
-Using Jupyter :::
 
 xxx need documentation
 
@@ -144,5 +142,3 @@ $$
   w_{t+1} = (1 + r_{t+1}) s(w_t) + y_{t+1}
 $$ (collab_equation_label)
 Ref to equation {eq}`collab_equation_label`.
-
-
