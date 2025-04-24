@@ -21,3 +21,79 @@ blockquote.table {
     background-color: #ffffff;
     border-left: #ffffff;
 }
+
+/*Tree strategy in pure css -> https://www.youtube.com/watch?v=rvKCsHS590o*/
+
+.tree li{ 
+  font-size: 100%;
+ }
+
+ .tree ul{ 
+  list-style: none;
+  line-height: 1.4em;
+  padding-left: 1.5em; /* ↓ smaller indentation per level */
+ }
+
+ .tree ul li{
+  position:relative;
+  padding-left: 0em;
+ }
+
+ .tree ul li::before{
+  position:absolute;
+  left:-1em;
+  top:0em;
+  border-left: 1px solid grey;
+  border-bottom: 1px solid grey;
+  content: "";
+  width: 0.8em;
+  height: 0.7em;
+ }
+
+ .tree ul li::after{
+  position:absolute;
+  left:-1em;
+  bottom:0em;
+  border-left: 1px solid grey;
+  content: "";
+  width: 1em;
+  height: 100%;
+ }
+
+ .tree ul li:last-child::after{
+  display: none;
+ }
+
+ .tree summary::before{
+  position: absolute;
+  left: -1.4em;
+  top:0.3em;
+  content:"";
+  text-align: center;
+  line-height: 0.8em;
+  background: darkgray;
+  border: 1px solid gray;
+  display: block;
+  width:0.8em;
+  height:0.8em;
+  border-radius: 0em;
+  z-index:999
+ }
+
+.tree details[open] > summary::before{
+  background: white;
+}
+
+ .tree summary{ 
+  cursor: pointer;
+  content:none;
+  list-style: none;
+ }
+
+ .tree summary::marker{
+  display:none;
+ }
+
+ .tree summary::-webkit-details-marker{
+  display:none;
+ }

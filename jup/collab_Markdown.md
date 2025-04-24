@@ -50,10 +50,10 @@ https://myst-parser.readthedocs.io/en/latest/syntax/cross-referencing.html
   - Reference result
 * - `{{fig % ("id.png","FigID","caption")}}`
   - {{fig % ("id.png","FigID","caption")}}
-  - `{refnum}`FigID``  
+  - `{numref}`FigID``  
   `{ref}`FigID``
-  - {refnum}`FigID`  
-  {ref}`FigID`
+  - {numref}`fig-FigID`  
+  {ref}`fig-FigID`
 
 ````
 
@@ -75,8 +75,8 @@ Using pipes and -
  - List within dropdow
    - Item2
    - Item3
+ - Use `:open:` to open the dropdown by default
 ````
-
 
 <img src="../images/id.png" alt="id.png" width="200px">
 
@@ -130,5 +130,3 @@ $$
   w_{t+1} = (1 + r_{t+1}) s(w_t) + y_{t+1}
 $$ (collab_equation_label)
 Ref to equation {eq}`collab_equation_label`.
-
-

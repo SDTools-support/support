@@ -1,4 +1,3 @@
-
 (collab_install)=
 # Installation / upgrade
 
@@ -27,16 +26,13 @@ Other Python installs of interest
 ## Build Jupyter book documentation
 
 If using Python / Jupyter book to generate this documentation
-
 - First setup Python for MATLAB following instructions in 
 - Install Jupyter book for Python by executing the commands listed by the call below in a Windows CMD/unix terminal   
 {m}`sdtpy.install('jup')`
 - Update the matlab lexer used by `Pygments` to color code to add SDT flavor.  
 Use command {m}`sdtm.jup('sdtlexer')`
-
 - {m}`sdtpy.install(''jup'')`) provides download instructions 
 - {m}`sdtm.jup('build{support}')` generates the documentation of a specific book
-
 
 (collab_install_VSCode)=
 ## VSCode as Markdown editor

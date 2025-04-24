@@ -409,7 +409,9 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    if ~isempty(MVR);
     if isa(MVR.Opt,'v_handle'); MVR=sdthdf('hdfreadref',MVR); end
     mo1=rmfield(MVR,'Case'); C1=MVR.Case;
-    if isfield(MVR,'NL')&&~isempty(nl_spring('getpro',MVR))
+    if isfield(MVR,'NL')%&&~isempty(nl_spring('getpro',MVR))
+     mo1.Case=C1; 
+     if isempty(stack_get(mo1,'curve','q0')); mo1=stack_set(mo1,stack_get(model,'curve','q0')); end
      mo1=nl_solve('TgtMdlAssemble -evalFNL',mo1);
     end
     if isequal(MVR.DOF,C1.DOF); assType=1; end % MVR already on C1.DOF
@@ -518,6 +520,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    SE=varargin{carg}; carg=carg+1;
    def=varargin{carg}; carg=carg+1;
    if carg<=nargin; RO=varargin{carg}; carg=carg+1; else; RO=struct; end
+   if isfield(RO,'nmap'); nmap=RO.nmap; end
   end
   if ~isfield(SE,'K') % late assemble if not done before
    % this a TimePre phase that could be done before to ease setup
@@ -593,19 +596,25 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    q0=stack_get(SE,'curve','q0','get');
    %[q01,r1]=nl_solve('deffnl-getRes',SE,q0)
   % emj=feutilb('dtkt',fe_c(TR.DOF,SE.DOF)*TR.def,SE.K{1});
-  def=fe_def('subdef',def,i1)
-   q1=q0; q1.def=def.TR.def*def.def;
+ % def=fe_def('subdef',def,i1)
+   q1=q0; if isfield(def,'TR'); q1.def=def.TR.def*def.def; end
    %diag(exp(1i*2*pi*TR.data(1)*linspace(0,1/TR.data(1),10)))
-   q1.def=5e-1*real(q1.def(:,1)*exp(1i*2*pi*def.data(1)*linspace(0,1/def.data(1),10)));
+   %q1.def=5e-0*real(q1.def(:,1)*exp(1i*2*pi*def.data(1)*linspace(0,1/def.data(1),10)));
    q1.q0=q0.def;
-   q1.data=linspace(0,1/def.data(1),10)';
+   q1.data=linspace(0,1/def.data(1),30)';
+   q1.def=5e-0*real(q1.def(:,1)*exp(1i*2*pi*def.data(1)*q1.data'));
    q1.def=fe_c(TR.DOF,SE.DOF)*q1.def; q1.q0=fe_c(TR.DOF,SE.DOF)*q1.q0;
    q1.DOF=SE.DOF;
    [q11,r1]=nl_solve('deffnl-getRes',SE,q1);
 
    [r1,ss,vv]=svd(r1,0); ss=diag(ss)/ss(1); r1=r1(:,ss>1e-4);
-
+if 1==1 % maybe we should generate shapes uplifted with coupling
+ % xxx what level of coupling, should we use snaps?
+ SE1=nl_solve('TgtMdlAssemble-skip',stack_rm(SE,'curve','q0'));
+  r1d=ofact(sdth.GetData(SE1.K{3}),r1);
+else
    r1d=ofact(sdth.GetData(SE.K{3}),r1);
+end
    % restrict to interface (nl) xxx
    ndof=[SE.NL{1,3}.masterDOF;SE.NL{1,3}.slaveDOF];
    inode=ndof; %feutil('findnode inelt{withnode{nodeid}}',model,unique(fix([SE.NL{1,3}.masterDOF;SE.NL{1,3}.slaveDOF])));
@@ -614,23 +623,14 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    r1d(icdof,:)=0;
    TR=feutilb('placeindof',SE.DOF,TR);
 
-   if 1==1 % lets just recall CMT format here to assess what we do with KA as double layer red
-    %[model,RO]=sdth.GetData(obj,'-mdl')
-    model=sdtm.rmfield(model,'DOF','K','Klab','Opt','FNL','FNLlab','FNLDOF','NL','Case','Load');
-    model=stack_set(model,'Case','Case 1',SE.Case);
-    TR=fe_def('exp',struct('DOF',SE.Case.mDOF,'adof',SE.Case.DOF,'def',SE.Case.T),TR);
-    model=stack_set(model,'curve','TRg',TR);
-    model=fe_cmt('listgen-cut-keepNL-AMode"TRg"',model,'withnode{inelt{proid 1010} | inelt{set 1}}');
-SE1=fe_cmt('init-build-NLtime',model)
+   TR.def=[TR.def r1d];
 
-   else
+   %TR1=TR.def; TR1(iidof,:)=0; TR2=TR.def; TR2(icdof,:)=0;
+   %TR1=fe_norm([TR1],SE.K{1},SE.K{3},[-1 0 0 1e-12]);
+   %TR2=fe_norm([TR2 r1d],SE.K{1},SE.K{3},[-1 0 0 1e-12]);
+   %TR.def=[TR1 TR2];
 
-   TR1=TR.def; TR1(iidof,:)=0; TR2=TR.def; TR2(icdof,:)=0;
-   TR1=fe_norm([TR1],SE.K{1},SE.K{3},[-1 0 0 1e-12]);
-   TR2=fe_norm([TR2 r1d],SE.K{1},SE.K{3},[-1 0 0 1e-12]);
-   TR.def=[TR1 TR2];
-   end
-   RO.normE=0;
+   %RO.normE=0;
    %r1d=r1d-TR.def*(TR.def'*(SE.K{1}*r1d));
    %TR.def=[TR.def r1d]; TR.data(size(TR.def,2),end)=0;
    %TR=feutilb('placeindof',SE.DOF,TR);
@@ -671,6 +671,9 @@ SE1=fe_cmt('init-build-NLtime',model)
    % else; % we would call fe_reduc for a redefined assembly
    while nnz(SE.K{end})==0; 
     i1=length(SE.K);SE.K(i1)=[];SE.Klab(i1)=[];SE.Opt(:,i1)=[];
+   end
+   if ~isa(SE.K{1},'vhandle.matrix')
+    SE.K=cellfun(@(x)vhandle.matrix('mkls',sdth.GetData(x)),SE.K,'uni',0);
    end
   end
 
@@ -743,7 +746,7 @@ SE1=fe_cmt('init-build-NLtime',model)
   if 1==2
    % things to sort
    % check final stability with BetaK 
-   RC=struct('backTgtMdl',2,'sepKj',1,'betaR',1e-8)
+   RC=struct('backTgtMdl',2,'sepKj',1,'betaR',1e-8,'EigOpt',2)
    [dd]=d_squeal('SolveModes',SE,RC); SE3t=dd.SE; dd=dd.Mode
    [dd.data(1,:) def.data(18,:)]
    % intial speed ?
@@ -757,7 +760,7 @@ SE1=fe_cmt('init-build-NLtime',model)
 
   if ~isempty(RO.TimeCont)
    %% #SolveRedOpt.TimeCont prepare time continue at TimeRed exit
-   if ischar(RO.TimeCont); TimOpt=RO.TimeCont;
+   if ischar(RO.TimeCont); TimeOpt=RO.TimeCont;
    elseif isKey(nmap,'TimeOpt'); TimeOpt=nmap('TimeOpt');
    else; TimeOpt=[];
    end
