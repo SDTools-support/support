@@ -70,7 +70,8 @@ Using pipes and -
  | $ -$ right | left | center |
 
 (collab_Markdown.macro.opt)=
-````{dropdown} Title of dropdown Expand to display source code.
+````{dropdown} Title of dropdown Expand to display source code. 
+:open:
  - List within dropdow
    - Item2
    - Item3
