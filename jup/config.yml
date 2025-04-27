@@ -4,7 +4,7 @@
 title: ""# Empty title because added to each page title (tabs in browser) + replaced by the logo
 author: SDTools 
 copyright: "1991-2025 by SDTools"
-logo: ./_images/logoS.png
+logo: _images/logoS.png
 only_build_toc_files: true
 # Define the name of the latex output file for PDF builds
 latex:

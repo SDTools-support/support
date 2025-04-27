@@ -78,7 +78,7 @@ Using pipes and -
  - Use `:open:` to open the dropdown by default
 ````
 
-<img src="../images/id.png" alt="id.png" width="200px">
+<img src="../_images/id.png" alt="id.png" width="200px">
 
 (markdown_Math)=
 ## Math
