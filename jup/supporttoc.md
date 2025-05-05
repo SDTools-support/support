@@ -12,6 +12,4 @@ toc={...
 'collab_git'      3
 'collab_Markdown' 3
 };
-RO.helpDir=sdtu.f.cffile('@sdt/helpj');
-RO.endCopy='jup{support}';
 ````

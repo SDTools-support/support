@@ -1,7 +1,7 @@
 ```{include} ../header.md
 ```
 (tuto)=
-# Tutorials
+# SDT-tuto
 
 This chapter is a list of tutorials to explore the main functionalities of SDT.
 
