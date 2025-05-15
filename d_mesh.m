@@ -636,7 +636,7 @@ end
 % Table Geometry :
 l1=1000; % table half width
 h1=400; % table height
-angle=20; % angle to fix the actuators
+anglea=20; % angle to fix the actuators
 % Satelite geometry
 b1=750; %  Base radius bottom
 b2=600; % Base radiu top
@@ -692,10 +692,10 @@ mo2=mo1;
 mo2.Elt=feutil(sprintf('selelt innode{x==-%.16f & y<=%.16f & y>=0 & z>=-%.16f}',...
  l1,l1-gap,h1/2),mo2);
 mo3=feutil(sprintf('RotateNode o -%.16f %.16f 0 -%.16f 0 0 1',...
- l1,l1-gap,angle),mo2);
+ l1,l1-gap,anglea),mo2);
 mo2.Elt=feutil('GetEdgeLine',mo2);
 mo2=feutil(sprintf('Rev-OptimDegen 1 o -%.16f %.16f 0 -%.16f 0 0 1',...
- l1,l1-gap,angle),mo2);
+ l1,l1-gap,anglea),mo2);
 mo2=feutil('AddtestMerge-noori;',mo2,mo3);
 
 % Get the 4 lists of two nodes by symmetry
@@ -2004,30 +2004,114 @@ elseif comstr(Cam,'naca')
   'zs(.1#%g#"refinement step length in transverse")' ... % xxx ug
   'sRef(400#%i#"profile curve refinement factor")' ...
   'extr(5#%i#extrude in length")' ...
+  'interp(#3#"interpolate sections along radius")' ...
   ],{RO,CAM}); Cam=lower(CAM);
- 
 
+ if RO.interp; %isfield(RO,'interp')
+  % goal is to prepare appealing demonstration blade profiles
+  % extract sections, interpolate extents, refine section positions
+
+  for jl=1:size(list,1) % extract section info: create refined section profile for each entry
+   RO.curProf=RO.nmap.('Map:Bsections').(list{jl,3});
+   %% Generate profile curve (angle, xpos ypos), provide
+   r1 = spline(RO.curProf.section(:,1)',...
+    [RO.curProf.EndSlope;RO.curProf.section(:,2:3);RO.curProf.EndSlope]');
+   s1=linspace(0,2*pi,RO.sRef*2*round(RO.xn/2)); % angle refinement
+   r2=ppval(r1,s1); % interpolated curve
+   %figure(11); plot(r2(1,:),r2(2,:),'-b',RO.curProf.section(:,2),RO.curProf.section(:,3),'or'),axis equal
+   n0=[(1:size(r2,2)-1)' zeros(size(r2,2)-1,3) r2(:,1:end-1)' zeros(size(r2,2)-1,1)];
+   list{jl,3}=n0;
+  end
+
+  % recover reasonable radius div
+  n0=cell2mat(list(:,3));
+  rd=round(max(abs(diff(sort(cell2mat(list(:,1))))))/...
+   (max(n0(:,5))-min(n0(:,5)))*RO.xn);
+  % create a new interpolated list based on provided sections
+  rdv=ceil((list{end,1}-list{1})/rd);
+
+  %% interpolate xz contour along R w/ cubic
+  % prepare xz contour
+  r1=list(:,1:3); r1(:,3)=cellfun(@(x)max(x(:,5)),r1(:,3),'uni',0);
+  r1=cell2mat(r1);
+  r2=[[r1(:,1);flipud(r1(1:end-1,1))] [r1(:,2);flipud(r1(1:end-1,3))]];
+  % figure(3);  plot(r2(:,2),r2(:,1))
+
+  % now prepare angular interpolation of xz contour
+  r3=mean(r2);
+  r22=r2-r3;  r23=sqrt(sum(r22.^2,2));  r24=angle(r22(:,1)+1i*r22(:,2));
+
+  r10=linspace(r24(1),r24(end),200*rdv);
+  %pp=spline(r24,r23);  %r11=ppval(pp,r10)
+  r11=interp1(r24,r23,r10,'cubic');
+  r4=[real(r11.*exp(1i*r10))' imag(r11.*exp(1i*r10))']+r3;
+  %clf(33);figure(33); plot(r2(:,2),r2(:,1),'o--'); hold on;figure(33);  plot(r4(:,2),r4(:,1))
+
+  %% create new section list from interpolated contour
+  % setup section positions
+  rlist=linspace(list{1},list{end,1},ceil((list{end,1}-list{1})/rd))'; rlist(end,3)=0;
+  [u1,i1]=max(r4(:,1));
+  r41=r4(1:i1,:); r42=r4(i1+1:end,:);
+  for j1=1:size(rlist,1)
+   [r5,i5]=min(abs(r41(:,1)-rlist(j1))); rlist(j1,2)=r41(i5,2);
+   [r5,i5]=min(abs(r42(:,1)-rlist(j1))); rlist(j1,3)=r42(i5,2);
+  end
+  %clf(33);figure(33); plot(r2(:,2),r2(:,1),'o--'); hold on;figure(33);
+  %plot([rlist(:,2);flipud(rlist(1:end-1,3))], [rlist(:,1);flipud(rlist(1:end-1,1))]);
+
+  %% interpolate skew angle XXX origin
+  rlist(:,7)=interp1(cell2mat(list(:,1)),cell2mat(list(:,7)),rlist(:,1),'makima');
+  ori=cell2mat(list(:,6));
+  ori=interp1(cell2mat(list(:,1)),ori,rlist(:,1));
+
+  %% interpolate thickness
+  rlist(:,5)=interp1(cell2mat(list(:,1)),cell2mat(list(:,5)),rlist(:,1),'makima');
+
+  %% fill the new rlist
+  % propagate section length
+  rlist(:,4)=rlist(:,3);
+  rlist=num2cell(rlist);
+
+  for j1=1:size(rlist,1)
+   rlist{j1,6}=ori(j1,:); % place interpolated origin
+   % find closest section profile and scale it to relatice extent and thickness
+   [u1,i1]=min(abs(cell2mat(list(:,1))-rlist{j1,1}));
+   n0=list{i1,3}; % closest profile
+   n0(:,5)=n0(:,5)*(rlist{j1,4}-rlist{j1,2})/(list{i1,4}-list{i1,2}); % scale xextent
+   n0(:,6)=n0(:,6)*rlist{j1,5}/list{i1,5}; % scale thickness (yextent)
+   rlist{j1,3}=n0; % store
+  end
+  list=rlist;
+ end % end intepr
+
+ %% create blade volume from section list
  RO.EdgeN=[]; RO.TipN=[]; RO.ExtN=[]; % nodes on extra/intra with vertical lines for thickness
+ RO.ilim=size(list,2)+1; RO.ilie3=size(list,2)+2;
  for jl=1:size(list,1) % loop on profile along radius
-  RO.curProf=RO.nmap.('Map:Bsections').(list{jl,3});
-  % Generate profile curve (angle, xpos ypos), provide
-  r1 = spline(RO.curProf.section(:,1)',...
-   [RO.curProf.EndSlope;RO.curProf.section(:,2:3);RO.curProf.EndSlope]');
-  s1=linspace(0,2*pi,RO.sRef*2*round(RO.xn/2)); % angle refinement
-  r2=ppval(r1,s1); % interpolated curve
-  %figure(11); plot(r2(1,:),r2(2,:),'-b',RO.curProf.section(:,2),RO.curProf.section(:,3),'or'),axis equal
+  if ischar(list{jl,3}); % resolve section here
+   RO.curProf=RO.nmap.('Map:Bsections').(list{jl,3});
+   % Generate profile curve (angle, xpos ypos), provide
+   r1 = spline(RO.curProf.section(:,1)',...
+    [RO.curProf.EndSlope;RO.curProf.section(:,2:3);RO.curProf.EndSlope]');
+   s1=linspace(0,2*pi,RO.sRef*2*round(RO.xn/2)); % angle refinement
+   r2=ppval(r1,s1); % interpolated curve
+   %figure(11); plot(r2(1,:),r2(2,:),'-b',RO.curProf.section(:,2),RO.curProf.section(:,3),'or'),axis equal
 
-  % prepare contour model, with closed line
-  n0=[(1:size(r2,2)-1)' zeros(size(r2,2)-1,3) r2(:,1:end-1)' zeros(size(r2,2)-1,1)];
+   % prepare contour model, with closed line
+   n0=[(1:size(r2,2)-1)' zeros(size(r2,2)-1,3) r2(:,1:end-1)' zeros(size(r2,2)-1,1)];
+
+  else; n0=list{jl,3}; % profile directly provided as nodal contour
+  end
 
   % prepare a grid to morph
-  x1=linspace(min(RO.curProf.section(:,2)),max(RO.curProf.section(:,2)),RO.xn); x1=x1(:); % xxx should be max of profile
+  %x1=linspace(min(RO.curProf.section(:,2)),max(RO.curProf.section(:,2)),RO.xn); x1=x1(:); % xxx should be max of profile
+  x1=linspace(min(n0(:,5)),max(n0(:,5)),RO.xn); x1=x1(:); % xxx should be max of profile
   y1=[min(r2(2,:)) max(r2(2,:))];
   node=[x1(1) y1(1) 0;x1(end) y1(1) 0;x1(end) y1(2) 0;x1(1) y1(2) 0];
   mo1=feutil('objectquad 1 1',node,RO.xn,1);
 
   if jl>1
-   mo1=feutil('renumber-noori',mo1,max(list{jl-1,4}.Node(:,1)));
+   mo1=feutil('renumber-noori',mo1,max(list{jl-1,RO.ilim}.Node(:,1)));
   end
 
   NNode=sparse(mo1.Node(:,1),1,1:size(mo1.Node,1));
@@ -2057,11 +2141,13 @@ elseif comstr(Cam,'naca')
   mo1.Node(NNode(mo2.Node(:,1)),5:7)=n2(:,5:7);
 
   % cleanup: coalesce exit tip
-  [r1,i1]=sort(abs(mo1.Node(:,5)-max(RO.curProf.section(:,2))),'ascend');
+  %[r1,i1]=sort(abs(mo1.Node(:,5)-max(RO.curProf.section(:,2))),'ascend');
+  [r1,i1]=sort(abs(mo1.Node(:,5)-max(n0(:,5))),'ascend');
   n1=mo1.Node(:,[1 1]); n1(i1(2),2)=n1(i1(1),1);
   RO.ExtN=[RO.ExtN;n1(i1(1),1)];
   % check height of front tip
-  [r1,i1]=sort(abs(mo1.Node(:,5)-min(RO.curProf.section(:,2))),'ascend');
+  %[r1,i1]=sort(abs(mo1.Node(:,5)-min(RO.curProf.section(:,2))),'ascend');
+  [r1,i1]=sort(abs(mo1.Node(:,5)-min(n0(:,5))),'ascend');
   %if abs(diff(mo1.Node(i1(1:2),6)))<abs(diff(y1))/20 % xxx should always be the case
   n1(i1(2),2)=n1(i1(1),1);
   RO.TipN=[RO.TipN;n1(i1(1),1)];
@@ -2080,6 +2166,16 @@ elseif comstr(Cam,'naca')
   mo1.Node(:,5)=mo1.Node(:,5)+list{jl,2};
   mo1.Node(:,7)=mo1.Node(:,7)+list{jl,1};
 
+  % skewness
+  if isfield(RO.curProf,'skew')||RO.ilim>4
+   if RO.ilim>4; no=list{jl,6}; an=list{jl,7};
+   else;   no=RO.curProf.skew.Orig; an=RO.curProf.skew.angle;
+   end
+   n2=mo1.Node(:,5:7) -no; %   n2=n2-no;
+   n2=n2*[cos(an*pi/180) sin(an*pi/180) 0;    -sin(an*pi/180) cos(an*pi/180) 0;    0 0 1] +no;%   n2=n2+no;
+   mo1.Node(:,5:7)=n2;
+  end
+
   % also create a mid plane section
   mo2=mo1;
   n2=feutil('getnodegroupall',mo2); mo2.Node=n2;
@@ -2091,29 +2187,28 @@ elseif comstr(Cam,'naca')
   n3=feutil('getnode',mo2,r3);
   el3=[r3(1:end-1,1) r3(2:end,1)]; % middle section
 
-
-  % generate base section and mid plane secction
+  % generate base section and mid plane section
   if jl==1
    model=struct('Node',mo1.Node,'Elt',[]);
    mo3=struct('Node',n3,'Elt',[]);
   else;
    %mo1=feutil('renumber-noori',mo1,max(list{jl-1,4}.Node(:,1))); % earlier
    model.Node=[model.Node;mo1.Node];
-   el1=[list{jl-1,4}.Elt(:,1:4) mo1.Elt(:,:)];
+   el1=[list{jl-1,RO.ilim}.Elt(:,1:4) mo1.Elt(:,:)];
    el1(~isfinite(el1(:,1)),:)=[];
    model.Elt=feutil('addelt',model.Elt,'hexa8',el1);
 
    [mo3.Node,i3]=feutil('AddNodeKnownNew',mo3.Node,n3(:,5:7));
    NN=sparse(n3(:,1),1,mo3.Node(i3,1));
    el3=full(NN(el3));
-   el4=[list{jl-1,5} fliplr(el3)];
+   el4=[list{jl-1,RO.ilie3} fliplr(el3)];
    mo3.Elt=feutil('addelt',mo3.Elt,'quad4',el4);
 
-  end
+  end% base section addition
 
-  list{jl,4}=mo1; list{jl,5}=el3;
+  list{jl,RO.ilim}=mo1; list{jl,RO.ilie3}=el3;
 
- end
+ end % loop on section list
 
  eltip=feutil('selelt seledgeAll & innode{nodeid}',model,RO.TipN);
  elted=feutil('selelt seledgeAll & innode{nodeid}',model,RO.ExtN);
@@ -2123,19 +2218,25 @@ elseif comstr(Cam,'naca')
   rd=round(max(abs(diff(sort(cell2mat(list(:,1))))))/...
    (max(model.Node(:,5))-min(model.Node(:,5)))*RO.xn);
   mo1=model;
-  model=feutil(sprintf('divideelt 1 1 %i',rd),model);
+  if ~RO.interp
+   model=feutil(sprintf('divideelt 1 1 %i',rd),model);
+  end
   %mo3=feutil(sprintf('divideelt %i 1',rd),mo3);
   % now identify intra/extra by identifying equivalent refinement on faces from EdgeN
   %RO.midPlane=mo3;
 
   % store tip line
   mo2=struct('Node',mo1.Node,'Elt',eltip); mo2.Node=feutil('getnodegroupall',mo2);
+  if ~RO.interp
   mo2=feutil(sprintf('divideelt %i',rd),mo2);mo2.Node=feutil('getnodegroupall',mo2);
+  end
   [n2,i2]=feutil('AddNode-nearest',model.Node,mo2.Node(:,5:7));
   model=feutil('AddSetNodeId',model,'TipLine',n2(i2,1));
   % store edge line
   mo2=struct('Node',mo1.Node,'Elt',elted); mo2.Node=feutil('getnodegroupall',mo2);
+  if ~RO.interp
   mo2=feutil(sprintf('divideelt %i',rd),mo2);mo2.Node=feutil('getnodegroupall',mo2);
+  end
   [n2,i2]=feutil('AddNode-nearest',model.Node,mo2.Node(:,5:7));
   model=feutil('AddSetNodeId',model,'EdgeLine',n2(i2,1));
 
@@ -2177,7 +2278,11 @@ elseif comstr(Cam,'naca')
 
  model=stack_set(model,'info','MeshOpt',RO);
  model.unit='MM';% xxx
- if isfield(RO,'plyList'); model=fevisco('MeshPlies',model,RO);end
+ if isfield(RO,'plyList'); 
+  mo1=model;
+  model=fevisco('MeshPlies',model,RO);
+  model=stack_set(model,'info','OrigVolume',mo1);
+ end
  out=model;
 
 
@@ -2237,12 +2342,52 @@ p0=struct('section',... % (angle, xpos ypos)
 p1=p0; p2=p0;
 p1.section(:,2)=120*p1.section(:,2); p2.section(:,2)=60*p2.section(:,2);
 p1.section(:,3)=1e2*p1.section(:,3); p2.section(:,3)=5e1*p2.section(:,3);
+p3=p2; p3.skew=struct('Orig',[40 0 0],'angle',-45); % skewness
 secM=vhandle.nmap;
-secM('naca66_120')=p1; secM('naca66_60')=p2;
+secM('naca66_120')=p1; secM('naca66_60')=p2; secM('naca66_60_rn45')=p3; 
+
+p1=p0;
+p1.section(:,2)=250*p1.section(:,2);p1.section(:,3)=1e2*p1.section(:,3);
+secM('naca66_250e7')=p1;
+
+p1=p0; % xxx pre-list may be better 'rad', 'xoff', 'sec', 'len', 'hei', 'skewO', 'skewA'
+p1.section(:,2)=300*p1.section(:,2);p1.section(:,3)=1e2*p1.section(:,3);
+secM('naca66_300e7')=p1;
+p1=p0;
+p1.section(:,2)=350*p1.section(:,2);p1.section(:,3)=1e2*p1.section(:,3);
+secM('naca66_350e7')=p1;
+p1=p0;
+p1.section(:,2)=520*p1.section(:,2);p1.section(:,3)=8e1*p1.section(:,3);
+secM('naca66_520e5p6')=p1;
+p1=p0;
+p1.section(:,2)=555*p1.section(:,2);p1.section(:,3)=6e1*p1.section(:,3);
+secM('naca66_555e4p2')=p1;
+p1=p0;
+p1.section(:,2)=450*p1.section(:,2);p1.section(:,3)=5e1*p1.section(:,3);
+secM('naca66_450e3p5')=p1;
+p1=p0;
+p1.section(:,2)=350*p1.section(:,2);p1.section(:,3)=2e1*p1.section(:,3);
+secM('naca66_350e1p4')=p1;
+p1=p0;
+p1.section(:,2)=200*p1.section(:,2);p1.section(:,3)=5e-1*p1.section(:,3);
+secM('naca66_200e0p35')=p1;
+
+
 RA.nmap('Map:Bsections')=secM;
 
 profM=vhandle.nmap;
+%'rad', 'xoff', 'sec', 'len', 'hei', 'skewO', 'skewA'
 profM('HyFoilA')={0,0,'naca66_120';180,30,'naca66_60'};
+profM('HyFoilB')={0,0,'naca66_120';180,30,'naca66_60_rn45'};
+profM('HyFoilC')={0,0,'naca66_250e7',250,7,[175 0 0],0
+ 137,-2 ,'naca66_300e7',298,7,[175 0 0],15
+ 192,-7 ,'naca66_350e7',343,7,[175 0 0],30
+ 356,-20,'naca66_520e5p6',500,5.6,[175 0 0],45
+ 438,-15,'naca66_555e4p2',540,4.2,[175 0 0],60
+ 493,0,'naca66_450e3p5',450,3.5,[175 0 0],70
+ 530,75,'naca66_350e1p4',425,1.4,[175 0 0],77
+ 548,200,'naca66_200e0p35',400,.035,[175 0 0],80};
+
 RA.nmap('Map:Bprofiles')=profM;
 
 plyM=vhandle.nmap;
@@ -2300,6 +2445,18 @@ RP=struct('plyList',{{ ...
   'notsym',1,  'OrientLine',struct('starts',10,'dir',[0 0 1]));
 plyM('plyVe')=RP;
 
+%% #plyD base plies test -3
+RP=struct('plyList',{{ ...
+ 'name','thick','matid','theta','rstop'
+ 'ply1' .15  1   0  Inf
+ 'ply2' .15  2  45  500
+ 'ply3' .15  3  45  350
+ 'ply4' .15  4  45  150
+ 'core' Inf  5   0  540 % Symmetry
+ }},...
+ 'OrientLine',struct('starts',10,'dir',[0 0 1]));
+plyM('plyD')=RP;
+
 RA.nmap('Map:Bplies')=plyM;
 %% #Naca_Map:MatName definition -3
 matM={'cply','m_elastic(dbval101 UD)'
@@ -2315,9 +2472,11 @@ RA.nmap('Map:MatDB')=matM;
 
 
 RA.nmap('NacaAA')={'MeshCfg{d_mesh(Naca{HyFoilA:plyA,zs.1,yn1,unitmm}):empty}','RunCfg{feplot}'};
+RA.nmap('NacaBA')={'MeshCfg{d_mesh(Naca{HyFoilB:plyA,zs.1,yn1,unitmm}):empty}','RunCfg{feplot}'};
 RA.nmap('NacaAB')={'MeshCfg{d_mesh(Naca{HyFoilA:plyB,zs.1,yn1,unitmm}):empty}','RunCfg{feplot}'};
 RA.nmap('NacaAC')={'MeshCfg{d_mesh(Naca{HyFoilA:plyC,zs.1,yn1,unitmm}):empty}','RunCfg{feplot}'};
 RA.nmap('NacaAVe')={'MeshCfg{d_mesh(Naca{HyFoilA:plyVe,zs.1,yn1,unitmm}):ParVeCut}','RunCfg{feplot}'};
+RA.nmap('NacaCD')={'MeshCfg{d_mesh(Naca{HyFoilC:plyD,interp,zs.1,yn1,unitmm}):empty}','RunCfg{feplot}'};
 projM('Naca')=RA;
 
  % sdtm.stdNmapOut('call')
