@@ -51,6 +51,7 @@ Use command {m}`sdtm.jup('sdtlexer')`
 ```
 
 - Suggested extensions 
+  - LaTeX workshop (from James Yu) 
   - LTEX for spelling / grammar compatible with both LaTeX and Markdown.
     - Note that add to dictionary is in Quick fix:Add to dictionary 
     - In settings search for ltex
