@@ -2213,6 +2213,7 @@ elseif comstr(Cam,'naca')
  eltip=feutil('selelt seledgeAll & innode{nodeid}',model,RO.TipN);
  elted=feutil('selelt seledgeAll & innode{nodeid}',model,RO.ExtN);
 
+ model.Elt=feutil('JoinAll',model.Elt); % cleanup
 
  if RO.extr % link profile sequence with an adequate mesh length
   rd=round(max(abs(diff(sort(cell2mat(list(:,1))))))/...
@@ -2253,7 +2254,7 @@ elseif comstr(Cam,'naca')
   RO.EdgeNN(:,3)=r6; % thickness from "mid" as half total
   RO.EdgeNN(:,4)=n61(:,3); % rad, could be mean of n61 and n62
 
-  model=feutil('divideelt 1 2',model);
+  model=feutil('divideelt 1 2',model); % create midPlane in mesh
   [~,model.Elt]=feutil('eltidfix;',model);
 
   [n5,i5]=feutil('addnode-nearest',model.Node,.5*(n61+n62));
@@ -2268,8 +2269,23 @@ elseif comstr(Cam,'naca')
 
   model=feutil('addsetfaceid',model,'extrados_face','selface & innode{setname ExtraDos_n}');
   model=feutil('addsetfaceid',model,'intrados_face','selface & innode{setname IntraDos_n}');
-  model=feutil('addsetfaceid',model,'midPlane',...
-   sprintf('setname extrados_face:underlying & selface & innode{nodeid %s}',num2str(n5(i5,1)')));
+
+  % midPlane: do face selection from extrados and midPlane nodes, remove degen faces
+  mo1=model; mo1.Elt=feutil('selelt setname extrados_face:underlying & selface',mo1);
+  % to remove degen faces, use temporatry unique eltid
+  el0=mo1.Elt; elid0=feutil('eltid',el0);
+  [eltid,mo1.Elt]=feutil('eltidfix;',mo1);
+  data=fe_quality('MeasDegen-silent2',mo1);
+  for j1=1:size(data.data,2); data.EltId{j1}=data.EltId{j1}(logical(data.data{j1})); end
+  data=cat(1,data.EltId{:}); % degen elts on temporaty eltid
+  EEid=sparse(eltid+1,1,1:length(eltid)); % convert to eltind
+  mo1.Elt=el0; % get back to initial elts as represent faceselections
+  mo1.Elt=feutil('removeelt eltind',mo1,full(EEid(data+1))); % remove found eltind
+  mo1.Elt=feutil('selelt innode{nodeid}',mo1,n5(i5,1)); % keep midPlane
+  model=feutil('addsetfaceid',model,'midPlane',mo1.Elt); % add face from selface
+
+  %model=feutil('addsetfaceid',model,'midPlane',...
+  % sprintf('setname extrados_face:underlying & selface & innode{nodeid %s}',num2str(n5(i5,1)')));
 
  end
 
