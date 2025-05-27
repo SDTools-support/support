@@ -1928,7 +1928,16 @@ if comstr(Cam,'pbc')||comstr(Cam,'simpleload')||comstr(Cam,'kubc')||comstr(Cam,'
      d2.def=C1.TIn-ofact({mo1.K{strcmpi(mo1.Klab,'k')},C1.T},mo1.K{strcmpi(mo1.Klab,'k')}*C1.TIn,RO.oProp{:});
    end
    r1=d2.def'*mo1.K{ismember(lower(mo1.Klab),{'k','1','5'})}*d2.def/R2.V;
-   C2=RO.toFun(r1);
+   if isfield(RO,'pl')
+    if isfield(mo1,'unit');RO.unit=mo1.unit;end
+    C2=RO.toFun(r1,[],sdth.sfield('addselected',struct,RO,{'type','unit','pl'}));% toOrtho
+    if isfield(RO,'volume')
+     C2.pl(strcmpi(m_elastic('propertyunittypecell',6),'rho'))= ...
+      full(feutilb('tkt',sum(fe_c(mo1.DOF,.01))',mo1.K{1})/RO.volume);
+    end
+   else
+    C2=RO.toFun(r1);% toOrtho
+   end
   else
    if isfield(RO,'LearnVal')
    %% #RveKubcLearnVal start by doing a reduced model -3
@@ -3147,9 +3156,11 @@ M(1,6)=1./c(6,6);
 M(1,5)=1./c(5,5);
 M(1,4)=1./c(4,4);
 if nargout==0||(nargin==3&&isfield(r1,'pl'))
+  if ~isfield(r1,'unit');r1.unit='US';end
   M(10)=-c(3,1)*M(3); % SDT uses nu31 rather than 13
   if nargin<3||~isfield(r1,'pl');r1=struct('pl',1);end
-  r1.pl=[r1.pl(1) fe_mat('m_elastic','US',6) M([1 2 3 7 10 9 4 5 6])];
+  r1.pl=[r1.pl(1) fe_mat('m_elastic',r1.unit,6) M([1 2 3 7 10 9 4 5 6])];
+  r1.type='m_elastic';
 else
     r1=struct('X',{{{'E1', 'E2', 'E3','G23','G13','G12','nu23','nu13','nu12'}'}}, ...
      'Xlab',{{'Comp'}},'Y',M(:));

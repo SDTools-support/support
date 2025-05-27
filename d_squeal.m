@@ -301,6 +301,7 @@ dm15('ViewStabHist',h1)
   % calibrated limit cycle configuration
 
   %% base.NM 0.7 Hz frequency
+  if ishandle(2)&&strcmpi(get(2,'tag'),'feplot');close('all');end
   RT=d_doe('nmap','TV.Hoff{n,base.MN}');RT.nmap('Log')='disp'; % exactly on limit cycle
   sdtm.range(RT);mo2=RT.nmap('CurModel');d2=RT.nmap('CurTime');
 
