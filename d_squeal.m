@@ -318,7 +318,11 @@ dm15('ViewStabHist',h1)
  sdtm.range(RT);mo3=RT.nmap('CurModel');d3=RT.nmap('CurTime');
 
  %% now using modal Newmark
- RT=d_doe('nmap','TV.Hoff{n,Texp.MN}');sdtm.range(RT);mo4=RT.nmap('CurModel');d4=RT.nmap('CurTime');nlutil('postv',mo4)
+
+ RT=d_doe('nmap','TV.Hoff{n,Texp.MN}');
+ try;sdtm.range(RT);catch;sdtm.range(RT); end % 'xxx initialization problem'
+ %'xxx tclip choice issue'
+ mo4=RT.nmap('CurModel');d4=RT.nmap('CurTime');nlutil('postv',mo4)
 
 
  %% xxxGV : example of call using MexIOa
@@ -3741,7 +3745,7 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
     r2=rem(double(C0.WAng)/2/pi,1)*360;i1=(diff(r2)<-3);r2(i1,1)=NaN;
     C0.WP=cdm({r2,'WP [deg]',Time.name});  
   end
-  if isfield(C0,'Amean')
+  if isfield(C0,'Amean')&&~isempty(C0.Amean{1})
    if ~isfield(RO,'amp'); RO.amp='[g]'; end
    i2=contains(C0.Amean(:,2),RO.amp);
    if any(i2);

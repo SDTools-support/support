@@ -368,7 +368,7 @@ nmap('TV.AR')=RT;
 
   %% sdtweb d_contact meshhoff
   li={'MeshCfg{d_contact(Hoffmann{cx.01,cz.01,kx100,kz110,ks32}),Ctc{},{1001,TExpCh{ke.2},1,KmuV}}';  % Mesh:Case:NL
-  'SimuCfg{ModalNewmark{.5m,40,uva111,rt-1e-4}SQ0{vq1Amp__10}}';
+  'SimuCfg{ModalNewmark{.5m,100,uva111,rt-1e-4}SQ0{vq1Amp__10}}';
   'RunCfg{Time,PostInit,PostC1,PostC2}'};
   RT.nmap('Texp.MN')=li; % non-linear damping (change viscous damping based on velocity)
 
