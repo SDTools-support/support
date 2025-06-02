@@ -2293,50 +2293,55 @@ elseif comstr(Cam,'naca')
  if RO.yn>1; mo1=feutil(sprintf('divideelt %i 1 ',RO.yn),mo1); end
 
  if isfield(RO,'foot')&&RO.foot
-% hub diameter and thickness
-% bladeori
+  % hub diameter and thickness
+  % bladeori
 
-% generate cylinder mesh, match surf base foot
-% extrude foot and apply sitcknode shape
+  % generate cylinder mesh, match surf base foot
+  % extrude foot and apply sitcknode shape
 
-mo1=model;
-mo1.Elt=feutil('selelt selface & innode{z==min(z)}',model);
+  mo1=model;
+  mo1.Elt=feutil('selelt selface & innode{z==min(z)}',model);
 
-% extrude over transition
-mo1.Node=feutil('getnodegroupall',mo1); n1=mo1.Node;
-mo1=feutil('extrude 1 0 0 -3',mo1); % xxx foot transition height
+  % extrude over transition
+  mo1.Node=feutil('getnodegroupall',mo1); n1=mo1.Node;
+  mo1=feutil('extrude 1 0 0 -3',mo1); % xxx foot transition height
 
-% place new nodes on cylinder face
-n2=mo1.Node(~ismember(mo1.Node(:,1),n1(:,1)),:); n2i=n2(:,1);
-
-% do local orient to use polar coordinates
-b1=basis('rotate',[1 1 0  0 0 0  1 0 0  0 1 0  0 0 1],'rz=30',1);
-n2=(n2(:,5:7)-[50 0 0])*reshape(b1(7:15),3,3);
-n2=n2+[50 0 0];
-% set relative to origin
-n2=n2-[0 0 -200]; % xxx hubori
-
-% go in polar, apply radius, back to cartesian
-n2p=basis('rect2cyl',n2(:,[2 3 1]));
-n2p(:,1)=197;
-n2c=basis('cyl2rect',n2p); n2c=n2c(:,[3 1 2]); n2c=n2c+[0 0 -200];
-n2c=(n2c-[50 0 0])*reshape(b1(7:15),3,3)'+[50 0 0];
-
-% edit in model
-NNode=sparse(mo1.Node(:,1),1,1:size(mo1.Node,1));
-mo1.Node(NNode(n2i),5:7)=n2c;
-
-% coarse cylinder mesh
-sqrt(2)/2
-mof=feutil('objectannulus 50 0 -200 192 197  0.707 0.707 0 36 1')
-mof=feutil('extrude 0 0.707 0.707 0',mof,[-60:10:60])
-
-feplot(feutilb('combinemodel',mo1,mof))
-
-% move nodes
+  % place new nodes on cylinder face
+  n2=mo1.Node(~ismember(mo1.Node(:,1),n1(:,1)),:); n2i=n2(:,1);
+  %n2(:,6)=1.5*n2(:,6);
+  n2(:,6)=n2(:,6)+2*sign(n2(:,6));
 
 
-% edit in model
+ % mof=feutil('objectannulus 50 0 -200 192 197  0.707 0.707 0 36 1');
+  %mof=feutil('extrude 0 0.707 0.707 0',mof,[-60:10:60]);
+
+ % match=struct('Node',n2(:,5:7));
+  %match=feutilb('matchsurf-radiusinf',mof,match,'selface');
+  NNode=sparse(mo1.Node(:,1),1,1:size(mo1.Node,1));
+  mo1.Node(NNode(n2i),5:7)=n2(:,5:7); %match.StickNode;
+
+%  feplot(feutilb('combinemodel',mo1,mof))
+
+% prepare arc
+% extrude and match foot nodes + extend wit "fillet" 
+% remove nodes inside foot contour, do addnode -noearest to make compatible
+
+
+na1=197*[0 sin(20*pi/180) cos(20*pi/180);0 sin(-20*pi/180) cos(-20*pi/180)]
+na1=(na1+[50 0 -200])
+
+b1=basis('rotate',[1 1 0  0 0 0  1 0 0  0 1 0  0 0 1],'rz=-45',1);
+na1=(na1-[50 0 0])*reshape(b1(7:15),3,3)+[50 0 0];
+
+moa=feutil(sprintf('objectarc 50 0 -200 %.15g %.15g %.15g %.15g %.15g %.15g 36 1',reshape(na1',1,[])))
+moa=feutil('extrude 0 1 0 0',moa,[-100:10:120]);
+
+
+  feplot(feutilb('combinemodel',mo1,moa))
+
+% then remove nodes of moa inside contour
+% then do addnode-nearest to close surface
+% then cut edges and place edges on yz plane
 
 
 
