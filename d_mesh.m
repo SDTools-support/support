@@ -1988,9 +1988,11 @@ elseif comstr(Cam,'naca')
   r2=sdth.findobj('_sub:',r1(2).subs{1});
   'xxx interpret further parameters'
   list=RO.nmap.('Map:Bprofiles').(r2(1).subs);
-  RM=RO.nmap.('Map:Bplies').(r2(2).subs);
-  %RO.plyList=RM.plyList; RO.OrientLine=RM.OrientLine;
-  RO=sdth.sfield('AddMissing',RO,RM);
+  if length(r2)>1;RM=RO.nmap.('Map:Bplies').(r2(2).subs);
+   %RO.plyList=RM.plyList; RO.OrientLine=RM.OrientLine;
+   RO=sdth.sfield('AddMissing',RO,RM);
+  else;RO.ver='box'
+  end
  else % xxx
   if ~isKey(RO.nmap,'Map:profiles') % Default blade
    RO.nmap=d_mesh('nmap');
@@ -2007,7 +2009,39 @@ elseif comstr(Cam,'naca')
   'interp(#3#"interpolate sections along radius")' ...
   ],{RO,CAM}); Cam=lower(CAM);
 
- if RO.interp; %isfield(RO,'interp')
+ if isfield(RO,'ver')&&strcmpi(RO.ver,'box') 
+ %% create blade volume from section list
+ RO.iSec=4;
+ for jl=1:size(list,1) % loop on profile along radius
+  if ischar(list{jl,3}); % resolve section here
+   RO.curProf=RO.nmap.('Map:Bsections').(list{jl,3});
+   RO=buildContour(RO);
+  else; RO.contour=list{jl,3}; % profile directly provided as nodal contour
+  end
+  mo1=sdtu.fe.boxInFlatContour(RO);
+
+  %% offset
+  mo1.Node(:,5)=mo1.Node(:,5)+list{jl,2};
+  mo1.Node(:,7)=mo1.Node(:,7)+list{jl,1};
+  % skewness
+  if isfield(RO.curProf,'skew')
+   if RO.ilim>4; no=list{jl,6}; an=list{jl,7};
+   else;   no=RO.curProf.skew.Orig; an=RO.curProf.skew.angle;
+   end
+   n2=mo1.Node(:,5:7) -no; %   n2=n2-no;
+   n2=n2*[cos(an*pi/180) sin(an*pi/180) 0;    -sin(an*pi/180) cos(an*pi/180) 0;    0 0 1] +no;%   n2=n2+no;
+   mo1.Node(:,5:7)=n2;
+  end
+  list{jl,RO.iSec}=mo1; 
+
+ end % loop on section list
+ model=sdtu.fe.boxCutsToVol(list(:,RO.iSec),RO);
+ model=stack_set(model,'info','MeshOpt',RO);
+ model.unit='MM';% xxx
+ out=model;
+ return
+
+ elseif RO.interp; %isfield(RO,'interp')
   % goal is to prepare appealing demonstration blade profiles
   % extract sections, interpolate extents, refine section positions
 
@@ -2618,5 +2652,20 @@ if isfield(R1,'thickness'); % offset
  out=out-R1.thickness;
 end
 
+end
+
+
+
+function   RO=buildContour(RO)
+   % Generate profile curve (angle, xpos ypos), provide
+   r1 = spline(RO.curProf.section(:,1)',...
+    [RO.curProf.EndSlope;RO.curProf.section(:,2:3);RO.curProf.EndSlope]');
+   s1=linspace(0,2*pi,RO.sRef*2*round(RO.xn/2)); % angle refinement
+   r2=ppval(r1,s1); % interpolated curve
+   %figure(11); plot(r2(1,:),r2(2,:),'-b',RO.curProf.section(:,2),RO.curProf.section(:,3),'or'),axis equal
+
+   % prepare contour model, with closed line
+   n0=[(1:size(r2,2)-1)' zeros(size(r2,2)-1,3) r2(:,1:end-1)' zeros(size(r2,2)-1,1)];
+   RO.contour=n0; RO.contourXY=r2;
 end
 
