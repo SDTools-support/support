@@ -2773,7 +2773,7 @@ else
       RB0=RB;% should be removed
       RB=sdth.sfield('MergeI',RO.list{j1,3},RB, ...
           {'MatId','ProId','Electrode','CAM','il','shape','lx','ly', ...
-          'rc'});
+          'rc','idc','MakeSandwich'});
      end
      if isfield(RB,'Electrode')&&~isempty(RB.Electrode)
       RO.Electrode(end+(1:size(RB.Electrode,1)),1:2)=RB.Electrode;

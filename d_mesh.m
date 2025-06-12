@@ -2652,6 +2652,7 @@ end
 
 
 function   RO=buildContour(RO)
+  sdtw('_ewt','sdtu.fe.splineR document calls t_fmesh')
    % Generate profile curve (angle, xpos ypos), provide
    r1 = spline(RO.curProf.section(:,1)',...
     [RO.curProf.EndSlope;RO.curProf.section(:,2:3);RO.curProf.EndSlope]');
