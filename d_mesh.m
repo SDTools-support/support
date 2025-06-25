@@ -2012,18 +2012,20 @@ elseif comstr(Cam,'naca')
  if isfield(RO,'ver')&&strcmpi(RO.ver,'box') 
  %% create blade volume from section list
  RO.iSec=4;
+ 'xxx ColumnName/table rad,'
+
  for jl=1:size(list,1) % loop on profile along radius
   if ischar(list{jl,3}); % resolve section here
    RO.curProf=RO.nmap.('Map:Bsections').(list{jl,3});
-   RO=buildContour(RO);
+   RO=buildContour(RO);% xxx should call splineR  
   else; RO.contour=list{jl,3}; % profile directly provided as nodal contour
   end
-  mo1=sdtu.fe.boxInFlatContour(RO);
+  mo1=sdtu.fe.boxInFlatContour(RO); % 2D profile
 
+  % skewness  x,y,ry,scale sdtu.fe.splineR
   %% offset
   mo1.Node(:,5)=mo1.Node(:,5)+list{jl,2};
   mo1.Node(:,7)=mo1.Node(:,7)+list{jl,1};
-  % skewness
   if isfield(RO.curProf,'skew')
    if RO.ilim>4; no=list{jl,6}; an=list{jl,7};
    else;   no=RO.curProf.skew.Orig; an=RO.curProf.skew.angle;
@@ -2488,9 +2490,10 @@ secM('naca66_200e0p35')=p1;
 RA.nmap('Map:Bsections')=secM;
 
 profM=vhandle.nmap;
-%'rad', 'xoff', 'sec', 'len', 'hei', 'skewO', 'skewA'
+%'rad', 'xoff', 'sec' -> x,y,ry,sec,scale
 profM('HyFoilA')={0,0,'naca66_120';180,30,'naca66_60'};
 profM('HyFoilB')={0,0,'naca66_120';180,30,'naca66_60_rn45'};
+%'rad', 'xoff', 'sec', 'len', 'hei', 'skewO', 'skewA'
 profM('HyFoilC')={0,0,'naca66_250e7',250,7,[175 0 0],0
  137,-2 ,'naca66_300e7',298,7,[175 0 0],15
  192,-7 ,'naca66_350e7',343,7,[175 0 0],30
