@@ -40,6 +40,7 @@ if ~ischar(varargin{1})||isempty(varargin{1})
   if isfield(obj,'nmap');projM=obj.nmap;else;projM=[]; end
 else; [CAM,Cam]=comstr(varargin{1},1);carg=2;obj=[]; projM=[]; evt=[];
 end
+sdtu.logger.entry(struct('message',sprintf('d_squeal(%s)',CAM),'type','diag'));
 
 if comstr(Cam,'script'); [CAM,Cam]=comstr(CAM,7);
  %% #Script/#Tutos ------------------------------------------------------------------
@@ -302,14 +303,16 @@ dm15('ViewStabHist',h1)
 
   %% base.NM 0.7 Hz frequency
   if ishandle(2)&&strcmpi(get(2,'tag'),'feplot');close('all');end
-  RT=d_doe('nmap','TV.Hoff{n,base.MN}');RT.nmap('Log')='disp'; % exactly on limit cycle
+  RT=d_doe('nmap','TV.Hoff{n,base.MN}'); % exactly on limit cycle
+  r2=sdtu.log('CmdDisp{Listen{diag,warn},stack}'); % Turn logViewer on 
+
   sdtm.range(RT);mo2=RT.nmap('CurModel');d2=RT.nmap('CurTime');
 
   %% This illustrates zero damping cycle, not influence of NL on level target frequency .7 Hz
   d1=sdth.urn('dcpx',mo2);d1.data %
 
   %% damping variation w/ stable|unstable transition from mu on velocity
-  RT=d_doe('nmap','TV.Hoff{n,Kmuv.MN}');;RT.nmap('Log')='disp'; 
+  RT=d_doe('nmap','TV.Hoff{n,Kmuv.MN}');
   sdtm.range(RT);mo3=RT.nmap('CurModel');d3=RT.nmap('CurTime');
 
 
@@ -320,9 +323,13 @@ dm15('ViewStabHist',h1)
  %% now using modal Newmark
 
  RT=d_doe('nmap','TV.Hoff{n,Texp.MN}');
- try;sdtm.range(RT);catch;sdtm.range(RT); end % 'xxx initialization problem'
+ sdtm.range(RT);mo4=RT.nmap('CurModel');
+%sdtm.toString(mo4.NL{2,3}.opt')
+%[435610083668 0 0 0 0 0 -100 -5 -2 2 5 100 -0.5 -0.025 0.01 -0.01 0.025 0.5 0 0 0]
+
+ %try;sdtm.range(RT);catch;sdtm.range(RT); end % 'xxx initialization problem'
  %'xxx tclip choice issue'
- mo4=RT.nmap('CurModel');d4=RT.nmap('CurTime');nlutil('postv',mo4)
+d4=RT.nmap('CurTime');nlutil('postv',mo4)
 
 
  %% xxxGV : example of call using MexIOa
@@ -3377,6 +3384,7 @@ function out=specMax(RO)
   %% #specMax indicators of max spectrum  
   % feval(d_squeal('@specMax'))
   % feval(d_squeal('@specMax'),struct('do',{'demA'},'gMin',1))
+  sdtu.logger.entry(struct('message','d_squeal@specMax','type','diag'));
 
   if nargin==0;RO=struct('do',{''});end
   out=[];
@@ -3762,7 +3770,10 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
   end
   if isfield(Time,'XM')&&isfield(C0,'Amean')
     r1=sdth.sfield('addselected',struct,C0,{'Amean','Amax','dr','WP'});
-    setInX1(Time.XM.PcNav,r1);
+    if isprop(Time.XM,'PcNav')
+     setInX1(Time.XM.PcNav,r1);
+    else; sdtw('_nb','need to rethink storage')
+    end
   end
 
 
