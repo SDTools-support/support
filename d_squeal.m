@@ -326,6 +326,11 @@ dm15('ViewStabHist',h1)
  sdtm.range(RT);mo4=RT.nmap('CurModel');
 %sdtm.toString(mo4.NL{2,3}.opt')
 %[435610083668 0 0 0 0 0 -100 -5 -2 2 5 100 -0.5 -0.025 0.01 -0.01 0.025 0.5 0 0 0]
+if 1==2
+ NL=GetData(clist,'cell')
+ nlutil('postview',NL{5})
+end
+
 
  %try;sdtm.range(RT);catch;sdtm.range(RT); end % 'xxx initialization problem'
  %'xxx tclip choice issue'
