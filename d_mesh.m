@@ -1806,6 +1806,8 @@ else; error('Mat%s unknown',CAM);
 end
 elseif comstr(Cam,'case'); [CAM,Cam]=comstr(CAM,5);
  %% #Case : step case (called by sdtsys StepMesh)
+ sdtu.logger.entry(struct('message',sprintf('d_mesh(''Case%s'')',CAM),'type','diag'));
+
  if isfield(RO,'Elt');model=RO;end
  RO=varargin{carg};carg=carg+1;
 
@@ -1874,6 +1876,8 @@ elseif comstr(Cam,'case'); [CAM,Cam]=comstr(CAM,5);
 elseif comstr(Cam,'mesh'); [CAM,Cam]=comstr(CAM,5);
  %% if not found edit MeshCmd to Cmd
 %% #Mesh : MeshCfg mesh command implementations (called by sdtsys StepMesh)
+sdtu.logger.entry(struct('message',sprintf('d_mesh(''Mesh%s'')',CAM),'type','diag'));
+
 if comstr(Cam,'plate')
 %% #MeshPlate {div,o%s,i%s}
  [st,RO]=sdtm.urnPar(CAM,'{div%g}:{o%s,i%s}');
@@ -1974,6 +1978,83 @@ if nargout==0; feplot(model);fecom showpatch
 else; out=model;
 end 
 
+elseif comstr(Cam,'nacaskin')
+ %% #MeshNacaSkin : non generic example
+ 
+model=RO.nmap('CurModel'); % EdgeN contains Thickness
+
+
+%% mesh area defining ply extent
+% show level cuts for target thickness
+cf=feplot(2,';');
+fevisco('CompThick{PlyLevels 1 4.4 5}',model)
+% xxx possible extension mesh using contours
+go=findobj(2,'tag','iso');
+[i1,i2]=unique([go.Faces(:,[1 4]);go.Faces(:,[2 3])],'rows');
+n1=(go.Vertices(i1(:,1),:)+go.Vertices(i1(:,2),:))/2;
+i1(:,3)=round(sqrt(sum((go.Vertices(i1(:,1),:)-go.Vertices(i1(:,2),:)).^2,2)));
+mo1=struct('Node',[i1(:,1)*[1 0 0 0] n1],'Elt',feutil('addelt','beam1',go.Faces(:,[1 2])));
+mo1=sdtu.fe.selCoarsenF2(mo1,struct('ToFace',[1 15 .7]));mo1.Node=feutil('getnodegroupall',mo1);
+
+i1=fe_gmsh('lineloops',mo1.Elt);NNode=sdtu.fe.NNode(mo1);
+for j1=1:length(i1)
+ r2=diff(mo1.Node(NNode(i1{j1}([1 end])),5:7));
+ if r2(3)<-10;  i1{j1}=fliplr(i1{j1});r2=-r2;end
+ if r2(3)<1&&r2(1)<0; i1{j1}=fliplr(i1{j1});r2=-r2;end % 
+ r3(j1)=mo1.Node(NNode(i1{j1}(1)),5);
+end
+[~,i2]=sort(r3);i1=i1(i2);
+
+% create reference lines and mesh plate
+i2=fliplr([i1{1} fliplr(i1{4}) fliplr(i1{2})])';mo1=fe_gmsh('AddLine -loop1',mo1,[i2 i2([2:end 1])]);
+i2=fliplr([i1{2} fliplr(i1{3})])';mo1=fe_gmsh('AddLine -loop2',mo1,[i2 i2([2:end 1])]);
+i2=[fliplr(i1{3})]';mo1=fe_gmsh('AddLine -loop3',mo1,[i2 i2([2:end 1])]);
+mo1.Stack{end}.PlaneSurface=[1;2;3]; 
+mo1.Stack{end}.Mesh=struct('Algorithm',5, ...
+    'RecombinationAlgorithm',3,'RecombineAll',1,'MeshSizeMin',2,'MeshSizeMax',7);
+S=scatteredInterpolant(mo1.Node(:,5),mo1.Node(:,7),mo1.Node(:,6));S.Method='natural';
+mo1.Node(:,6)=0;
+area=fe_gmsh('write @tempdir/tmp.geo -lc 5 -run -2 -v 0 -vol2',mo1);
+area.Node(:,6)=S(area.Node(:,5),area.Node(:,7));
+
+mpid=feutil('mpid',area);
+mpid(mpid(:,2)==138,1:2)=1; % 1 layer
+mpid(mpid(:,2)==139,1:2)=2; % 2 layer
+mpid(mpid(:,2)==140,1:2)=3; % 3 layer
+area.Elt=feutil('mpid',area,mpid);
+RO.nmap('area')=area;
+
+%% Mesh LongSkin 
+
+skin=RO.nmap('CurModel');
+skin.Elt=feutil('selelt selface &facing <.8 0 0 1000',skin);skin=feutil('divide 3 3',skin);
+
+% round off the skin tip
+n1=feutil('getnode z==',skin,max(skin.Node(:,7)));
+n2=feutil('getnode inelt{InNode&seledge}',skin,n1(:,1));
+n1(ismember(n1(:,1),n2(:,1)),:)=[];
+n1(:,7)=n1(:,7)+3;fecom('shownodemark',n1(:,5:7))
+skin.Node(sdtu.fe.NNode(skin,n1(:,1)),:)=n1;
+
+%cf.sel(1)='reset';
+%cf.sel(2)='urn.LineTopo{starts 1 1520,cos.6}';cf.o(2)='sel2 ty1';
+%cf.sel(2)='urn.LineTopo{starts 2 1503,cos.6}';cf.o(2)='sel2 ty1';
+
+i1=feutil('geolinetopo',skin,struct('starts',[1 1520;2 1503],'cos',.6));
+
+mo5=skin; mo5.Elt=feutil('selelt seledge & innode',skin,i1{2});
+mo5=feutil('rev 5 o 0 10 0  90 1 0 0',mo5);
+skin.Node=mo5.Node;skin.Elt=feutil('addelt',skin.Elt,mo5.Elt);
+
+mo5=skin; mo5.Elt=feutil('selelt seledge & innode',skin,i1{1});
+mo5=feutil('rev 5 o 0 -10 0  90 -1 0 0',mo5);
+skin.Node=mo5.Node;skin.Elt=feutil('addelt',skin.Elt,mo5.Elt);
+%feplot(skin,'showfipro')
+skin.name='Skin with foot transition';
+
+RO.nmap('skin')=skin;
+
+
 elseif comstr(Cam,'naca')
  %% #MeshNaca : sample blade with NACA profile and orthotropic material
 
@@ -1986,12 +2067,12 @@ elseif comstr(Cam,'naca')
  if comstr(Cam,'naca{')
   r1=sdth.findobj('_sub{}',CAM);
   r2=sdth.findobj('_sub:',r1(2).subs{1});
-  'xxx interpret further parameters'
+  %'xxx interpret further parameters'
   list=RO.nmap.('Map:Bprofiles').(r2(1).subs);
   if length(r2)>1;RM=RO.nmap.('Map:Bplies').(r2(2).subs);
    %RO.plyList=RM.plyList; RO.OrientLine=RM.OrientLine;
    RO=sdth.sfield('AddMissing',RO,RM);
-  else;RO.ver='box'
+  else;RO.ver='box';
   end
  else % xxx
   if ~isKey(RO.nmap,'Map:profiles') % Default blade
@@ -2006,15 +2087,15 @@ elseif comstr(Cam,'naca')
   'zs(.1#%g#"refinement step length in transverse")' ... % xxx ug
   'sRef(400#%i#"profile curve refinement factor")' ...
   'extr(5#%i#extrude in length")' ...
+  'unit(mm#%s#"unit system")' ...
   'interp(#3#"interpolate sections along radius")' ...
   ],{RO,CAM}); Cam=lower(CAM);
 
  if isfield(RO,'ver')&&strcmpi(RO.ver,'box') 
- %% create blade volume from section list
+ %% #MeshNaca.box create blade box volume from section list
  RO.iSec=4;
- 'xxx ColumnName/table rad,'
 
- for jl=1:size(list,1) % loop on profile along radius
+ for jl=2:size(list,1) % loop on profile along radius
   if ischar(list{jl,3}); % resolve section here
    RO.curProf=RO.nmap.('Map:Bsections').(list{jl,3});
    RO=buildContour(RO);% xxx should call splineR  
@@ -2037,14 +2118,16 @@ elseif comstr(Cam,'naca')
   list{jl,RO.iSec}=mo1; 
 
  end % loop on section list
- model=sdtu.fe.boxCutsToVol(list(:,RO.iSec),RO);
+ model=sdtu.fe.boxCutsToVol(list(2:end,RO.iSec),RO);
  model=stack_set(model,'info','MeshOpt',RO);
- model.unit='MM';% xxx
+ model.unit=RO.unit(1:2);
+ RO.nmap('CurModel')=model; 
+ d_mesh('MeshNacaSkinArea',RO)
  out=model;
  return
 
  elseif RO.interp; %isfield(RO,'interp')
-  % goal is to prepare appealing demonstration blade profiles
+  % #MeshNaca.Interp goal is to prepare appealing demonstration blade profiles
   % extract sections, interpolate extents, refine section positions
 
   for jl=1:size(list,1) % extract section info: create refined section profile for each entry
@@ -2491,10 +2574,11 @@ RA.nmap('Map:Bsections')=secM;
 
 profM=vhandle.nmap;
 %'rad', 'xoff', 'sec' -> x,y,ry,sec,scale
-profM('HyFoilA')={0,0,'naca66_120';180,30,'naca66_60'};
-profM('HyFoilB')={0,0,'naca66_120';180,30,'naca66_60_rn45'};
-%'rad', 'xoff', 'sec', 'len', 'hei', 'skewO', 'skewA'
-profM('HyFoilC')={0,0,'naca66_250e7',250,7,[175 0 0],0
+profM('HyFoilA')={'rad','xoff','sec';0,0,'naca66_120';180,30,'naca66_60'};
+profM('HyFoilB')={'rad','xoff','sec';0,0,'naca66_120';180,30,'naca66_60_rn45'};
+%
+profM('HyFoilC')={'rad', 'xoff', 'sec', 'len', 'hei', 'skewO', 'skewA';
+ 0,0,'naca66_250e7',250,7,[175 0 0],0
  137,-2 ,'naca66_300e7',298,7,[175 0 0],15
  192,-7 ,'naca66_350e7',343,7,[175 0 0],30
  356,-20,'naca66_520e5p6',500,5.6,[175 0 0],45
@@ -2660,7 +2744,7 @@ end
 
 
 function   RO=buildContour(RO)
-  sdtw('_ewt','sdtu.fe.splineR document calls t_fmesh')
+   %sdtw('_ewt','sdtu.fe.splineR document calls t_fmesh')
    % Generate profile curve (angle, xpos ypos), provide
    r1 = spline(RO.curProf.section(:,1)',...
     [RO.curProf.EndSlope;RO.curProf.section(:,2:3);RO.curProf.EndSlope]');
