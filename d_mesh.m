@@ -1980,8 +1980,9 @@ end
 
 elseif comstr(Cam,'nacaskin')
  %% #MeshNacaSkin : non generic example
- 
-model=RO.nmap('CurModel'); % EdgeN contains Thickness
+
+if ~isfield(RO,'projM');RO.projM=RO.nmap;end
+model=RO.projM('CurModel'); % EdgeN contains Thickness
 
 
 %% mesh area defining ply extent
@@ -2026,7 +2027,7 @@ RO.nmap('area')=area;
 
 %% Mesh LongSkin 
 
-skin=RO.nmap('CurModel');
+skin=RO.projM('CurModel');
 skin.Elt=feutil('selelt selface &facing <.8 0 0 1000',skin);skin=feutil('divide 3 3',skin);
 
 % round off the skin tip
@@ -2052,7 +2053,7 @@ skin.Node=mo5.Node;skin.Elt=feutil('addelt',skin.Elt,mo5.Elt);
 %feplot(skin,'showfipro')
 skin.name='Skin with foot transition';
 
-RO.nmap('skin')=skin;
+RO.projM('skin')=skin;
 
 
 elseif comstr(Cam,'naca')
