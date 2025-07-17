@@ -2011,6 +2011,7 @@ i2=fliplr([i1{1} fliplr(i1{4}) fliplr(i1{2})])';mo1=fe_gmsh('AddLine -loop1',mo1
 i2=fliplr([i1{2} fliplr(i1{3})])';mo1=fe_gmsh('AddLine -loop2',mo1,[i2 i2([2:end 1])]);
 i2=[fliplr(i1{3})]';mo1=fe_gmsh('AddLine -loop3',mo1,[i2 i2([2:end 1])]);
 mo1.Stack{end}.PlaneSurface=[1;2;3]; 
+% xxx GV 
 mo1.Stack{end}.Mesh=struct('Algorithm',5, ...
     'RecombinationAlgorithm',3,'RecombineAll',1,'MeshSizeMin',2,'MeshSizeMax',7);
 S=scatteredInterpolant(mo1.Node(:,5),mo1.Node(:,7),mo1.Node(:,6));S.Method='natural';
