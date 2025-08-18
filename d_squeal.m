@@ -347,7 +347,7 @@ d4=RT.nmap('CurTime');nlutil('postv',mo4)
  'xxx need to verify residual'
 
   %% Now a time varying limit cycle sdtweb d_fetime hoff TVK/TVKA
-  %% #Hoff.Mssp -3
+  %% #Hoff.Mssp -2
   % see also sdtweb cbi20b Script23HoffTransient
   % sdtweb d_fetime TV.Hoffman for the PerK 
   % need version for exponential law 
@@ -3317,7 +3317,7 @@ else; error('Cb%s',CAM)
 end
 
 %% #Admin
-%% #Tuto: recover model from a specific tuto step -3
+%% #Tuto: recover model from a specific tuto step -2
 elseif comstr(Cam,'tuto'); 
  eval(sdtweb('_tuto',struct('file','d_squeal','CAM',CAM)));
  if nargout==0; clear out; end
