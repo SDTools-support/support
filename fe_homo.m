@@ -611,12 +611,15 @@ for j1=1:size(RO.P2Sets,1)
  RO.usedIndDof=[RO.usedIndDof;i2];
  ci2=setdiff(1:size(def.def,1),i2);
  T3=sparse(i2,1:length(i2),1,size(def.def,1),length(i2));
+ RO.curActive=0;
+ RC=struct('EdgeDof',[],'EdgeTol',RO.EdgeTol,'DOF',[],'k',[]);
  if isfield(RO.P2Sets{j1,2},'Active')&&RO.P2Sets{j1,2}.Active==1
-  i2(fe_c(SE.DOF(i2),Case.DOF,'ind',2))=[]; % Only keep active DOFs
+  i2(fe_c(SE.DOF(i2),Case.DOF,'ind',2))=[]; RO.curActive=1;% Only keep active DOFs
   T3=Case.T(:,fe_c(Case.DOF,SE.DOF(i2),'ind'));T2=def.def(i2,:);
- else; T2=def.def(i2,:);k2=k(i2,i2);
+  RC.k=T3'*k*T3;RC.DOF=SE.DOF(i2);
+ else; 
+   T2=def.def(i2,:);k2=k(i2,i2);RC.k=k(i2,i2);RC.DOF=SE.DOF(i2);
  end
- RC=struct('EdgeDof',[],'EdgeTol',RO.EdgeTol,'DOF',SE.DOF(i2),'k',k(i2,i2));
  if ~isstruct(RO.P2Sets{j1,2});RO.P2Sets{j1,2}=struct('type',RO.P2Sets{j1,2});
  else;  RC=sdth.sfield('AddMissing',RC,RO.P2Sets{j1,2});
  end
@@ -639,8 +642,13 @@ for j1=1:size(RO.P2Sets,1)
     di=feutilb('placeindof',SE.DOF,di);
     [u,s]=svd(di.def(i2,:),0);s=diag(s); 
     [T2,fr]=fe_norm(u,m(i2,i2),RC.k);
- elseif strcmpi(RO.curSetType,'fe_norm'); 
+ elseif strncmpi(RO.curSetType,'fe_norm',7);
+   if RO.curActive
+     [T2,fr]=fe_norm(T2(:,any(T2)),T3'*m*T3,T3'*k*T3);
+   else
      [T2,fr]=fe_norm(T2(:,any(T2)),m(i2,i2),RC.k);
+   end
+   if contains(RO.curSetType,'lrik');RO.curCoor='lrik';end
  elseif isempty(T2); continue
  else; 
    if isfield(RC,'coef'); 
@@ -664,10 +672,12 @@ for j1=1:size(RO.P2Sets,1)
   % else; T2=struct('Tl',[],'Tr',[],'Ti',T2);
   % end
  else;
-  T2=fe_coor(RO.curCoor,T2,RC);% sdtweb fe_coor('lrisvd')
+  T0=T2;
+  T2=fe_coor(RO.curCoor,T0,RC);% sdtweb fe_coor('lrisvd')
  end
  % p_pml('viewqz'); 
  % cf=feplot(10);cf.def=struct('def',[T2.Tl T2.Tr T2.Ti],'DOF',SE.DOF(i2),'adof',vertcat(T2.adof{:}))
+ % d1=fe_eig({m,k,T3*[T2.Tl T2.Tr T2.Ti],SE.DOF},2);cf.def=d1
  
  if isempty(T2.Tl);T2.Tl=zeros(size(T3,1),0);T2.Tr=zeros(size(T3,1),0);
  elseif ~isempty(strfind(RO.curSetType,'static'));
@@ -693,7 +703,6 @@ for j1=1:size(RO.P2Sets,1)
  else; T2.Ti=zeros(size(T3,1),0);
  end
  % fecom('shownodemark',vertcat(T2.adof{:}),'marker','o','color','r')
- % cf=feplot;cf.def=struct('def',[T2.Tl T2.Tr T2.Ti],'DOF',SE.DOF,'adof',vertcat(T2.adof{:}))
  RO.P2info(j1,1:3)=[size(T2.Tl,2) size(T2.Tr,2) size(T2.Ti,2)];
  if j1==1;r1=T2;
  else
@@ -701,6 +710,8 @@ for j1=1:size(RO.P2Sets,1)
   r1.Ti=[r1.Ti T2.Ti];
   r1.adof=cellfun(@(x,y)[x;y],r1.adof,T2.adof,'uni',0);
  end
+ % d1=fe_eig({m,k,[r1.Tl r1.Tr r1.Ti],SE.DOF},2);cf.def=d1; 
+ % cf=feplot;cf.def=struct('def',[r1.Tl r1.Tr r1.Ti],'DOF',SE.DOF,'adof',vertcat(r1.adof{:}))
 end
 if ~isempty(kd);ofact('clear',kd);end
    
