@@ -11,8 +11,8 @@ toc={...
 'tutotoc'      1
 'tuto_interact'      2
 'tuto_FeplotInteract' 3
-'tuto_ema'          2
-'tuto_EMADataGUI'          3
+'tuto_test'          2
+'tuto_EMA'          3
 'tuto_By' 3
 'tuto_correl'  2
 'tuto_ExpGUI' 3
