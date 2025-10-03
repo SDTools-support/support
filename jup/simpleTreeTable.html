@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>5-Layer Tree Table</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      background: #f7f7f7;
+    }
+    table.tree-table {
+      border-collapse: collapse;
+      width: 100%;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .tree-table th, .tree-table td {
+      border: 1px solid #ddd;
+      padding: 8px 16px;
+      text-align: left;
+      position: relative;
+    }
+    .tree-table th {
+      background: #eaeaea;
+      font-weight: bold;
+    }
+    .tree-toggle {
+      cursor: pointer;
+      margin-right: 6px;
+      user-select: none;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .tree-indent {
+      display: inline-block;
+      width: 18px;
+    }
+    .tree-hidden {
+      display: none;
+    }
+    /* Button style for the 3rd row */
+    .tree-button-row td {
+      background: #4a90e2;
+      color: #fff;
+      border-radius: 6px;
+      font-weight: bold;
+      box-shadow: 0 2px 4px rgba(74,144,226,0.15);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .tree-button-row td:hover {
+      background: #357ab7;
+    }
+    .icon {
+      font-size: 1.2em;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h2>5-Layer Tree Table</h2>
+  <table class="tree-table" id="treeTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Details</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Tree rows will be inserted here by JS -->
+    </tbody>
+  </table>
+  <script>
+    // Random Unicode icons for the button row
+    const unicodeIcons = [
+      "🌟", "🚀", "🍀", "🎲", "🦄", "💡", "🎯", "⚡", "🎉", "🔥", "✨", "🧩", "🔮"
+    ];
+    function getRandomIcon() {
+      return unicodeIcons[Math.floor(Math.random() * unicodeIcons.length)];
+    }
+
+    // Tree data structure (5 layers deep)
+    const treeData = [
+      {
+        name: "Root A",
+        details: "Details A",
+        children: [
+          {
+            name: "Level 2 - A1",
+            details: "Details A1",
+            children: [
+              {
+                name: "Level 3 - A1.1",
+                details: "Details A1.1",
+                children: [
+                  {
+                    name: "Level 4 - A1.1.1",
+                    details: "Details A1.1.1",
+                    children: [
+                      {
+                        name: "Level 5 - A1.1.1.1",
+                        details: "Details A1.1.1.1"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        name: "Root B",
+        details: "Details B",
+        children: [
+          {
+            name: "Level 2 - B1",
+            details: "Details B1",
+            children: [
+              {
+                name: "Level 3 - B1.1",
+                details: "Details B1.1",
+                children: [
+                  {
+                    name: "Level 4 - B1.1.1",
+                    details: "Details B1.1.1",
+                    children: [
+                      {
+                        name: "Level 5 - B1.1.1.1",
+                        details: "Details B1.1.1.1"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      // Third row (button row)
+      {
+        name: "Root C",
+        details: "Special Button Row",
+        children: [
+          {
+            name: "Level 2 - C1",
+            details: "Details C1",
+            children: [
+              {
+                name: "Level 3 - C1.1",
+                details: "Details C1.1",
+                children: [
+                  {
+                    name: "Level 4 - C1.1.1",
+                    details: "Details C1.1.1",
+                    children: [
+                      {
+                        name: "Level 5 - C1.1.1.1",
+                        details: "Details C1.1.1.1"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ];
+
+    // Render tree recursively
+    let rowId = 0;
+    function renderTree(nodes, depth = 0, parentId = null, rows = [], isButtonRow = false) {
+      nodes.forEach((node, idx) => {
+        rowId++;
+        const currentId = "row-" + rowId;
+        const hasChildren = node.children && node.children.length > 0;
+        // Mark the third root row as the button row
+        let isButtonThisRow = (depth === 0 && idx === 2) || isButtonRow;
+
+        let tr = document.createElement('tr');
+        tr.setAttribute('data-id', currentId);
+        if (parentId) tr.setAttribute('data-parent', parentId);
+        if (depth > 0) tr.classList.add('tree-hidden');
+        if (isButtonThisRow && depth === 0) tr.classList.add('tree-button-row');
+
+        // Name cell
+        let tdName = document.createElement('td');
+        // Indentation
+        for (let i = 0; i < depth; i++) {
+          let indent = document.createElement('span');
+          indent.className = 'tree-indent';
+          tdName.appendChild(indent);
+        }
+        // Toggle icon
+        if (hasChildren) {
+          let toggle = document.createElement('span');
+          toggle.className = 'tree-toggle';
+          toggle.textContent = '▶';
+          toggle.onclick = function(e) {
+            e.stopPropagation();
+            toggleRow(currentId);
+            // Toggle arrow
+            this.textContent = this.textContent === '▼' ? '▶' : '▼';
+          };
+          tdName.appendChild(toggle);
+        } else if (depth > 0) {
+          // For leaf nodes, add a placeholder
+          let indent = document.createElement('span');
+          indent.className = 'tree-indent';
+          tdName.appendChild(indent);
+        }
+        // Add icon to button row
+        if (isButtonThisRow && depth === 0) {
+          let icon = document.createElement('span');
+          icon.className = 'icon';
+          icon.textContent = getRandomIcon();
+          tdName.appendChild(icon);
+        }
+        tdName.appendChild(document.createTextNode(node.name));
+        tr.appendChild(tdName);
+
+        // Details cell
+        let tdDetails = document.createElement('td');
+        tdDetails.textContent = node.details;
+        tr.appendChild(tdDetails);
+
+        if (isButtonThisRow && depth === 0) {
+          tr.onclick = function() {
+            alert("Button row clicked! 🎉");
+          };
+        }
+
+        rows.push(tr);
+
+        // Recursively add children
+        if (hasChildren) {
+          renderTree(node.children, depth + 1, currentId, rows, isButtonThisRow);
+        }
+      });
+      return rows;
+    }
+
+    // Toggle expand/collapse
+    function toggleRow(rowId) {
+      const rows = document.querySelectorAll(`tr[data-parent='${rowId}']`);
+      rows.forEach(row => {
+        if (row.classList.contains('tree-hidden')) {
+          row.classList.remove('tree-hidden');
+          // If child row has expanded arrow, show its children too
+          const toggle = row.querySelector('.tree-toggle');
+          if (toggle && toggle.textContent === '▼') {
+            toggleRow(row.getAttribute('data-id'));
+          }
+        } else {
+          hideDescendants(row);
+        }
+      });
+    }
+    function hideDescendants(row) {
+      const rowId = row.getAttribute('data-id');
+      const childRows = document.querySelectorAll(`tr[data-parent='${rowId}']`);
+      childRows.forEach(child => {
+        child.classList.add('tree-hidden');
+        hideDescendants(child);
+        // Reset toggle arrow
+        const toggle = child.querySelector('.tree-toggle');
+        if (toggle) toggle.textContent = '▶';
+      });
+    }
+
+    // Insert rows into table
+    const tbody = document.querySelector('#treeTable tbody');
+    const rows = renderTree(treeData);
+    rows.forEach(tr => tbody.appendChild(tr));
+  </script>
+</body>
+</html>
