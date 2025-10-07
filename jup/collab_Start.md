@@ -1,9 +1,5 @@
 ```{include} ../header.md
 ```
-
-```{tableofcontents}
-```
-
 # Basic navigation in code/documentation 
 
 - Learn about SDT {m}`sdtweb start`
