@@ -70,6 +70,8 @@ parse:
    myst_url_schemes: [mailto, https]
    myst_enable_extensions:
     - "substitution"
+    - "attrs_inline"
+    - "attrs_block"
     - amsmath
     - dollarmath
    myst_substitutions:
