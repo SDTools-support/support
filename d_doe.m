@@ -85,16 +85,6 @@ elseif comstr(Cam,'nmap');
 %% #nmap list of named experiments used for demos and non-regression tests ---
 
 [key,nmap,uo,carg]=sdtm.stdNmapArgs(varargin,CAM,carg);
-%  key=''; if nargin>1; key=varargin{2};end
-%  if nargin>2;uo=varargin{3};carg=4; 
-%    if isfield(uo,'nmap');nmap=uo.nmap;else; nmap=vhandle.nmap;uo.nmap=nmap;end
-%    if isfield(uo,'Daq'); nmap('AcqTime')=uo.Daq.AcqTime;end
-%  else; nmap=vhandle.nmap;
-%  end
-%  if ~any(key=='{')
-%  elseif strncmp(key,'@',1);out=sdtm.urnCb(key);return; % @gui21{nmap,DaqShakerPres}
-%  else;[key,nmap]=sdtm.keyRep(nmap,key,'_ParSet');%sdtsys('nmap','VtDaq{dt,1e-6}')
-%  end
 
  if ~isKey(nmap,'AcqTime');nmap('AcqTime')=.3;end
 
