@@ -304,7 +304,7 @@ dm15('ViewStabHist',h1)
   %% base.NM 0.7 Hz frequency
   if ishandle(2)&&strcmpi(get(2,'tag'),'feplot');close('all');end
   RT=d_doe('nmap','TV.Hoff{n,base.MN}'); % exactly on limit cycle
-  r2=sdtu.log('CmdDisp{Listen{diag,warn},stack}'); % Turn logViewer on 
+  sdtu.logger.status('CmdDisp','on'); % Turn logViewer on 
 
   sdtm.range(RT);mo2=RT.nmap('CurModel');d2=RT.nmap('CurTime');
 
