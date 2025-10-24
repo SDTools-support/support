@@ -655,10 +655,10 @@ for j1=1:size(RO.P2Sets,1)
        T2=T2*RC.coef;% Pcond scale coef for SvdTol
    % cf=feplot(10);cf.def=struct('def',T2,'DOF',SE.DOF(i2));fecom(';colordataA;coloralpha');
    end 
-   [T2,s]=svd(T2,0);s=diag(s); 
-   T2=T2(:,s>RO.SvdTol*s(1));
-   fprintf('%20s: svd_1=%.1e nkept=%i\n',RO.P2Sets{j1,3},s(1),size(T2,2));
+   %[T2,s]=svd(T2,0,'vector');T2=T2(:,s>RO.SvdTol*s(1));
    if ~isempty(strfind(RO.curSetType,'lrilu'));RO.curCoor='lrilu';end
+   RC.SvdTol=RO.SvdTol; % How delayed to fe_coor
+   %fprintf('%20s: svd_1=%.1e nkept=%i, %s\n',RO.P2Sets{j1,3},s(1),size(T2,2),RO.curCoor);
  end
  nind=sparse(i2,1,1:length(i2));
  RC.EdgeDof=full(nind(RO.EdgeDof(ismember(RO.EdgeDof(:,1),i2),:)));
@@ -672,6 +672,10 @@ for j1=1:size(RO.P2Sets,1)
   % else; T2=struct('Tl',[],'Tr',[],'Ti',T2);
   % end
  else;
+  if 1==2
+   curCoor=RO.curCoor;T2ref=def.def(i2,:);eval(iigui({'T2','RC','curCoor','T2ref'},'SetInBaseC'));
+   T3=fe_coor(curCoor,T2,RC);subspace([T3.Tl,T3.Tr,T3.Ti],T2ref)
+  end
   T0=T2;
   T2=fe_coor(RO.curCoor,T0,RC);% sdtweb fe_coor('lrisvd')
  end
@@ -710,9 +714,9 @@ for j1=1:size(RO.P2Sets,1)
   r1.Ti=[r1.Ti T2.Ti];
   r1.adof=cellfun(@(x,y)[x;y],r1.adof,T2.adof,'uni',0);
  end
+end % loop on sets
  % d1=fe_eig({m,k,[r1.Tl r1.Tr r1.Ti],SE.DOF},2);cf.def=d1; 
  % cf=feplot;cf.def=struct('def',[r1.Tl r1.Tr r1.Ti],'DOF',SE.DOF,'adof',vertcat(r1.adof{:}))
-end
 if ~isempty(kd);ofact('clear',kd);end
    
 % fecom('shownodemark',SE.TR.adof,'marker','o','color','r')
@@ -720,14 +724,18 @@ if ~isempty(kd);ofact('clear',kd);end
 TR=struct('def',[r1.Tl r1.Ti r1.Tr],'DOF',SE.DOF, ...
     'adof',[r1.adof{1};r1.adof{3}; r1.adof{2}], ...
     'info',[size(r1.Tl,2) size(r1.Ti,2) size(r1.Tl,2)],'P2info',RO.P2info);
-%% fix NoMass
+%% fix NoMass % fecom('shownodemark',TR.DOF(diag(m)==0))
 mr=feutilb('tkt',TR.def,m);i1=find(diag(mr)==0);
 if ~isempty(i1)
  i2={fe_c(r1.adof{1},TR.adof(i1),'ind') fe_c(r1.adof{2},TR.adof(i1),'ind') ...
      fe_c(r1.adof{3},TR.adof(i1),'ind')};
  i2{1}=unique(vertcat(i2{1:2}));i2{2}=i2{1};
+ if ~isempty(i2{3});
+     fprintf('Clipping interior DOF %s\n',sdtm.toString(fe_c(r1.adof{3}(i2{3}))'))
+ end
  r1.Tl(:,i2{1})=[];r1.Tr(:,i2{2})=[];r1.Ti(:,i2{3})=[];
  r1.adof{1}(i2{1})=[];r1.adof{2}(i2{2})=[];r1.adof{3}(i2{3})=[];
+
  TR=struct('def',[r1.Tl r1.Ti r1.Tr],'DOF',SE.DOF, ...
     'adof',[r1.adof{1};r1.adof{3}; r1.adof{2}], ...
     'info',[size(r1.Tl,2) size(r1.Ti,2) size(r1.Tl,2)]);
