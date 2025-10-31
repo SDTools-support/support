@@ -597,33 +597,37 @@ if ~isfield(RO,'P2Sets');
              SE.DOF,'fe_norm','interior'
              };
 elseif ischar(RO.P2Sets{1}); %{name,DOF,type} -> {DOF,type,name};
-    RO.P2Sets=RO.P2Sets(:,[2 3 1]);
+  RO.P2Sets=RO.P2Sets(:,[2 3 1]);
 elseif size(RO.P2Sets,2)<3; 
  RO.P2Sets(:,3)=cellfun(@(x)sprintf('Set%i',x),num2cell(1:size(RO.P2Sets,1)),'uni',0);
+end
+for j1=1:size(RO.P2Sets,1)
+ if ~isstruct(RO.P2Sets{j1,2});
+        RO.P2Sets{j1,2}=struct('type',RO.P2Sets{j1,2});
+ end
+ RC=struct('EdgeDof',[],'EdgeTol',RO.EdgeTol,'DOF',[],'k',[]);
+ RO.P2Sets{j1,2}=sdth.sfield('AddMissing',RO.P2Sets{j1,2},RC);
 end
 if ~isfield(RO,'fe_coor');RO.fe_coor='lrilu';end
 if ~isfield(RO,'SvdTol');RO.SvdTol=1e-8;end
 RO.usedIndDof=find(~any(def.def,2));kd=[];
 if ~isreal(def.def);def.def=[real(def.def) imag(def.def)];end
+
 for j1=1:size(RO.P2Sets,1)
  i2=RO.P2Sets{j1,1};if ischar(i2);eval(i2);end
  i2=fe_c(SE.DOF,i2,'ind');i2=setdiff(i2,RO.usedIndDof);
  RO.usedIndDof=[RO.usedIndDof;i2];
  ci2=setdiff(1:size(def.def,1),i2);
  T3=sparse(i2,1:length(i2),1,size(def.def,1),length(i2));
- RO.curActive=0;
- RC=struct('EdgeDof',[],'EdgeTol',RO.EdgeTol,'DOF',[],'k',[]);
- if isfield(RO.P2Sets{j1,2},'Active')&&RO.P2Sets{j1,2}.Active==1
+ RO.curActive=0;RC=RO.P2Sets{j1,2};
+ if isfield(RC,'Active')&&RC.Active==1
   i2(fe_c(SE.DOF(i2),Case.DOF,'ind',2))=[]; RO.curActive=1;% Only keep active DOFs
   T3=Case.T(:,fe_c(Case.DOF,SE.DOF(i2),'ind'));T2=def.def(i2,:);
   RC.k=T3'*k*T3;RC.DOF=SE.DOF(i2);
  else; 
    T2=def.def(i2,:);k2=k(i2,i2);RC.k=k(i2,i2);RC.DOF=SE.DOF(i2);
  end
- if ~isstruct(RO.P2Sets{j1,2});RO.P2Sets{j1,2}=struct('type',RO.P2Sets{j1,2});
- else;  RC=sdth.sfield('AddMissing',RC,RO.P2Sets{j1,2});
- end
- RO.curCoor=RO.fe_coor;RO.curSetType=RO.P2Sets{j1,2}.type;
+ RO.curCoor=RO.fe_coor;RO.curSetType=RC.type;
 
  if strcmpi(RO.curSetType,'keep'); 
   T2=speye(length(i2));
@@ -662,13 +666,14 @@ for j1=1:size(RO.P2Sets,1)
  end
  nind=sparse(i2,1,1:length(i2));
  RC.EdgeDof=full(nind(RO.EdgeDof(ismember(RO.EdgeDof(:,1),i2),:)));
+ % fecom('shownodemark',{RC.DOF(RC.EdgeDof(:,1)),RC.DOF(RC.EdgeDof(:,2)))})
  %% Build a basis that uses all given DOF and span the learning subspace
  if isfield(RC,'NoAdof')&&ischar(RC.NoAdof); 
     RC.NoAdof=fe_c(RC.DOF,feutil(['findnode' RC.NoAdof],SE),'ind');
  end
  if ~isnumeric(T2)
  elseif isempty(RC.EdgeDof)&&~isfield(RC,'noEdge');
-   warning('No EdgeDof : probably an Error');break;
+   warning('No EdgeDof : if not an error use .noEdge=1');break;
   % else; T2=struct('Tl',[],'Tr',[],'Ti',T2);
   % end
  else;
@@ -680,7 +685,7 @@ for j1=1:size(RO.P2Sets,1)
   T2=fe_coor(RO.curCoor,T0,RC);% sdtweb fe_coor('lrisvd')
  end
  % p_pml('viewqz'); 
- % cf=feplot(10);cf.def=struct('def',[T2.Tl T2.Tr T2.Ti],'DOF',SE.DOF(i2),'adof',vertcat(T2.adof{:}))
+ % cf=feplot(10);cf.def=struct('def',T3*[T2.Tl T2.Tr T2.Ti],'DOF',SE.DOF,'adof',vertcat(T2.adof{:}))
  % d1=fe_eig({m,k,T3*[T2.Tl T2.Tr T2.Ti],SE.DOF},2);cf.def=d1
  
  if isempty(T2.Tl);T2.Tl=zeros(size(T3,1),0);T2.Tr=zeros(size(T3,1),0);
