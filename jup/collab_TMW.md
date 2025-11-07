@@ -138,8 +138,22 @@ DONE
 (TMW_errors)=
 ## Miscellaneous annoyance ☹ / errors 😠
 
-- ☹ `quit` does not work for us in either 2025a or 2025b, we need to use `quit('force')`. Suggestion on how to diagnose the problem ? 
-- ☹ Annoying caught error
+- ☹ `quit` does not work for us in either 2025a, 2025b, 2026a, we need to use `quit('force')`. Suggestion on how to diagnose the problem ? 
+
+- ☹ in the web browser there is no limit on the text length shown for a tab (makes using multiple tabs a pain). 
+- ☹ setFigureIcon (a cosmetic issue for our customers selling products developed with our toolbox)
+- how to use git to track a live script ? 
+- ☹ named HTML color support (not a good idea that we are the only ones to support it)
+- ☹ inability to have a stable link to [uistyle/interpreter/html](https://fr.mathworks.com/help/releases/R2025b/matlab/ref/uistyle.html#mw_e57c82dd-e4a5-4f48-a8db-0561c0ee0341). ToDo SDTools implement `@MatlabHelp`
+
+
+- Error using fopen The 'all' option will be removed in a future release. For a list of all open file identifiers, use the openedFiles function
+instead. You are saying will be removed when it aready has. 
+
+
+Solved : 
+- ☹ `h=matlab.desktop.editor.Document.findEditor(which('evt.WhichName');` is not always the same as `h=matlab.desktop.editor.Document.findEditor(evt.WhichName);`. Now switched to using `opentoline`. ☹ why do we have to do bypasses to open file at specific line {m}`matlab.desktop.editor.Document.goToLine` ?
+- ☹ Annoying caught error (solved 2026a)
 
 ```
 figure(1);plot([0 1]); dbstop if caught error;print(1,'-noui','-dpng','xxx.png')
@@ -149,11 +163,3 @@ Error using matlab.graphics.axis.Axes/set
 Unrecognized property YColorMode_I for class Axes.
 
 ```
-
-- ☹ in the web browser there is no limit on the text length shown for a tab (makes using multiple tabs a pain). 
-- ☹ setFigureIcon (a cosmetic issue for our customers selling products developed with our toolbox)
-- how to use git to track a live script ? 
-- ☹ named HTML color support (not a good idea that we are the only ones to support it)
-- ☹ why do we have to do bypasses to open file at specific line {m}`matlab.desktop.editor.Document.goToLine` ?
-- ☹ inability to have a stable link to [uistyle/interpreter/html](https://fr.mathworks.com/help/releases/R2025b/matlab/ref/uistyle.html#mw_e57c82dd-e4a5-4f48-a8db-0561c0ee0341). ToDo SDTools implement `@MatlabHelp`
-- ☹ `h=matlab.desktop.editor.Document.findEditor(which('evt.WhichName');` is not always the same as `h=matlab.desktop.editor.Document.findEditor(evt.WhichName);`

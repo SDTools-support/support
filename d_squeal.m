@@ -3934,3 +3934,22 @@ function showCoh(varargin)
 
  if length(dbstack)>1;  figure(InGf);end
 end
+
+function TS_key(obj,evt,varargin)
+ fprintf('Implement time scan key')
+end
+
+function TS_select(obj,evt,varargin)
+ %% #TS_select time scan selection callback 
+ ci=sdth.urn('Dock.Id.ci');
+ C1=ci.Stack{ci.ua.sList{1}};
+ if sdtm.isValid(13);c13=get(13,'userdata');end
+ [i1,uo]=feval(iimouse('@LinkedCh'),obj,evt,'TgetCh-row');
+ i2=uo.row{1}; if ischar(i2);i2=str2double(i2);end
+ st1=uo.ColumnName{uo.col};
+ iicom(ci,'ch',{C1.Xlab{2},st1,C1.Xlab{3},i2})
+ st=c13.Stack{'Spec'}.Source.X{3};
+ iicom(c13,'ch',ci.ua.ch)
+ qualT=ci.data.qualT;
+ qualT.GHandle.UpdateCb(struct,struct('show',1,'j1',find(qualT.table(:,1)==i2)));
+end
