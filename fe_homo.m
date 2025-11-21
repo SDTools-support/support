@@ -1888,7 +1888,9 @@ if comstr(Cam,'pbc')||comstr(Cam,'simpleload')||comstr(Cam,'kubc')||comstr(Cam,'
  if ~isfield(RO,'epsl');RO.epsl=sp_util('epsl');end
  if ~isfield(RO,'silent');RO.silent=';';end
  if ~isfield(RO,'oProp');RO.oProp={};end
- 
+ if ~isfield(model,'nmap');model.nmap=vhandle.nmap;end
+ model.nmap('NoLoadWarn')='on';model.nmap('NoMaterialWithLoss')='on';
+
  [z,RO,mo1,C1,Load,w,ft,carg]=safeInitDfrf([{CAM,model,RO},varargin(carg:end)],2);
 
  mo2=mo1;fe_case(mo2,'stack_rm','DofSet'); [Case,NNode,DOF]=fe_case(mo2,'gett');
