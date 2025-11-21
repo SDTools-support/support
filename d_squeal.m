@@ -3947,9 +3947,16 @@ function TS_select(obj,evt,varargin)
  [i1,uo]=feval(iimouse('@LinkedCh'),obj,evt,'TgetCh-row');
  i2=uo.row{1}; if ischar(i2);i2=str2double(i2);end
  st1=uo.ColumnName{uo.col};
- iicom(ci,'ch',{C1.Xlab{2},st1,C1.Xlab{3},i2})
- st=c13.Stack{'Spec'}.Source.X{3};
- iicom(c13,'ch',ci.ua.ch)
+ iicom(ci,'ch',{C1.Xlab{2},st1(2:end);C1.Xlab{3},find(C1.X{3}==i2)})
+ try
+  st=c13.Stack{'Spec'}.Source.X{3};
+  ch=find(strcmpi(st,sprintf('%s %i',st1(2:end),i2)));
+ catch
+  warning('problem with spectro channel')
+  ch=ci.ua.ch;
+ end
+ st{ch}
+ iicom(c13,'ch',ch)
  qualT=ci.data.qualT;
  qualT.GHandle.UpdateCb(struct,struct('show',1,'j1',find(qualT.table(:,1)==i2)));
 end
