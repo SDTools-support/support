@@ -3944,10 +3944,15 @@ function TS_select(obj,evt,varargin)
  ci=sdth.urn('Dock.Id.ci');
  C1=ci.Stack{ci.ua.sList{1}};
  if sdtm.isValid(13);c13=get(13,'userdata');end
- [i1,uo]=feval(iimouse('@LinkedCh'),obj,evt,'TgetCh-row');
- i2=uo.row{1}; if ischar(i2);i2=str2double(i2);end
- st1=uo.ColumnName{uo.col};
- iicom(ci,'ch',{C1.Xlab{2},st1(2:end);C1.Xlab{3},find(C1.X{3}==i2)})
+ if nargin<1||isempty(obj)
+  [i1,i2]=ind2sub([size(C1.Y,2) size(C1.Y,3)],ci.ua.ch);
+  st1=[' ' C1.X{2}{i1,1}];i2=C1.X{3}(i2);
+ else
+  [i1,uo]=feval(iimouse('@LinkedCh'),obj,evt,'TgetCh-row');
+  i2=uo.row{1}; if ischar(i2);i2=str2double(i2);end
+  st1=uo.ColumnName{uo.col};
+ end
+ iicom(ci,'ch',{C1.Xlab{2},st1(2:end);C1.Xlab{3},find(C1.X{3}==i2)});
  try
   st=c13.Stack{'Spec'}.Source.X{3};
   ch=find(strcmpi(st,sprintf('%s %i',st1(2:end),i2)));
@@ -3955,8 +3960,9 @@ function TS_select(obj,evt,varargin)
   warning('problem with spectro channel')
   ch=ci.ua.ch;
  end
- st{ch}
- iicom(c13,'ch',ch)
- qualT=ci.data.qualT;
- qualT.GHandle.UpdateCb(struct,struct('show',1,'j1',find(qualT.table(:,1)==i2)));
+ iicom(c13,'ch',ch);
+ try
+  qualT=ci.data; if isfield(qualT,'qualT');qualT=qualT.qualT;else; return;end
+  qualT.GHandle.UpdateCb(struct,struct('show',1,'j1',find(qualT.table(:,1)==i2)));
+ end
 end

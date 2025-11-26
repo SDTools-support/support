@@ -2791,7 +2791,13 @@ else
          RC=stack_get(model,'info','LsutilOpt','get');
          if isfield(RB,'tolE');RC.tolE=RB.tolE;end
          if isfield(RB,'doCut'); model=feval(RB.doCut{:},model,{RB},RC);
-         else; model=lsutil('cut',model,{RB},RC);
+         elseif isfield(RB,'NoSplit')
+          def=lsutil('gen',model,{RB}); 
+          i2=intersect(fix(def.DOF(def.def>0)),feutil(RB.onSurf,model));
+          [model.Node,model.Elt]=fevisco(['MakeSandwich -node ' RB.MakeSandwich],model, ...
+           sprintf('selface & innode %s',sprintf('%i ',i2)));
+         else
+             model=lsutil('cut',model,{RB},RC);
          end
          [model.Elt,elt]=feutil('removeelt proid',model,RB.ProId);
          model.Elt=feutil('addelt',model.Elt,elt);
