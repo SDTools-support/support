@@ -3182,10 +3182,16 @@ M(1,6)=1./c(6,6);
 M(1,5)=1./c(5,5);
 M(1,4)=1./c(4,4);
 if nargout==0||(nargin==3&&isfield(r1,'pl'))
+  %% set model property keep rho
+  if nargin<2;RO=struct;else; RO=Range;end
   if ~isfield(r1,'unit');r1.unit='US';end
   M(10)=-c(3,1)*M(3); % SDT uses nu31 rather than 13
-  if nargin<3||~isfield(r1,'pl');r1=struct('pl',1);end
-  r1.pl=[r1.pl(1) fe_mat('m_elastic',r1.unit,6) M([1 2 3 7 10 9 4 5 6])];
+  if nargin<3||~isfield(r1,'pl')||isempty(r1.pl);r1=struct('pl',1);end
+  if ~isscalar(r1.pl)
+     mat=feutil(sprintf('getpl %i -struct1',r1.pl(1)),r1);
+  else; mat.Rho=1e-10;
+  end
+  r1.pl=[r1.pl(1) fe_mat('m_elastic',r1.unit,6) M([1 2 3 7 10 9 4 5 6]) mat.Rho];
   r1.type='m_elastic';
 else
     r1=struct('X',{{{'E1', 'E2', 'E3','G23','G13','G12','nu23','nu13','nu12'}'}}, ...
