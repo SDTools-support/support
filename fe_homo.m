@@ -739,7 +739,8 @@ if ~isempty(i1)
      fprintf('Clipping interior DOF %s\n',sdtm.toString(fe_c(r1.adof{3}(i2{3}))'))
  end
  r1.Tl(:,i2{1})=[];r1.Tr(:,i2{2})=[];r1.Ti(:,i2{3})=[];
- r1.adof{1}(i2{1})=[];r1.adof{2}(i2{2})=[];r1.adof{3}(i2{3})=[];
+ r1.adof{1}(i2{1})=[];r1.adof{2}(i2{2})=[];
+ if ~isempty(i2{3});r1.adof{3}(i2{3})=[];end
 
  TR=struct('def',[r1.Tl r1.Ti r1.Tr],'DOF',SE.DOF, ...
     'adof',[r1.adof{1};r1.adof{3}; r1.adof{2}], ...

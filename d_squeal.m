@@ -1834,6 +1834,7 @@ if RO.ci==13; setappdata(13,'SdtName','Spec');end
 if new % Place in same tile as iiplot 
  cingui('objset',c13,{'@Dock',{'Name','Id','tile',c2.opt(1)}})
 end
+
 if any(strncmpi(RO.Other,'suma',4))
   %% Suma : Sum Time freq amplitudes
   % suma : sum all channels
@@ -1883,6 +1884,14 @@ else;% If spectro
  end
  out=RO; 
 end 
+if any(strncmpi(RO.Other,'sync',4))
+   c2.ua.PostFcn=@TS_select;
+   if ishandle(13);
+       c13=get(13,'userdata');
+       c13.ua.PostFcn=@TS_select;%eval('d_squeal(''@TS_select'')');
+   end
+  
+end
 
 if isfield(RO,'cleanFig')
  % List of PlotWd
@@ -3941,18 +3950,37 @@ end
 
 function TS_select(obj,evt,varargin)
  %% #TS_select time scan selection callback 
+ persistent last
+ if isempty(last)
+     last=now;
+ elseif (now-last)*24*3600<.01; return;
+ end
+
  ci=sdth.urn('Dock.Id.ci');
  C1=ci.Stack{ci.ua.sList{1}};
  if sdtm.isValid(13);c13=get(13,'userdata');end
  if nargin<1||isempty(obj)
-  [i1,i2]=ind2sub([size(C1.Y,2) size(C1.Y,3)],ci.ua.ch);
+  if evalin('caller','exist(''cf'',''var'')&&cf.opt(1)==13')
+    i1=c13.ua.ch; evt=struct('cf',13,'ch',i1);
+  else
+    i1=ci.ua.ch;evt=struct('cf',ci.opt(1));
+  end
+  [i1,i2]=ind2sub([size(C1.Y,2) size(C1.Y,3)],i1);
+  ev1=struct('show',1,'j1',i2,C1.Xlab{2},i1);
   st1=[' ' C1.X{2}{i1,1}];i2=C1.X{3}(i2);
  else
   [i1,uo]=feval(iimouse('@LinkedCh'),obj,evt,'TgetCh-row');
   i2=uo.row{1}; if ischar(i2);i2=str2double(i2);end
+  ev1=struct('show',1,'j1',find(i2==C1.X{3}),C1.Xlab{2},i1);
   st1=uo.ColumnName{uo.col};
  end
- iicom(ci,'ch',{C1.Xlab{2},st1(2:end);C1.Xlab{3},find(C1.X{3}==i2)});
+ if isfield(evt,'cf')&&evt.cf==ci.opt(1)
+ elseif isfield(evt,'ch')
+  iicom(ci,'ch',evt.ch);
+ else % click in TSQual
+  iicom(ci,'ch',{C1.Xlab{2},st1(2:end);C1.Xlab{3},find(C1.X{3}==i2)});
+   return % ci.ua.PostFcn updates table so don't do it multiple times 
+ end
  try
   st=c13.Stack{'Spec'}.Source.X{3};
   ch=find(strcmpi(st,sprintf('%s %i',st1(2:end),i2)));
@@ -3960,9 +3988,12 @@ function TS_select(obj,evt,varargin)
   warning('problem with spectro channel')
   ch=ci.ua.ch;
  end
- iicom(c13,'ch',ch);
+ if isfield(evt,'cf')&&evt.cf==13
+ else
+  iicom(c13,'ch',ch);
+ end
  try
   qualT=ci.data; if isfield(qualT,'qualT');qualT=qualT.qualT;else; return;end
-  qualT.GHandle.UpdateCb(struct,struct('show',1,'j1',find(qualT.table(:,1)==i2)));
+  qualT.GHandle.UpdateCb(struct,ev1);
  end
 end
