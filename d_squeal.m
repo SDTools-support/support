@@ -2649,6 +2649,42 @@ cinguj('robotcapture',struct('FigTag',106,'fname',sprintf('/n/vermot/scratch/squ
 else; error('Not an implemented example')
 end
 
+elseif comstr(Cam,'envsummary')
+ %% #viewEnvSummary : Time evolution of environment parameters
+ DoOpt=[ ...
+ 'tmin(#%g#"First time stamp")' ...
+ 'tmax(#%g#"Last time stamp")' ...
+ ];
+ % varname=varargin{carg}; carg=carg+1; % Eventually catch here previous inputs
+ if carg>nargin||~isstruct(varargin{carg});RO=struct;
+ else;RO=varargin{carg};carg=carg+1;
+ end
+ [RO,st,CAM]=cingui('paramedit -DoClean',DoOpt,{RO,CAM}); Cam=lower(CAM);
+
+ c2=sdth.urn('Dock.Id.ci');
+ Time=c2.Stack{'Time'};
+ st=Time.Xlab{1}(:,1);
+ if isfield(RO,'list')
+  % xxxgm should integrate such option in paramedit for autodoc purpose
+  [i1,i2]=ismember(lower(RO.list),lower(st));
+  st2=st(i2(i1));
+ else; st2=st(2:end);
+ end
+ if ~isempty(RO.tmin);indmin=find(Time.X{1}(:,1)>RO.tmin,1,'first');else;indmin=1;end
+ if ~isempty(RO.tmax);indmax=find(Time.X{1}(:,1)<RO.tmax,1,'last');else;indmax=length(t.data);end
+ Time=fe_def('subchcurve',Time,{'Time',indmin:indmax});
+ y=cellfun(@(x) cdm(cdm.urnVec(Time,sprintf('{x,%s}',x))),st2,'uni',0);
+ t=cdm(cdm.urnVec(Time,sprintf('{x,%s}',st{1})));
+ 
+ % C0=cdm.xvec(Time,st([2:end 1]),struct); % Do not return what is asked in st
+ if ~isfield(Time,'name'); Time.name='EnvSummary'; end
+ RP=struct('gf',501,'ax',ones(1,length(y)),'os',{{'@title',{'String',Time.name},...
+     '@line',{'linewidth',2}, ...
+   ... % '@Dock',{'name','SqSig'}, ...
+     '@PlotWd',{'@OsDic',{'ImSw80{@line,""}','WrW49c'}}}});
+ r1=reshape([repmat({t},length(y),1) y]',[],1);
+ ax=cdm.plotys(r1',RP);
+
  elseif comstr(Cam,'summary')
  %% #viewSummary : 
 
