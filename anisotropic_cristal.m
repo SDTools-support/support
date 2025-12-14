@@ -19,7 +19,6 @@ end
 %% #Auto SCRIPT part of the example - - - - - - - - - - - - - - - - - - - - -
 if comstr(Cam,'auto')
 RO.Quad=1;
-sdtkey('cvsnum>1.014','fe_stress')
 
 if RO.Quad;model=anisotropic_cristal('mesh -div12 -quad');  % Generate mesh
 else;model=anisotropic_cristal('mesh  -div12');  % Generate mesh
@@ -33,8 +32,8 @@ cf.def=def;
 %fecom('colordataevaly') % color displacement
 fecom('colordatastress AtNode -comp 3 -edgealpha.01')  % color sigma zz
 
- RO=struct('Origin',[0 0 0;0 0 .02],'steps',linspace(0,1,100));
- cut=fe_caseg('StressCut',RO);cut.type='observe';
+ RC=struct('Origin',[0 0 0;0 0 .02],'steps',linspace(0,1,100));
+ cut=fe_caseg('StressCut',RC);cut.type='observe';
  cut=fe_caseg('stresscut -radius .1 -SelOut',cut,model); % get output info
  cut.StressObs.CritFcn='';
  R1=fe_caseg('stressobserve',cut,def);
@@ -94,11 +93,11 @@ out1=C1.GroupInfo{C1.jGroup,8};
 % - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 % reformat computed stresses along lines assuming a series of
 % elements. From 'comp','Gauss','EltId' to 'Comp','pos','Line'
-elseif comstr(Cam,'groupaslines');
+elseif comstr(Cam,'groupaslines')
 
 match=varargin{carg};carg=carg+1;
 r1=varargin{carg};carg=carg+1;
-EC=varargin{carg};carg=carg+1;
+EC=varargin{carg};carg=carg+1; %#ok<*NASGU,*ASGLU>
 
 [CAM,Cam,RO.dir]=comstr('-dir',[-25 1 1],CAM,Cam);
 if isempty(RO.dir);RO.dir=3;end  % Direction of extrusion
@@ -144,7 +143,9 @@ if comstr(Cam,'nominal')
 
  model.pl=[m_elastic('formulaPlAniso 1',C,basis('bunge',[5.175 1.3071 4.2012]));
       m_elastic('formulaPlAniso 2',C,basis('bunge',[2.9208 1.7377 1.3921]))];
- model=p_solid('default',model);
+ model=feutil('setmat 1 rho 1',model);
+ model=feutil('setmat 2 rho 1',model);
+ model=p_solid('default;',model);
  
 % Internal verification
 %sp_util('diag',11);fe_mknl('init',model);

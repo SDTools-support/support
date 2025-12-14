@@ -17,7 +17,10 @@ function [out,out1,out2]=start_time2frf(varargin) %#ok<STOUT>
 
 %#ok<*ASGLU,*NOSEM,*NASGU>
 
-[CAM,Cam]=comstr(varargin{1},1);carg=2;
+if nargin==0
+  start_time2frf('h1h2 example')
+else; [CAM,Cam]=comstr(varargin{1},1);carg=2;
+end
 
 if comstr(Cam,'h1h2 example')
 

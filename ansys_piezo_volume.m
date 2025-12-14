@@ -5,9 +5,6 @@
 % This requires ADDITIONAL ANSYS .RST and .EMAT files (.CDB is optional)
 
 % Check that recent enough versions of functions are available
-sdtkey('cvsnum >1.075','p_piezo')
-sdtkey('cvsnum >1.073','fe_reduc')
-
 
 % Read ANSYS model into UPCOM element - - - - - - - - - - - - - - - - 
 cf=feplot; ans2sdt('BuildUp File')

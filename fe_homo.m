@@ -739,7 +739,8 @@ if ~isempty(i1)
      fprintf('Clipping interior DOF %s\n',sdtm.toString(fe_c(r1.adof{3}(i2{3}))'))
  end
  r1.Tl(:,i2{1})=[];r1.Tr(:,i2{2})=[];r1.Ti(:,i2{3})=[];
- r1.adof{1}(i2{1})=[];r1.adof{2}(i2{2})=[];r1.adof{3}(i2{3})=[];
+ r1.adof{1}(i2{1})=[];r1.adof{2}(i2{2})=[];
+ if ~isempty(i2{3});r1.adof{3}(i2{3})=[];end
 
  TR=struct('def',[r1.Tl r1.Ti r1.Tr],'DOF',SE.DOF, ...
     'adof',[r1.adof{1};r1.adof{3}; r1.adof{2}], ...
@@ -3161,13 +3162,13 @@ function  r2=histToId(RO,def)
   r2.zfun=@(xa,ya,ga)ii_plp('plzcrop',ga,{'linewidth',1,'linestyle','-'});
   r2.po.MainDim='y';
 
-%% #toDD : return DD
  function   r1=toDD(C1,Range,r1);
+%% #toDD : return DD
 
  r1=struct('dd',C1); 
 
-%% #toOrtho : extract orthotropic moduli
  function   r1=toOrtho(C1,Range,r1);
+%% #toOrtho : extract orthotropic moduli
 
 if nargin==1||(nargin==3&&isfield(r1,'pl'))
  %dd stiffness matrix, c softness 
