@@ -620,7 +620,7 @@ elseif comstr(Cam,'solve'); [CAM,Cam]=comstr(CAM,6);
    q1.q0=q0.def;
    q1.data=linspace(0,1/def.data(1),30)';
    q1.def=5e-0*real(q1.def(:,1)*exp(1i*2*pi*def.data(1)*q1.data'));
-   q1.def=fe_c(TR.DOF,SE.DOF)*q1.def; q1.q0=fe_c(TR.DOF,SE.DOF)*q1.q0;
+   q1.def=fe_c(TR.DOF,SE.DOF)*q1.def; q1.q0=fe_c(SE.DOF,TR.DOF)*q1.q0;
    q1.DOF=SE.DOF;
    [q11,r1]=nl_solve('deffnl-getRes',SE,q1);
 
