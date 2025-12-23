@@ -3085,6 +3085,7 @@ if ~isfield(RO,'btype');RO.btype='kubc';end
 switch lower(RO.btype)
 case {'pbc','kubc','simpleload'}
  % Select reference homogeneous field
+ % [a,b]=feval(fe_homo('@BuildUb'),model,struct('btype','kubc'))
  d1={'e11',struct('dir',{{'x','0','0'}},'DOF',[.01;.02;.03])
      'e22',struct('dir',{{'0','y','0'}},'DOF',[.01;.02;.03])
      'e33',struct('dir',{{'0','0','z'}},'DOF',[.01;.02;.03])
