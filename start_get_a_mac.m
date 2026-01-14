@@ -26,7 +26,7 @@ test.tdof(:,3:5)=test.tdof(:,3:5)*[0,0,-1;-1,0,0;0,1,0];
 %% Read mesh and modes from NASTRAN typically generated with -----------
 % PARAM,POST,-2 or -4
 cf=feplot(2);nasread('cc_mode.op2');
-cf.def=cf.Stack{'OUG(1)'};
+cf.def=cf.Stack{'BOPHIG.1'};
 
 % Perform topology correlation
 
@@ -36,7 +36,7 @@ fecom(cf,'curtabCases','Test');fecom(cf,'Proviewon');
 sens=fe_case(cf.mdl,'sens');
 
 % View FEM modes in test wire frame
-def=cf.Stack{'OUG(1)'};def.name='FEM';
+def=cf.Stack{'BOPHIG.1'};def.name='FEM';
 def=fe_def('subdef',def,7:size(def.data,1));
 def=feutilb('placeindof',sens.DOF,def);
 dr=struct('def',sens.cta*def.def,'DOF',sens.tdof, ...
