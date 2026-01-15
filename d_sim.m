@@ -2,6 +2,14 @@ function   out=d_sim(varargin)
 
 %% Simulink examples 
 
+i0=testHasSimulink;
+if ~i0; fprintf('\nSimulink is not available, cannot run d_sim\n'); return; end
+if nargin==0
+ %% auto check and Simulink availability
+ d_sim('TestUbeam')
+ return
+end
+
 [CAM,Cam]=comstr(varargin{1},1);carg=2;
 
 if comstr(Cam,'init')
@@ -148,4 +156,12 @@ set_param('sim_anim/anim_struct','SystemSampleTime',[.01 0]) % dt,T0
     
 end
 
-
+%% testHasSimulink
+function i0=testHasSimulink
+persistent hasS
+if isempty(hasS)
+ r1=ver;
+ hasS=any(~cellfun(@isempty,strfind({r1.Name},'Simulink')))
+end
+i0=hasS;
+end
