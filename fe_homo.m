@@ -2119,8 +2119,9 @@ for jpar=1:size(RO.RangeNc.val)
  % Build Ud(kappa,x)
  
  if isempty(RO.iVisco) % Detect need to reassemble or not
-   error('Need renew');
+   error('Need renew r2.Kh');
  elseif jpar==1 || diff(RO.RangeNc.val(jpar+[-1 0],RO.iVisco))
+     sdtw('_ewt','detect example')
    r3=RO.RangeNc.param.iVisco.data{RO.RangeNc.val(jpar,RO.iVisco)};
    r2=feutilb('sumkcoef',SE.K,r3);
    SE1.K=struct2cell(r2)';SE1.Klab=fieldnames(r2)';

@@ -12,6 +12,7 @@ if nargin==0
  if sdtdef('isinteractive');d_dft('tuto');return;
  else;% Non interactive test
   d_dft('ScriptNida');
+  d_dft('ScriptRve');
  end
 end
 
