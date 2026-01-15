@@ -39,14 +39,15 @@ sens=fe_case(cf.mdl,'sens');
 def=cf.Stack{'BOPHIG.1'};def.name='FEM';
 def=fe_def('subdef',def,7:size(def.data,1));
 def=feutilb('placeindof',sens.DOF,def);
-dr=struct('def',sens.cta*def.def,'DOF',sens.tdof, ...
+dr=struct('def',sens.cta*def.def,'tdof',sens.tdof, ...
     'data',def.data(:,1));
-cg=feplot(5);feplot(cg,test,dr);fecom(cg,'colordata evaly')
+cg=feplot(5);cg.sel='-test'; cg.def=dr;fecom(cg,'colordata evaly')
 
 %% Now compute full and partial MAC
 %idenfity modes ----------------------------------------------
-ci=idcom;ci.Stack{'Test'}=UFS(1);iicom('submagpha')
-idcom(';e 1415 .01;ea;e .01 3609 ;ea')
+ci=iicom('curveinit-reset','Test',UFS(1))
+ci=idcom(ci,'init');iicom('submagpha')
+idcom(';e 1415 .01;ea;e .01 3609 ;ea; estlocalpole;')
 
 % View MAC
 figure(1);ii_mac(ci.Stack{'IdMain'},def,'sens',sens,'macplot')
