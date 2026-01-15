@@ -2794,6 +2794,7 @@ else
          elseif isfield(RB,'NoSplit')
           def=lsutil('gen',model,{RB}); 
           i2=intersect(fix(def.DOF(def.def>0)),feutil(RB.onSurf,model));
+          if isempty(i2);error('Problem');end
           [model.Node,model.Elt]=fevisco(['MakeSandwich -node ' RB.MakeSandwich],model, ...
            sprintf('selface & innode %s',sprintf('%i ',i2)));
          else
