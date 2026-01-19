@@ -64,7 +64,7 @@ if comstr(Cam,'script'); [CAM,Cam]=comstr(CAM,7);
   
   %% Step 2 : Property handling
   % Remove friction damping, and recompute modes
-  ctc_utils('set euler=-1',cf.mdl)
+  ctc_utils('set euler=-1',cf.mdl); 
   mo1=ctc_utils('tangentmdl inModel-evalFNL',cf.mdl.GetData,cf.Stack{'q0'});
   def2=d_squeal('SolveModes',mo1,[5 25 1e3]);
   
@@ -351,7 +351,8 @@ d4=RT.nmap('CurTime');nlutil('postv',mo4)
   % see also sdtweb cbi20b Script23HoffTransient
   % sdtweb d_fetime TV.Hoffman for the PerK 
   % need version for exponential law 
-  RS=d_doe('nmap','TV.Hoff{n,TVKA.MN}'); sdtm.range(RS);mo4=RS.nmap('CurModel');d4=RS.nmap('CurTime');nlutil('postv',mo4);
+  RS=d_doe('nmap','TV.Hoff{n,TVKA.MN}'); sdtm.range(RS);
+  mo4=RS.nmap('CurModel');d4=RS.nmap('CurTime');nlutil('postv',mo4);
   figure(1);semilogy(d4.data,abs(d4.def))
 
 
