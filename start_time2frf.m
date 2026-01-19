@@ -12,13 +12,16 @@ function [out,out1,out2]=start_time2frf(varargin) %#ok<STOUT>
 
 
 %       Etienne Balmes, Guillaume Martin
-%       Copyright (c) 1990-2025 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2026 by SDTools, All Rights Reserved.
 %       start_time2frf('cvs') for revision information
 
 %#ok<*ASGLU,*NOSEM,*NASGU>
 
 if nargin==0
-  start_time2frf('h1h2 example')
+% Automated tests
+ start_time2frf('h1h2 example')
+
+  return
 else; [CAM,Cam]=comstr(varargin{1},1);carg=2;
 end
 
