@@ -2056,6 +2056,26 @@ skin.name='Skin with foot transition';
 
 RO.projM('skin')=skin;
 
+%% Mesh insert
+if 1==2
+ mo1=RA.projM('MacroVol');
+ r1=sdth.urn('FootStart',mo1);
+ [n1,i1]=sortrows(feutil('getnode',mo1,r1.data(:,2)),5);r1.data=r1.data(i1,:);
+ mo5=struct('Node',n1,'Elt',feutil('objectbeamline',n1(:,1)));
+ mo5=feutil('rev 10 o 0 10 0  90 1 0 0',mo5);
+ mo5.Elt=feutil('set groupall matid 101 proid101',mo5.Elt);
+ insert=mo5;
+ n1=feutil('getnode',mo1,r1.data(:,3));
+ mo5=struct('Node',n1,'Elt',feutil('objectbeamline',n1(:,1)));
+ mo5=feutil('rev 10 o 0 -10 0  90 -1 0 0',mo5);
+ mo5.Elt=feutil('set groupall matid 102 proid102',mo5.Elt);
+ insert=feutil('addtest',insert,mo5);
+ %feplot(insert,'showfipro')
+ ind=insert.Node(:,7)<0; insert.Node(ind,7)=insert.Node(ind,7)-5;
+ RA.projM('insert')=insert;
+ 
+
+end
 
 elseif comstr(Cam,'naca')
  %% #MeshNaca : sample blade with NACA profile and orthotropic material

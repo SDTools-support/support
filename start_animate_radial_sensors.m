@@ -30,10 +30,10 @@ XF=nor2xf(def,model,linspace(0,2000,1024)','struct');
 XF1=struct('w',XF.X{1},'xf',reshape(XF.Y,[],10),'dof',XF.dof);
 
 % Identify a modeshapes and display it
-ci=idcom; ci.Stack{'Test'}=XF1;iicom('submagpha')
+ci=idcom; ci.Stack{'curve','Test'}=XF1;iicom('submagpha')
 idcom(sprintf(';e .01 %.2f;ea',def.data(1))) % estimate a pole and accept it
 
-% Note how 'Test' is specify to force use of sensor orientations in 'Test'
+% Note how 'Test' is specified to force use of sensor orientations in 'Test'
 % 
 cf.def={ci.Stack{'IdMain'},'Test'}; 
 fecom ShowLine

@@ -12,6 +12,7 @@ if nargin==0
  if sdtdef('isinteractive');d_dft('tuto');return;
  else;% Non interactive test
   d_dft('ScriptNida');
+  d_dft('ScriptRve');
  end
 end
 
@@ -145,6 +146,22 @@ iicom(ci,'curveinit','Test',C1);iicom(ci,';submagpha;chall;cax1;xlog;cax2;xlog')
 
 else;error('Solve%s unknown',CAM);
 end
+elseif comstr(Cam,'view')
+
+if comstr(Cam,'viewdebugt2')
+ %% debug views for fe_homo P2Sets, fe_coor LriLU  
+ eval(iigui({'T3','SE','T2','RC'},'GetInCaller')) 
+ c10=feplot(10,';');
+ if comstr(Cam,'T2')
+   if isfield(T2,'adof')&&iscell(T2.adof{:})
+    c10.def=struct('def',T3*[T2.Tl T2.Tr T2.Ti],'DOF',SE.DOF,'adof',vertcat(T2.adof{:}));
+   end
+   % t_cyclic('debugCoorView')
+   % cf=feplot(10,';');cf.def=struct('def',T3*Ti,'DOF',SE.DOF);
+ end
+else; error('%s',CAM)
+end
+
 %% #Tuto: recover model from a specific tuto step -3
 elseif comstr(Cam,'tuto'); 
  eval(sdtweb('_tuto',struct('file','d_dft','CAM',CAM)));
@@ -152,6 +169,7 @@ elseif comstr(Cam,'tuto');
 
 elseif comstr(Cam,'cvs')
  out=sdtcheck('revision','$Revision: a244ccc $  $Date: 2021-04-15 20:25:44 +0200 $');
+else;error('%s',CAM);
 
 %% #End function
 end

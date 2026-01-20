@@ -16,7 +16,7 @@ model=nasread('cc_mode.op2');
 % FEM results are stored in model.Stack, see sdtweb('stack')
 % Access to stack can be named based, see sdtweb('stack_get')
 cf=feplot(2);cf.model=model;
-cf.def=cf.Stack{'OUG(1)'}; fecom(';colordata evaly;ch7')
+cf.def=cf.Stack{'BOPHIG.1'}; fecom(';colordata evaly;ch7')
 
 % Define inputs and outputs (here on specific DOF)
 %  for details on DOF numbering, see sdtweb('mdof')
@@ -24,7 +24,7 @@ cf.def=cf.Stack{'OUG(1)'}; fecom(';colordata evaly;ch7')
 cf.mdl=fe_case(cf.mdl,'DofLoad','IN',425.02);
 cf.mdl=fe_case(cf.mdl,'SensDof','OUT',[425.02;911.02]);
 
-def=cf.Stack{'OUG(1)'}; % Get Modes
+def=cf.Stack{'BOPHIG.1'}; % Get Modes
 def.data=def.data(:,1); % if multiple columns, damping in column 2
 Freq=linspace(1000,3500,1024)';cf.Stack{'info','Freq'}=Freq;
 
@@ -38,5 +38,5 @@ iicom('submagpha')
 ss=nor2ss(def,.02,cf.mdl);
 if exist('bode','file'); 
     figure(10);bode(ss,cf.Stack{'Freq'}*2*pi); % Using BODE in control toolbox
-else qbode(ss,cf.Stack{'Freq'}*2*pi,'iiplot "SS"');    % Using SDT QBODE
+else; qbode(ss,cf.Stack{'Freq'}*2*pi,'iiplot "SS"');    % Using SDT QBODE
 end

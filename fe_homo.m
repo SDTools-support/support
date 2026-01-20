@@ -592,21 +592,22 @@ RO.pml=setdiff((1:length(SE.DOF))',RO.mech);
 %if ~isfield(RO,'P2Sets');RO.P2Sets={SE.DOF,'fe_norm'};end
 %if ~isfield(RO,'P2Sets');RO.P2Sets={SE.DOF,'lrisvd'};end
 % fecom('shownodemark',RO.P2Sets(:,1),'marker','o')
-if ~isfield(RO,'P2Sets');
+if ~isfield(RO,'P2Sets'); % DftRedP2LU 
   RO.P2Sets={SE.DOF(RO.EdgeDof(:)),'svd lrilu static','edge';
-             SE.DOF,'fe_norm','interior'
+             SE.DOF,struct('type','fe_norm','noEdge',1),'interior'
              };
 elseif ischar(RO.P2Sets{1}); %{name,DOF,type} -> {DOF,type,name};
   RO.P2Sets=RO.P2Sets(:,[2 3 1]);
 elseif size(RO.P2Sets,2)<3; 
  RO.P2Sets(:,3)=cellfun(@(x)sprintf('Set%i',x),num2cell(1:size(RO.P2Sets,1)),'uni',0);
 end
-for j1=1:size(RO.P2Sets,1)
+for j1=1:size(RO.P2Sets,1) % Robust format RC
  if ~isstruct(RO.P2Sets{j1,2});
         RO.P2Sets{j1,2}=struct('type',RO.P2Sets{j1,2});
  end
- RC=struct('EdgeDof',[],'EdgeTol',RO.EdgeTol,'DOF',[],'k',[]);
- RO.P2Sets{j1,2}=sdth.sfield('AddMissing',RO.P2Sets{j1,2},RC);
+ RC=struct('EdgeDof',[],'EdgeTol',RO.EdgeTol,'DOF',[],'k',[],'Active',0);
+ RC=sdth.sfield('AddMissing',RO.P2Sets{j1,2},RC);
+ RO.P2Sets{j1,2}=RC;
 end
 if ~isfield(RO,'fe_coor');RO.fe_coor='lrilu';end
 if ~isfield(RO,'SvdTol');RO.SvdTol=1e-8;end
@@ -614,58 +615,22 @@ RO.usedIndDof=find(~any(def.def,2));kd=[];
 if ~isreal(def.def);def.def=[real(def.def) imag(def.def)];end
 
 for j1=1:size(RO.P2Sets,1)
- i2=RO.P2Sets{j1,1};if ischar(i2);eval(i2);end
+ RC=RO.P2Sets{j1,2};i2=RO.P2Sets{j1,1};if ischar(i2);eval(i2);end
  i2=fe_c(SE.DOF,i2,'ind');i2=setdiff(i2,RO.usedIndDof);
  RO.usedIndDof=[RO.usedIndDof;i2];
  ci2=setdiff(1:size(def.def,1),i2);
  T3=sparse(i2,1:length(i2),1,size(def.def,1),length(i2));
- RO.curActive=0;RC=RO.P2Sets{j1,2};
- if isfield(RC,'Active')&&RC.Active==1
+ RO.curActive=0;
+ if RC.Active==1
   i2(fe_c(SE.DOF(i2),Case.DOF,'ind',2))=[]; RO.curActive=1;% Only keep active DOFs
   T3=Case.T(:,fe_c(Case.DOF,SE.DOF(i2),'ind'));T2=def.def(i2,:);
   RC.k=T3'*k*T3;RC.DOF=SE.DOF(i2);
  else; 
    T2=def.def(i2,:);k2=k(i2,i2);RC.k=k(i2,i2);RC.DOF=SE.DOF(i2);
  end
- RO.curCoor=RO.fe_coor;RO.curSetType=RC.type;
+ RO.curCoor=RO.fe_coor;RO.curSetType=RC.type;if isempty(T2); continue;end
+ [T2,RC,RO]=genT2(T2,RC,RO,i2);
 
- if strcmpi(RO.curSetType,'keep'); 
-  T2=speye(length(i2));
- elseif strcmpi(RO.curSetType,'CaseT'); % Keep full bases on some DOF
-  i3=fe_c(def.DOF(i2),Case.DOF,'ind',2); RO.usedIndDof=[RO.usedIndDof;i2(i3)];
-  i2(i3)=[];
-  i3={intersect(i2,RO.EdgeDof(:,1)),intersect(i2,RO.EdgeDof(:,2)), ...
-      setdiff(i2,RO.EdgeDof(:))};
-  i3=cellfun(@(x)fe_c(Case.DOF,def.DOF(x),'ind'),i3,'uni',0);
-  T2=struct('Tl',Case.T(:,i3{1}),'Tr',Case.T(:,i3{2}),'Ti',Case.T(:,i3{3}),...
-      'adof',{cellfun(@(x)Case.DOF(x),i3,'uni',0)});
-  fprintf('%20s: CaseT L%i : R%i : I%i\n',RO.P2Sets{j1,3},cellfun(@length,i3));
- elseif strcmpi(RO.curSetType,'di');
-   di=RO.di;%fprintf('Using finite learning');dbstack; 
-    di.def=reshape(di.def,size(di.def,1),[]);
-    di=feutilb('placeindof',SE.DOF,di);
-    [u,s]=svd(di.def(i2,:),0);s=diag(s); 
-    [T2,fr]=fe_norm(u,m(i2,i2),RC.k);
- elseif strncmpi(RO.curSetType,'fe_norm',7);
-   if RO.curActive
-     [T2,fr]=fe_norm(T2(:,any(T2)),T3'*m*T3,T3'*k*T3);
-   else
-     [T2,fr]=fe_norm(T2(:,any(T2)),m(i2,i2),RC.k);
-   end
-   if contains(RO.curSetType,'lrik');RO.curCoor='lrik';end
- elseif isempty(T2); continue
- else; 
-   if isfield(RC,'coef'); 
-       T2=T2*RC.coef;% Pcond scale coef for SvdTol
-   % cf=feplot(10);cf.def=struct('def',T2,'DOF',SE.DOF(i2));fecom(';colordataA;coloralpha');
-   end 
-   %[T2,s]=svd(T2,0,'vector');T2=T2(:,s>RO.SvdTol*s(1));
-   if ~isempty(strfind(RO.curSetType,'lrilu'));RO.curCoor='lrilu';end
-   RC.SvdTol=RO.SvdTol; % How delayed to fe_coor
-   %fprintf('%20s: svd_1=%.1e nkept=%i, %s\n',RO.P2Sets{j1,3},s(1),size(T2,2),RO.curCoor);
- end
- nind=sparse(i2,1,1:length(i2));
- RC.EdgeDof=full(nind(RO.EdgeDof(ismember(RO.EdgeDof(:,1),i2),:)));
  % fecom('shownodemark',{RC.DOF(RC.EdgeDof(:,1)),RC.DOF(RC.EdgeDof(:,2)))})
  %% Build a basis that uses all given DOF and span the learning subspace
  if isfield(RC,'NoAdof')&&ischar(RC.NoAdof); 
@@ -673,7 +638,8 @@ for j1=1:size(RO.P2Sets,1)
  end
  if ~isnumeric(T2)
  elseif isempty(RC.EdgeDof)&&~isfield(RC,'noEdge');
-   warning('No EdgeDof : if not an error use .noEdge=1');break;
+   sdtw('_nb','P2Set %s no EdgeDof : if not an error use .noEdge=1',RO.P2Sets{j1,3});
+   break;
   % else; T2=struct('Tl',[],'Tr',[],'Ti',T2);
   % end
  else;
@@ -684,9 +650,8 @@ for j1=1:size(RO.P2Sets,1)
   T0=T2;
   T2=fe_coor(RO.curCoor,T0,RC);% sdtweb fe_coor('lrisvd')
  end
- % p_pml('viewqz'); 
- % cf=feplot(10);cf.def=struct('def',T3*[T2.Tl T2.Tr T2.Ti],'DOF',SE.DOF,'adof',vertcat(T2.adof{:}))
- % d1=fe_eig({m,k,T3*[T2.Tl T2.Tr T2.Ti],SE.DOF},2);cf.def=d1
+ % d_dft('viewdebugT2') p_pml('viewqz'); 
+ %  % d1=fe_eig({m,k,T3*[T2.Tl T2.Tr T2.Ti],SE.DOF},2);cf=feplot(10,';');cf.def=d1
  
  if isempty(T2.Tl);T2.Tl=zeros(size(T3,1),0);T2.Tr=zeros(size(T3,1),0);
  elseif ~isempty(strfind(RO.curSetType,'static'));
@@ -2154,8 +2119,9 @@ for jpar=1:size(RO.RangeNc.val)
  % Build Ud(kappa,x)
  
  if isempty(RO.iVisco) % Detect need to reassemble or not
-   error('Need renew');
+   error('Need renew r2.Kh');
  elseif jpar==1 || diff(RO.RangeNc.val(jpar+[-1 0],RO.iVisco))
+     sdtw('_ewt','detect example')
    r3=RO.RangeNc.param.iVisco.data{RO.RangeNc.val(jpar,RO.iVisco)};
    r2=feutilb('sumkcoef',SE.K,r3);
    SE1.K=struct2cell(r2)';SE1.Klab=fieldnames(r2)';
@@ -2966,6 +2932,49 @@ else; error('%s',CAM);
 end
 
 
+function [T2,RC,RO]=genT2(T2,RC,RO,i2);
+ %% #genT2 : 
+ if strcmpi(RO.curSetType,'keep'); 
+  T2=speye(length(i2));
+ elseif strcmpi(RO.curSetType,'CaseT'); % Keep full bases on some DOF
+  i3=fe_c(def.DOF(i2),Case.DOF,'ind',2); RO.usedIndDof=[RO.usedIndDof;i2(i3)];
+  i2(i3)=[];
+  i3={intersect(i2,RO.EdgeDof(:,1)),intersect(i2,RO.EdgeDof(:,2)), ...
+      setdiff(i2,RO.EdgeDof(:))};
+  i3=cellfun(@(x)fe_c(Case.DOF,def.DOF(x),'ind'),i3,'uni',0);
+  T2=struct('Tl',Case.T(:,i3{1}),'Tr',Case.T(:,i3{2}),'Ti',Case.T(:,i3{3}),...
+      'adof',{cellfun(@(x)Case.DOF(x),i3,'uni',0)});
+  fprintf('%20s: CaseT L%i : R%i : I%i\n',RO.P2Sets{j1,3},cellfun(@length,i3));
+ elseif strcmpi(RO.curSetType,'di');
+   di=RO.di;%fprintf('Using finite learning');dbstack; 
+    di.def=reshape(di.def,size(di.def,1),[]);
+    di=feutilb('placeindof',SE.DOF,di);
+    [u,s]=svd(di.def(i2,:),0);s=diag(s); 
+    [T2,fr]=fe_norm(u,m(i2,i2),RC.k);
+ elseif strncmpi(RO.curSetType,'fe_norm',7);
+   if RO.curActive
+     m=evalin('caller','T3''*m*T3');
+     k=evalin('caller','T3''*k*T3');
+     [T2,fr]=fe_norm(T2(:,any(T2)),m,k);
+   else
+     m=evalin('caller','m(i2,i2)');
+     [T2,fr]=fe_norm(T2(:,any(T2)),m,RC.k);
+   end
+   if contains(RO.curSetType,'lrik');RO.curCoor='lrik';end
+ else; 
+   if isfield(RC,'coef'); 
+       T2=T2*RC.coef;% Pcond scale coef for SvdTol
+   % cf=feplot(10);cf.def=struct('def',T2,'DOF',SE.DOF(i2));fecom(';colordataA;coloralpha');
+   end 
+   %[T2,s]=svd(T2,0,'vector');T2=T2(:,s>RO.SvdTol*s(1));
+   if ~sdtm.Contains(RO.curSetType,'lrilu');RO.curCoor='lrilu';end
+   RC.SvdTol=RO.SvdTol; % How delayed to fe_coor
+   %fprintf('%20s: svd_1=%.1e nkept=%i, %s\n',RO.P2Sets{j1,3},s(1),size(T2,2),RO.curCoor);
+ end
+ nind=sparse(i2,1,1:length(i2));
+ RC.EdgeDof=full(nind(RO.EdgeDof(ismember(RO.EdgeDof(:,1),i2),:)));
+
+
 %% #RvePerDef_gen rve periodic disp
 function [out,out1,out2]=RvePerDef(varargin)
 
@@ -3085,6 +3094,7 @@ if ~isfield(RO,'btype');RO.btype='kubc';end
 switch lower(RO.btype)
 case {'pbc','kubc','simpleload'}
  % Select reference homogeneous field
+ % [a,b]=feval(fe_homo('@BuildUb'),model,struct('btype','kubc'))
  d1={'e11',struct('dir',{{'x','0','0'}},'DOF',[.01;.02;.03])
      'e22',struct('dir',{{'0','y','0'}},'DOF',[.01;.02;.03])
      'e33',struct('dir',{{'0','0','z'}},'DOF',[.01;.02;.03])
@@ -3287,8 +3297,8 @@ function [mdl,RunOpt,SE,Case,Load,w,ft,carg]=safeInitDfrf(varg,carg);
 
  
  
-%% #getCellDir
 function out=getCellDir(varargin);
+%% #getCellDir
 [CAM,Cam]=comstr(varargin{1},1);
 data=varargin{2};
 
