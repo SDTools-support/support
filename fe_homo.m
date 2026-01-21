@@ -2525,11 +2525,13 @@ end
 if length(RO.CellDir)>1;RO.CellDir=norm(RO.CellDir);end
 %% edit the def range
 
+if ~isfield(RO,'unit');RO.unit='US';end
+r1=fe_mat(sprintf('convert%sUS',RO.unit(1:2))); r1=sdtm.toStruct(r1(:,[4 2]));
 r1={'ncxkcx',@(x)2*pi./x,'kcx','rad/cell';
     'ncxkc',@(x)1./x,'kc','1/cell';
-   'ncxkx',@(x)2*pi/RO.CellDir./x,'kx','rad/len'
+   'ncxkx',@(x)2*pi/RO.CellDir./x,'kx',['rad/' r1.length]
    'kxncx',@(x)2*pi./x./RO.CellDir,'ncx','cell'
-   'kxlx',@(x)2*pi./x,'lx','length'
+   'kxlx',@(x)2*pi./x,'lx',r1.length
    'lxkx',@(x)2*pi./x,'kx','rad/len xxx'
    'lxkcx',@(x)2*pi*RO.CellDir./x,'kcx','rad/cell xxx'
    'kxkcx',@(x)x*RO.CellDir,'kcx','rad/cell';
