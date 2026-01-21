@@ -2056,26 +2056,37 @@ skin.name='Skin with foot transition';
 
 RO.projM('skin')=skin;
 
-%% Mesh insert
-if 1==2
+
+elseif comstr(Cam,'nacainsert')
+ %% #MeshNacaInsert
+
+ RA=evalin('base','RA');
  mo1=RA.projM('MacroVol');
  r1=sdth.urn('FootStart',mo1);
- [n1,i1]=sortrows(feutil('getnode',mo1,r1.data(:,2)),5);r1.data=r1.data(i1,:);
+ n1=feutil('getnode NodeId&x>10 & x<74',mo1,r1.data(:,2));
+ r1.data(~ismember(r1.data(:,2),n1(:,1)),:)=[];
+ [n1,i1]=sortrows(n1,5);r1.data=r1.data(i1,:);
+ %n1=sortrows([n1;max(n1(:,1))+[1;2] zeros(2,3) [0 .8 -5*0;80 .8 -5*0]],5);
  mo5=struct('Node',n1,'Elt',feutil('objectbeamline',n1(:,1)));
  mo5=feutil('rev 10 o 0 10 0  90 1 0 0',mo5);
  mo5.Elt=feutil('set groupall matid 101 proid101',mo5.Elt);
  insert=mo5;
- n1=feutil('getnode',mo1,r1.data(:,3));
+ n1=feutil('getnode NodeId',mo1,r1.data(:,3));
+ %n1=sortrows([n1;max(n1(:,1))+[1;2] zeros(2,3) [0 .8 -5*0;80 .8 -5*0]],5);
  mo5=struct('Node',n1,'Elt',feutil('objectbeamline',n1(:,1)));
  mo5=feutil('rev 10 o 0 -10 0  90 -1 0 0',mo5);
  mo5.Elt=feutil('set groupall matid 102 proid102',mo5.Elt);
  insert=feutil('addtest',insert,mo5);
- %feplot(insert,'showfipro')
- ind=insert.Node(:,7)<0; insert.Node(ind,7)=insert.Node(ind,7)-5;
- RA.projM('insert')=insert;
- 
 
-end
+ % add flat area when insert gone
+ %insert=feutil('addtest',insert,feutil('objectquad5 5',[ 0 0.8 -14;10 0 0;0 0 14],1,1));
+ %insert=feutil('addtest',insert,feutil('objectquad5 5',[70 0.82 -14;10 0 0;0 0 14],1,1));
+
+ %feplot(insert,'showfipro')
+ ind=insert.Node(:,7)<.01; insert.Node(ind,7)=insert.Node(ind,7)-5;
+ insert.Node(insert.Node(:,5)<10|insert.Node(:,5)>74,6)=.8;
+ sdtm.store(RA.projM,'insert>insert');
+ if ~contains(Cam,';');feplot(insert);end
 
 elseif comstr(Cam,'naca')
  %% #MeshNaca : sample blade with NACA profile and orthotropic material

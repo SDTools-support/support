@@ -632,6 +632,7 @@ for j1=1:size(RO.P2Sets,1)
  [T2,RC,RO]=genT2(T2,RC,RO,i2);
 
  % fecom('shownodemark',{RC.DOF(RC.EdgeDof(:,1)),RC.DOF(RC.EdgeDof(:,2)))})
+ % d_dft('viewdebugT2')
  %% Build a basis that uses all given DOF and span the learning subspace
  if isfield(RC,'NoAdof')&&ischar(RC.NoAdof); 
     RC.NoAdof=fe_c(RC.DOF,feutil(['findnode' RC.NoAdof],SE),'ind');
@@ -2545,7 +2546,7 @@ for j1=1:2
   if strncmpi(st,'lambda',6);st='lx';end
   r2=r1(strcmpi(r1(:,1),[st,RO.ktype]),:);
   if isempty(r2);
-      error('%s not known',st);
+      error('%s not in %s',[st,RO.ktype],sdtm.toString(r1(:,1)'));
   elseif j1==1; RO.defKtype=r2(2:4);
      if ~isempty(def);
          def.Range.lab{1}=RO.ktype;

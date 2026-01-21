@@ -148,16 +148,24 @@ else;error('Solve%s unknown',CAM);
 end
 elseif comstr(Cam,'view')
 
-if comstr(Cam,'viewdebugt2')
+if comstr(Cam,'viewdebug')
  %% debug views for fe_homo P2Sets, fe_coor LriLU  
+ [CAM,Cam]=comstr(CAM,10);
  eval(iigui({'T3','SE','T2','RC'},'GetInCaller')) 
  c10=feplot(10,';');
- if comstr(Cam,'T2')
-   if isfield(T2,'adof')&&iscell(T2.adof{:})
-    c10.def=struct('def',T3*[T2.Tl T2.Tr T2.Ti],'DOF',SE.DOF,'adof',vertcat(T2.adof{:}));
+ if ~isequal(c10.mdl.Node,SE.Node);c10.model=SE;end
+   if isfield(T2,'adof')&&iscell(T2.adof)
+    d2=struct('def',T3*[T2.Tl T2.Tr T2.Ti],'DOF',SE.DOF,'adof',vertcat(T2.adof{:}));
+   elseif isnumeric(T2)
+    d2=struct('def',T2,'DOF',SE.DOF);       
    end
+ if comstr(Cam,'t2')
+   c10.def=d2;
    % t_cyclic('debugCoorView')
    % cf=feplot(10,';');cf.def=struct('def',T3*Ti,'DOF',SE.DOF);
+ elseif comstr(Cam,'eigt2')
+   [d2.def,d2.data]=fe_norm(d2.def,SE.K{1},SE.K{2});d2.data=d2.data/2/pi;
+   d2=rmfield(d2,'adof');c10.def=d2;
  end
 else; error('%s',CAM)
 end
