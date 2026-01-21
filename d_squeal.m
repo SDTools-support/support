@@ -3809,10 +3809,10 @@ function  [C0,st]=getAmp(C0,Time,st,RO);
    i2=contains(C0.Amean(:,2),RO.amp);
    if any(i2);
     C0.Amean=cdm(C0.Amean(i2,:));
-    C0.Amax=cdm(C0.Amax(contains(C0.Amax(:,2),'[g]'),:));
+    C0.Amax=cdm(C0.Amax(contains(C0.Amax(:,2),RO.amp),:));
    else
     sdtw('_nb',sprintf(['Several units found to compute Amean ( '...
-     sprintf('[%s] ',st2{:}),').\nPrecise selection with option a[unit].\n'...
+     sprintf('[%s] ',st2{:}),').\nPrecise selection with option amp[unit].\n'...
      sprintf('[%s] has been selected by default',st2{1})]));
     i2=1;
     C0.Amean=cdm(C0.Amean(i2,:));

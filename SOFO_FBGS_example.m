@@ -72,6 +72,6 @@ bl=SensB(:,2)-SensA(:,2);%% divide SOFO reading by base length for comparison
 figure(10); plot(xlg,md2(:,1)./bl,'r*'); plot(xlg,md2(:,3)./bl,'r*');
 plot(xlg,md2(:,10)./bl,'r*'); plot(xlg,md2(:,20)./bl,'r*'); 
 xlabel('x'); ylabel('\epsilon_x')
-legend(cellstr(num2str(i1(:))),'SOFO')
+legend([cellstr(num2str(i1(:)));'SOFO'])
 
 
