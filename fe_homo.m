@@ -1415,7 +1415,9 @@ if carg<=nargin;def=varargin{carg};carg=carg+1;else;def=[];end
 if ~isfield(RO,'ci');RO.ci=1;end; figure(RO.ci);
 RO.hist=hist;RO=ktypeCheck(RO,[]);hist=RO.hist;
 r1=hist.X{1};st=hist.Xlab{1};
-if iscell(st);st=sprintf('%s ',st{cellfun(@ischar,st)});end
+if iscell(st);st(~cellfun(@ischar,st))=[];
+    if length(st)>1;st=sprintf('%s [%s]',st{1:2});else; st=st1{1};end
+end
 if size(hist.Y,3)==2 % If markers defined loop on markers
  r2=unique(hist.Y(:,:,2)); marker={'or','+g','db','sk','^m','<c','vy'};
  li={}; 
