@@ -2085,7 +2085,7 @@ elseif comstr(Cam,'nacainsert')
  %feplot(insert,'showfipro')
  ind=insert.Node(:,7)<.01; insert.Node(ind,7)=insert.Node(ind,7)-5;
  insert.Node(insert.Node(:,5)<10|insert.Node(:,5)>74,6)=.8;
- sdtm.store(RA.projM,'insert>insert');
+ sdtm.store(RA.projM,'insert>RefInsert');
  if ~contains(Cam,';');feplot(insert);end
 
 elseif comstr(Cam,'naca')
