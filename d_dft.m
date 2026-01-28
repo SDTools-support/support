@@ -78,10 +78,11 @@ for j1=1:size(df.def,2); disp(dfr.def(:,j1)\df.def(:,j1));end
 %% Step4 :  Recombine harmonics xxx needs further checks
  C1=struct('type','cfrf');C1.sens=sens;C1=fe_homo('DfpViewCurve',dFrf,C1); C2=C1.GetData;
 
- % Initialize multi-cell display
- RB=struct('mno',(0:5)','cf',102,'ktype','kc');
- fe_homo('dfpInitSelDef',SE,df,RB);fecom('ShowFiCEvalz')
-
+ % Initialize multi-cell display : need renew 2026
+ if 1==2
+  RB=struct('mno',(0:5)','cf',102,'ktype','kc');
+  fe_homo('dfpInitSelDef',SE,df,RB);fecom('ShowFiCEvalz')
+ end 
  
 %% EndTuto
 
@@ -95,6 +96,7 @@ feutilb('_write',mo1)
 [dd1,d1]=fe_homo('RveKubc',mo1);
 [d2,dd2]=fe_homo('RveSubc',mo1);
 
+if 1==2
 RP=struct('Range',struct('ncx',1,'ncy',1,'ncz',[3 10 100 1000]));
 %dd1.Y([1 6 5;6 2 4;5 4 3])
 RP.pl=m_elastic('FormulaDDtoOrtho',dd2.dd);RP.matdes=[2 1 4 -1];
@@ -103,6 +105,7 @@ RP.pl=m_elastic('FormulaDDtoOrtho',dd2.dd);RP.matdes=[2 1 4 -1];
 squeeze(C1.Y(:,:,2))./squeeze(C1.Y(:,:,strcmpi(C1.X{3},'Ed')))
 RE=struct('mno',(0:4)'*[0 0 1],'cf',102);
 fe_homo('dfpInitSelDef',mo1,d1,RE);fecom('ShowFiCEvalZ')%sdtweb fe_homo dfpSensObs
+end
 
 % EndTuto
 

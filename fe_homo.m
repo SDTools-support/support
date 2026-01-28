@@ -2116,7 +2116,7 @@ RO.k=dftu('getx',struct('RangeNc',RO.RangeNc,'CellDir',RO.CellDir), ...
 out1=[];
 RO.iVisco=find(strcmpi(RO.RangeNc.lab,'iVisco'));
 SE1=SE;
-for jpar=1:size(RO.RangeNc.val)
+for jpar=1:size(RO.RangeNc.val,1)
  %RO.cx=sprintf('exp(1i*x*%.15g)',2*pi/(RO.nx*data.CellDir(1)));
  % 2*pi/10/RO.CellDir(end)
  % Build Ud(kappa,x)
@@ -2438,13 +2438,14 @@ function out=DftRest(varargin)
    r1=reshape(r2.cna*r1,[],2);
   end
   r3=dftu('getx',def,struct('lab',{{'kcx','kcy','kcz'}}),ch);
-  if length(r3)==1; Enk=exp(1j*r2.mno(:,1)*r3(1)); % single dir for now
+  if isscalar(r3); Enk=exp(1j*r2.mno(:,1)*r3(1)); % single dir for now
   else;
      Enk=exp(1j*r2.mno*reshape(r3,size(r2.mno,2),1));
   end
   % Back-transform of monoharmonic
   % Re(U(k)e(j (kx m+ky n + kz o))
   Enk=[real(Enk) -imag(Enk)];
+  if size(r1,2)==1; error('Expecting different form');end
   r1=r1*Enk';
 
   % xxx deal with complex feplot scaling
@@ -2472,7 +2473,7 @@ function out=DftRest(varargin)
    out=reshape(def.def(def.CurInd,:),[],size(def.X{1},1),size(def.X{2},1));
    out=permute(out,[2 3 1]);
    out=subsref(out,S); % freq,kappa,DOF
-   if length(S.subs)==3&&length(S.subs{2})==1&&isfield(def,'Disp') 
+   if length(S.subs)==3&&isscalar(S.subs{2})&&isfield(def,'Disp') 
     % Single kappa
     try
      i1=S.subs{2}; 
@@ -2527,8 +2528,11 @@ end
 if length(RO.CellDir)>1;RO.CellDir=norm(RO.CellDir);end
 %% edit the def range
 
-if ~isfield(RO,'unit');RO.unit='US';end
-r1=fe_mat(sprintf('convert%sUS',RO.unit(1:2))); r1=sdtm.toStruct(r1(:,[4 2]));
+if ~isfield(RO,'unit')||strncmpi(RO.unit,'us',2);
+  r1=fe_mat(sprintf('convertSIUS')); r1=sdtm.toStruct(r1(:,[4 4]));
+else
+ r1=fe_mat(sprintf('convert%sUS',RO.unit(1:2))); r1=sdtm.toStruct(r1(:,[4 2]));
+end
 r1={'ncxkcx',@(x)2*pi./x,'kcx','rad/cell';
     'ncxkc',@(x)1./x,'kc','1/cell';
    'ncxkx',@(x)2*pi/RO.CellDir./x,'kx',['rad/' r1.length]
@@ -2748,7 +2752,7 @@ elseif comstr(Cam,'getx');
  
  r1=Range.val(:,strncmpi(Range.lab,'ncx',3));
  if isfield(RO,'lab'); RO.Needed=RO.lab; else;RO.Needed=Range.lab;end
- if isfield(Range,'lc')&&length(Range.lc)==1  % Monodim
+ if isfield(Range,'lc')&&isscalar(Range.lc)  % Monodim
     error('Update EB');
     if isempty(r1);
      r1=Range.val(:,strncmpi(Range.lab,'lambda',5))/Range.lc;
