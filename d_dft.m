@@ -13,6 +13,7 @@ if nargin==0
  else;% Non interactive test
   d_dft('ScriptNida');
   d_dft('ScriptRve');
+  return;
  end
 end
 
