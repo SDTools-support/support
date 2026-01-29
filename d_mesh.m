@@ -2110,6 +2110,7 @@ mo2.Elt=feutil('setsel matid2 proid2',mo2, ...
    mean([max(RO.mergeX(RO.mergeX>max(r3))),max(r3)])));
    
 c10=feplot(10,';');c10.model=mo2; c10.sel={'matid~=19','showfipro'};
+mo2.Node=feutil('getnodegroupall',mo2);
 mo2.name='PreMorphFoot'; sdtm.store(RA.projM,['mo2>' mo2.name]);
 fecom(c10,'colordatapro-alpha.3')
 
@@ -2117,29 +2118,51 @@ fecom(c10,'colordatapro-alpha.3')
 n1=sortrows(feutil('getnode z==30&y==-15',mo3),5);
 n2=sortrows(feutil('getnode z==30&y==15',mo3),5);
 
-RM=struct('projM',RA.projM,'list',{{'key','urn','annot'
-  'L1','findNodeLine{src"PreMorphFoot",find"z==80&y==-10",r"unit"}','line{linewidth,2,linestyle,--}'
-  'L4','findNodeLine{src"PreMorphFoot",find"z==80&y==10",r"unit"}','line{linewidth,2,linestyle,--}'
-  'L2','findNodeLine{src"PreMorphFoot",find"z==80&y==-5",r"unit"}','line{linewidth,2}'
-  'L3','findNodeLine{src"PreMorphFoot",find"z==80&y==+5",r"unit"}','line{linewidth,2}'
-  'L5','findNodeLine{src"PreMorphFoot",find"z==40&y==-10",resample"L1"}','line{linewidth,2,linestyle,--}'
-  'L8','findNodeLine{src"PreMorphFoot",find"z==40&y==+10",resample"L1"}','line{linewidth,2,linestyle,--}'
-  'L6','findNodeLine{src"PreMorphFoot",find"z==35&y==-5& x>8&x<92",resample"L3"}','line{linewidth,2}'
-  'L7','findNodeLine{src"PreMorphFoot",find"z==35&y==+5& x>8&x<92",resample"L3"}','line{linewidth,2}'
-  'L10',['findNodeLine{src"PreMorphFoot",find"NodeId' sprintf('%i ',n1(:,1)) '",r"unit",resample"L1"}'],'line{linewidth,2,linestyle,--}'
-  'L12','transLine{src"L10",Cb"xyz(:,3)=37;"}}','line{linewidth,2,linestyle,--}'
-  'L11',['findNodeLine{src"PreMorphFoot",find"NodeId' sprintf('%i ',n2(:,1)) '",r"unit",resample"L1"}'],'line{linewidth,2,linestyle,--}'
-  'L13','transLine{src"L11",Cb"xyz(:,3)=37;"}}','line{linewidth,2,linestyle,--}'
-  'Q15','QuadStick{x"{L1,L5}",y"5",surf"PreMorphFoot",sel"matid1&y==-10"}','surface{edgealpha,.1,facealpha,1}'
-  'Q512','QuadStick{x"{L5,L12}",y"5",surf"PreMorphFoot",sel"inelt{selface&facing >.8 0 -1e5 1e5}"}', ...
+RM=struct('projM',RA.projM,'list',{{'key','ToolTip','urn','annot'
+  'L1','TopSkinLine' ...
+    'findNodeLine{src"PreMorphFoot",find"z==80&y==-10",r"unit"}','line{linewidth,2,linestyle,--}'
+  'L4','BotSkinLine', ...
+    'findNodeLine{src"PreMorphFoot",find"z==80&y==10",r"unit"}','line{linewidth,2,linestyle,--}'
+  'L2','TopInsert line', ...
+    'findNodeLine{src"PreMorphFoot",find"z==80&y==-5",r"unit"}','line{linewidth,2}'
+  'L3','Bot insert line', ...
+     'findNodeLine{src"PreMorphFoot",find"z==80&y==+5",r"unit"}','line{linewidth,2}'
+  'L5','', ...
+    'findNodeLine{src"PreMorphFoot",find"z==40&y==-10",resample"L1"}','line{linewidth,2,linestyle,--}'
+  'L8','', ...
+    'findNodeLine{src"PreMorphFoot",find"z==40&y==+10",resample"L1"}','line{linewidth,2,linestyle,--}'
+  'L6','', ...
+     'findNodeLine{src"PreMorphFoot",find"z==35&y==-5& x>8&x<92",resample"L3"}','line{linewidth,2}'
+  'L7','', ...
+    'findNodeLine{src"PreMorphFoot",find"z==35&y==+5& x>8&x<92",resample"L3"}','line{linewidth,2}'
+  'L10','', ...
+    ['findNodeLine{src"PreMorphFoot",find"NodeId' sprintf('%i ',n1(:,1)) '",r"unit",resample"L1"}'],'line{linewidth,2,linestyle,--}'
+  'L12','', ...
+    'transLine{src"L10",Cb"xyz(:,3)=37;"}}','line{linewidth,2,linestyle,--}'
+  'L11','', ...
+    ['findNodeLine{src"PreMorphFoot",find"NodeId' sprintf('%i ',n2(:,1)) '",r"unit",resample"L1"}'],'line{linewidth,2,linestyle,--}'
+  'L13','', ...
+    'transLine{src"L11",Cb"xyz(:,3)=37;"}}','line{linewidth,2,linestyle,--}'
+  'LE10','', ...
+    'transLine{src"L11",Cb"xyz(:,2)=-20;"}}','line{linewidth,2,linestyle,--}'
+  'LE11','', ...
+    'transLine{src"L11",Cb"xyz(:,2)=20;"}}','line{linewidth,2,linestyle,--}'
+  'Q15','', ...
+    'QuadStick{x"{L1,L5}",y"5",surf"PreMorphFoot",sel"matid1&y==-10"}','surface{edgealpha,.1,facealpha,1}'
+  'Q512','', ...
+    'QuadStick{x"{L5,L12}",y"5",surf"PreMorphFoot",sel"inelt{selface&facing >.8 0 -1e5 1e5}"}', ...
       'surface{edgealpha,.1,facealpha,1}'
-  'Q48','QuadStick{x"{L4,L8}",y"5",surf"PreMorphFoot",sel"matid2&y==10"}','surface{edgealpha,.1,facealpha,1}'
-  'Q813','QuadStick{x"{L8,L13}",y"5",surf"PreMorphFoot",sel"inelt{selface&facing >.8 0 1e5 1e5}"}','surface{edgealpha,.1,facealpha,1}'
+  'Q48','', ...
+    'QuadStick{x"{L4,L8}",y"5",surf"PreMorphFoot",sel"matid2&y==10"}','surface{edgealpha,.1,facealpha,1}'
+  'Q813','', ...
+    'QuadStick{x"{L8,L13}",y"5",surf"PreMorphFoot",sel"inelt{selface&facing >.8 0 1e5 1e5}"}','surface{edgealpha,.1,facealpha,1}'
    }},'cf',10);
  RM=fe_shapeoptim('mapGenMorph',RM);
 fecom(c10,'colordatapro-alpha0-edgealpha.2')
 RO.xfun=@(x)((x-RO.xyzlim(1))/diff(RO.xyzlim([1 4])))*diff(RO.xValues([1 end]))+RO.xValues(1);
-if isfield(RO.annot,'L1')
+%n1=feutil('getnode x==-2',mo2);xyz=n1(:,5:7); x=xyz(:,1);y=xyz(:,2);xyz(:,1)=xyz(:,1)-((1-abs(y)/15)).^.2.*(5+10*double(xyz(:,3)<40));fecom('shownodemark',xyz)
+
+if isfield(RO,'annot')&&isfield(RO.annot,'L1')
  %% Fill PreMorph table based on identical lines
  r2=struct('ColumnName',{{'xr','yr','zr','x','y','z'}},'table',{{
  }},'name','PreMorph');
@@ -2154,6 +2177,7 @@ if isfield(RO.annot,'L1')
    end
   end
  end
+ % actually morph a foot
  mo2=fe_shapeoptim('ViewMorph',r2);
  sdtm.store(RA.projM,'mo2>MorphFoot');
 end
