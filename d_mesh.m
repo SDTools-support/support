@@ -2059,7 +2059,7 @@ RO.projM('skin')=skin;
 
 elseif comstr(Cam,'nacafootref')
  %% #MeshNacaFootRef
-
+  [~,RO]=sdtm.urnPar(CAM,'{}{Clean%31,trans%s,Merge%s,cf%i}');
   RA=evalin('base','RA');
   toNode=@(x)[x(:,1) zeros(size(x,1),3) x(:,2:4)];
   n1=[1 0  -10 80; 2 0  -5 80; 3 0  5 80; 4 0 10 80
@@ -2091,7 +2091,8 @@ for j1=1:length(h);
   end
  end
  if strcmpi(st1,'L1')
-  RO.xValues=sdtu.fe.splineR(RO.annot.L1,struct('out','rL'));
+  RO.xValues=(1:size(RO.annot.L1,1))';
+  %sdtu.fe.splineR(RO.annot.L1,struct('out','rL'));
   RO.mergeX=RO.xValues(all(RO.annot.L3==RO.annot.L2,2));
  end
 end
@@ -2109,11 +2110,14 @@ mo2.Elt=feutil('setsel matid2 proid2',mo2, ...
    mean([max(RO.mergeX(RO.mergeX<min(r3))),min(r3)]), ...
    mean([max(RO.mergeX(RO.mergeX>max(r3))),max(r3)])));
    
-c10=feplot(10,';');c10.model=mo2; c10.sel={'matid~=19','showfipro'};
 mo2.Node=feutil('getnodegroupall',mo2);
 mo2.name='PreMorphFoot'; sdtm.store(RA.projM,['mo2>' mo2.name]);
-fecom(c10,'colordatapro-alpha.3')
-
+c10=feplot(10,';');c10.model=mo2; 
+if isfield(RO,'Other')&&any(strcmpi(RO.Other,'back'));
+ % d_mesh('MeshNacaFootRef{cf10,back}')
+c10.sel={'matid~=19','showfipro'};
+ return;
+end
 
 n1=sortrows(feutil('getnode z==30&y==-15',mo3),5);
 n2=sortrows(feutil('getnode z==30&y==15',mo3),5);
@@ -2132,9 +2136,9 @@ RM=struct('projM',RA.projM,'list',{{'key','ToolTip','urn','annot'
   'L8','', ...
     'findNodeLine{src"PreMorphFoot",find"z==40&y==+10",resample"L1"}','line{linewidth,2,linestyle,--}'
   'L6','', ...
-     'findNodeLine{src"PreMorphFoot",find"z==35&y==-5& x>8&x<92",resample"L3"}','line{linewidth,2}'
+     'findNodeLine{src"PreMorphFoot",find"z==35&y==-5",resample"L3"}','line{linewidth,2}'
   'L7','', ...
-    'findNodeLine{src"PreMorphFoot",find"z==35&y==+5& x>8&x<92",resample"L3"}','line{linewidth,2}'
+    'findNodeLine{src"PreMorphFoot",find"z==35&y==+5",resample"L3"}','line{linewidth,2}'
   'L10','', ...
     ['findNodeLine{src"PreMorphFoot",find"NodeId' sprintf('%i ',n1(:,1)) '",r"unit",resample"L1"}'],'line{linewidth,2,linestyle,--}'
   'L12','', ...
@@ -2158,7 +2162,9 @@ RM=struct('projM',RA.projM,'list',{{'key','ToolTip','urn','annot'
     'QuadStick{x"{L8,L13}",y"5",surf"PreMorphFoot",sel"inelt{selface&facing >.8 0 1e5 1e5}"}','surface{edgealpha,.1,facealpha,1}'
    }},'cf',10);
  RM=fe_shapeoptim('mapGenMorph',RM);
-fecom(c10,'colordatapro-alpha0-edgealpha.2')
+ if isfield(RO,'cf');c10=comgui('guifeplot',RO.cf);end
+fecom(c10,'colordatapro-alpha0-edgealpha.2');figure(c10.opt(1))
+
 RO.xfun=@(x)((x-RO.xyzlim(1))/diff(RO.xyzlim([1 4])))*diff(RO.xValues([1 end]))+RO.xValues(1);
 %n1=feutil('getnode x==-2',mo2);xyz=n1(:,5:7); x=xyz(:,1);y=xyz(:,2);xyz(:,1)=xyz(:,1)-((1-abs(y)/15)).^.2.*(5+10*double(xyz(:,3)<40));fecom('shownodemark',xyz)
 
@@ -2167,20 +2173,51 @@ if isfield(RO,'annot')&&isfield(RO.annot,'L1')
  r2=struct('ColumnName',{{'xr','yr','zr','x','y','z'}},'table',{{
  }},'name','PreMorph');
  for j1=2:size(RM.nSet,1)
-  if isfield(RO.annot,RM.nSet{j1,3})
-   n1=RM.nSet{j1,2};n2=RO.annot.(RM.nSet{j1,3});
+  ev1=vhandle.tab.getValEvt(RM.nSet,j1);% on reference 
+  if isfield(RO.annot,ev1.name)
+   n1=ev1.xyz;n2=RO.annot.(ev1.name);%n1 ref, n2 morphed 
    if size(n1,3)==1 % line
-    n2=interp1(RO.xfun(n2(:,1)),n2,n1(:,1));
-    r2.table(end+(1:size(n1,1)),1:6)=num2cell([n1 n2]);
+    %n2=interp1(RO.xfun(n2(:,1)),n2,n1(:,1));
+    if size(n2,1)~=size(n1,1)
+     n2=interp1(n2(:,1),n2,n1(:,1));
+     %n2=n2(n1(:,1),:);% plane index
+    end
+    if any(~isfinite(n2(:)));warning('%s NaN interp',ev1.name);end
+    RO.annot.(ev1.name)=[n1 n2];
+    r2.table(end+(1:size(n1,1)),1:6)=num2cell(RO.annot.(ev1.name));
    elseif size(n1,3)==3 % surface
     r2.table(end+(1:size(n2,1)),1:6)=num2cell([reshape(n1,size(n2)) n2]);
    end
   end
  end
  % actually morph a foot
+ if 1==2
+  n2=cell2mat(r2.table);
+  i2=sdtm.indNearest(n2(:,1:3),RO.annot.L10(1,1:3));n2(i2,:)
+  r2.table(i2,1:6)=num2cell([ 0   -15    30 -124 1.4 115])
+
+  i2=sdtm.indNearest(n2(:,1:3),RO.annot.L10(end,1:3));n2(i2,:)
+  r2.table(i2,1:6)=num2cell([ 0   -15    30 -124 1.4 115])
+  
+  mo2=fe_shapeoptim('ViewMorph',r2);
+  cg=feplot(11);cg.model=mo2;fecom showfipro;fecom('shownodemark',cell2mat(r2.table(:,4:6)))
+ end
  mo2=fe_shapeoptim('ViewMorph',r2);
  sdtm.store(RA.projM,'mo2>MorphFoot');
 end
+if isfield(RO,'trans')
+ %% use back transformation
+ model=fe_quality('clean{flathex,degenrecast,njstraight-nit2,orient}',RA.projM('MorphFoot'));
+ xyz=model.Node(:,5:7);
+ eval(RA.projM(RO.trans).InverseCb)
+ sdtm.store(RA.projM,'model>Foot');
+end
+if isfield(RO,'Merge')
+ mo2=feutilb('CombineModel',RA.projM(RO.Merge),model);
+ c10=comgui('guifeplot',RO.cf);
+ c10.model=mo2; fecom('showfipro')
+end
+
 
 elseif comstr(Cam,'nacainsert')
  %% #MeshNacaInsert
