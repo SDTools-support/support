@@ -3209,6 +3209,9 @@ if nargout==0||(nargin==3&&isfield(r1,'pl'))
   M(10)=-c(3,1)*M(3); % SDT uses nu31 rather than 13
   if ~isscalar(r1.pl)
      mat=feutil(sprintf('getpl %i -struct1',r1.pl(1)),r1);
+  elseif isfield(r1,'Rho');
+    mat=sdth.sfield('addselected',struct,r1,{'Rho','Eta'});
+    r1=sdtm.rmfield(r1,{'Rho','Eta'});
   else; mat.Rho=1e-10;
   end
   r1.pl=[r1.pl(1) fe_mat('m_elastic;',r1.unit,6) M([1 2 3 7 10 9 4 5 6]) mat.Rho];
