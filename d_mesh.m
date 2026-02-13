@@ -2111,7 +2111,11 @@ mo2.Elt=feutil('setsel matid2 proid2',mo2, ...
   sprintf('matid3&innode{x<%g |x>%g}', ...
    mean([max(RO.mergeX(RO.mergeX<min(r3))),min(r3)]), ...
    mean([max(RO.mergeX(RO.mergeX>max(r3))),max(r3)])));
-   
+
+% avoid warp in some areas
+mo3=mo2; [mo3.Elt,mo2.Elt]=feutil('removeElt withnode{z<=40}',mo3);
+mo2=feutil('hexa2tetra;',mo2);mo2.Elt=feutil('addelt',mo2.Elt,mo3.Elt);
+
 mo2.Node=feutil('getnodegroupall',mo2);
 mo2.name='PreMorphFoot'; sdtm.store(RA.projM,['mo2>' mo2.name]);
 c10=feplot(10,';');c10.model=mo2; 
@@ -2228,6 +2232,8 @@ if isfield(RO,'annot')&&isfield(RO.annot,'L1')
    mo2=feutilb('CombineModel',mo2,RO.annot.(st1{j1}).model);
   end
  end
+ [n1,i2]=feutil('addnode epsl.01',[],mo2.Node);mo2=feutil('renumber',mo2,n1(i2));mo2.Node=n1;
+
  %% assign properties
 'xxx TOP/BOT'
 mo2.Elt=feutil('setsel matid 1021 proid 1021',mo2,'matid 1 5');
