@@ -629,7 +629,7 @@ for j1=1:size(RO.P2Sets,1)
    T2=def.def(i2,:);k2=k(i2,i2);RC.k=k(i2,i2);RC.DOF=SE.DOF(i2);
  end
  RO.curCoor=RO.fe_coor;RO.curSetType=RC.type;if isempty(T2); continue;end
- [T2,RC,RO]=genT2(T2,RC,RO,i2);
+ RO.indActive=i2; [T2,RC,RO]=genT2(T2,RC,RO);
 
  % fecom('shownodemark',{RC.DOF(RC.EdgeDof(:,1)),RC.DOF(RC.EdgeDof(:,2)))})
  % d_dft('viewdebugT2')
@@ -2941,8 +2941,9 @@ else; error('%s',CAM);
 end
 
 
-function [T2,RC,RO]=genT2(T2,RC,RO,i2);
+function [T2,RC,RO]=genT2(T2,RC,RO);
  %% #genT2 : 
+ i2=RO.indActive;
  if strcmpi(RO.curSetType,'keep'); 
   T2=speye(length(i2));
  elseif strcmpi(RO.curSetType,'CaseT'); % Keep full bases on some DOF

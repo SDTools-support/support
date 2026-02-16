@@ -161,7 +161,9 @@ if comstr(Cam,'viewdebug')
    if isfield(T2,'adof')&&iscell(T2.adof)
     d2=struct('def',T3*[T2.Tl T2.Tr T2.Ti],'DOF',SE.DOF,'adof',vertcat(T2.adof{:}));
    elseif isnumeric(T2)
-    d2=struct('def',T2,'DOF',SE.DOF);       
+    d2=struct('def',T2,'DOF',SE.DOF);  
+    if size(d2.def,1)~=size(d2.DOF,1);d2.def=evalin('caller','T3')*T2;end
+    % c10.def=struct('def',T2,'DOF',RC.DOF)
    end
  if comstr(Cam,'t2')
    c10.def=d2;
