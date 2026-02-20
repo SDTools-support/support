@@ -343,9 +343,10 @@ else
  for jpar=1:size(RO.RangeNc.val,1)
   sp_util('setinput',RO.follow,jpar/size(RO.RangeNc.val,1),zeros(1));
   R1=RO.RangeNc; R1.val=R1.val(jpar,:);
+  R1=sdth.sfield('addselected',R1,RO,'ModalFilter');
   if isfield(RO,'UseLong');R1.UseLong=RO.UseLong;end
   d1=feval(RO.EigFcn{:},R1,SE);%fe_homo('dftEig')
-  if isfield(R1,'ModalFilter')&&R1.ModalFilter==R1.val(1)
+  if isfield(R1,'ModalFilter')&&abs(R1.ModalFilter-R1.val(1))<1e-4
     m=SE.K{1};z=spalloc(size(m,1),size(m,2),1);k=SE.K{2};
     m=[m z;z m];k=[k z;z k];%feutilb('dtkt',[real(d1.def);imag(d1.def)],{m,k})    
     d1.Filter=d1;
@@ -362,11 +363,29 @@ else
       RO.nM=size(d1.def,2);def=fe_def('subdef',def,1:RO.nM);
   end
   def=fe_def('appendDef',def,d1);
+  def=sdth.sfield('addselected',def,d1,'Filter');
  end
 end
 
 try
+ Nm=size(d1.def,2);
  i1=reshape(1:size(def.def,2),[],size(RO.RangeNc.val,1))';
+ if isfield(def,'Filter')
+  for j2=size(i1,1):-1:1
+   r2=d1.Filter.pdef*def.def(:,Nm*j2+(-Nm+1:0));
+   r2=abs(r2(1:2:end,:))+abs(r2(2:2:end,:));
+   [~,i2]=max(r2); 
+   if length(unique(i2))~=length(i2); 
+    for j3=2:length(i2)
+    end
+    reshape(def.data(i1,1),size(i1,1),[]);figure(1);plot(1./Range.ncx(1:j2),ans(1:j2,1:5),':o')
+    1;
+   end
+   i1(j2,i2)=i1(j2,:);
+  end
+  %rs=@(x)reshape(x,size(i1,1),[]);figure(1);plot(rs(1./Range.ncx(def.data(i1(:,1:4),2))),rs(def.data(i1(:,1:4),1)),'o')
+ end
+ 
  def=fe_def('subdef',def,reshape(i1,[],1));
  ph=reshape(def.data(:,2),size(RO.RangeNc.val,1),[]); 
  RO.NeedHist=1;
