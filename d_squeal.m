@@ -2987,6 +2987,10 @@ elseif comstr(Cam,'load');[CAM,Cam]=comstr(CAM,5);
     wire=fe_sens('MeshSub',wire,RA.rmPoints(:));
     d1=feutilb('placeindof',wire.tdof(:,1),d1);
    end
+   if isfield(RA,'rmSensInd')&&~isempty(RA.rmSensInd)
+    wire.tdof(RA.rmSensInd,:)=[];
+    d1=feutilb('placeindof',wire.tdof(:,1),d1);
+   end
    out=struct('TEST',wire); out1=d1; out2=[];
   else % polytec files
    RA.FastScan=sdtm.regContains(f1,'(TimeScan|FastScan)');
