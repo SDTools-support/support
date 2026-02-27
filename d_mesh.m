@@ -988,33 +988,9 @@ else; error('Command d_mesh BeamGen%s unknown',CAM);
 end
 out=model;
 elseif comstr(Cam,'track'); [CAM,Cam]=comstr(CAM,5);
- %% #BeamTrack : standard track model -----------------3
+ %% #BeamTrack : standard track model (beam/spring/mass) -----------------3
  
- [~,RO]=sdtm.urnPar(CAM,['ms(130#%g#"sleeper mass")' ...
-   'kb(70e3#%g#"ballast stiffness")' ...
-   'ncell(15#%g#"number of sleepers")' ...
-   'unit(SI#%s#"unit system")' ...
-   'lc(.15#%g#"refine length")' ...
-   'pk(75e3#%g#"pad stiffness")']);
- if length(RO.ncell)<2;RO.ncell(2)=0;end
- if ~isfield(RO,'xsens'); RO.xsens=[];end
-
- model=struct('Node',[1  0 0 0   -.3 0 0; % first rail node
-                     2  0 0 0     0 0 0;  % center rail node
-                     %3  0 0 0    .3 0 0; % end rail node (not used)
-                     4  0 0 0     0 0 -.07;
-                     5  0 0 0     0 0 -.07-.22], ...
-    'Elt',[%Inf abs('beam1');1 2 100 100 0 0;2 3 100 100 0 0;% Rail
-           Inf abs('celas') 0;2 4 -3 0 200 0 0;4 5 -3 0 300 0 0;
-           Inf abs('mass1') 0; 4 RO.ms*[1 1 1]  0 0 0]);
-model=feutil(sprintf('RepeatSel %i .6 0 0',RO.ncell(1)),model);
-
-% Now add rail
-x=[model.Node(:,5); RO.xsens(:)]; if isfield(RO,'addMass');x=[x;vertcat(RO.addMass{:,1})];end
-x=sort(unique(round(x*1000)))/1000;
-x=feutil(sprintf('refineline%.15g',RO.lc),[x(1)-.3;x;x(end)+.3]);
-[model.Node,i1]=feutil('addnode',model.Node,x*[1 0 0]);i1=model.Node(i1,1);
-model=feutil('addelt',model,'beam1',[i1(1:end-1) i1(2:end) ones(length(i1)-1,2)*100]);
+ error('Move to d_rail MeshBeamMass')
 out=model;
 
 %% #BeamEnd
