@@ -2036,7 +2036,12 @@ RO.projM('skin')=skin;
 elseif comstr(Cam,'nacafootref')
  %% #MeshNacaFootRef
   [~,RO]=sdtm.urnPar(CAM,'{}{Clean%31,trans%s,Merge%s,cf%i}');
-  RA=evalin('base','RA');
+  if evalin('caller','exist(''RA'',''var'')&&isfield(RA,''projM'')')
+   RA=evalin('caller','RA');
+  elseif evalin('base','exist(''RA'',''var'')&&isfield(RA,''projM'')');
+   RA=evalin('base','RA');
+  else; warning('Missing RA.projM skipping');return;
+  end
   toNode=@(x)[x(:,1) zeros(size(x,1),3) x(:,2:4)];
   n1=[1 0  -10 80; 2 0  -5 80; 3 0  5 80; 4 0 10 80
       5 0  -10 40; 6 0  -5 35; 7 0  5 35; 8 0 10 40; 
@@ -2055,7 +2060,7 @@ RO.xyzlim=[Inf Inf Inf -Inf -Inf -Inf];
 if ~ishandle(2);h=[];else;h=findobj(2,'tag','annot');end
 RO.xValues=[-2 8 linspace(10,90,5) 92 102];
 RO.mergeX=[-2 8 92 102];RO.ForInsert='withnode{z<50&x>10&x<90}';
-sdt=getappdata(ancestor(h(1),'figure'),'sdt');
+if isempty(h);sdt=[];else;sdt=getappdata(ancestor(h(1),'figure'),'sdt');end
 if isfield(sdt,'annot');RO.annot=sdt.annot;end
 for j1=1:length(h);
  st1=get(h(j1),'DisplayName');
