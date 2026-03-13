@@ -4435,7 +4435,7 @@ elseif comstr(Cam,'pcond')
  
 %% #TutoDo: recover model from a specific tuto step
 elseif comstr(Cam,'tuto'); 
- eval(sdtweb('_tuto',struct('file','d_piezo','CAM',CAM)));
+ r1=dbstack;eval(sdtweb('_tuto',struct('file',r1(1).name,'CAM',CAM)));
  if nargout==0; clear out; end
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
