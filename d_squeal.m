@@ -26,6 +26,7 @@ if nargin==0
   
  else % allow auto testing
   d_squeal('ScriptSimple')
+  if exist('sd','file')&&sd('_user','balmes');sdtroot('setProject',struct('Report',''));end
   d_squeal('ScriptFromABQ')
   % need MVR example
   
