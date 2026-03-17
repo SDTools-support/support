@@ -20,3 +20,4 @@ jup/_toc.yml
 /jup/_tempGM
 __pycache__/sdtpygments.cpython-311.pyc
 jup/__pycache__/sdtlexer.cpython-311.pyc
+/jup/__pycache__

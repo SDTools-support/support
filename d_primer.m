@@ -453,7 +453,7 @@ end
 elseif comstr(Cam,'@');out=eval(CAM);
 %% #TutoDo: recover model from a specific tuto step -3
 elseif comstr(Cam,'tuto'); 
- eval(sdtweb('_tuto',struct('file','d_primer','CAM',CAM)));
+ r1=dbstack;eval(sdtweb('_tuto',struct('file',r1(1).name,'CAM',CAM)));
  if nargout==0; clear out; end
 
 elseif comstr(Cam,'cvs')
