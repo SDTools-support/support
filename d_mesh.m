@@ -2232,6 +2232,7 @@ if isfield(RO,'trans')
  eval(RA.projM(RO.trans).InverseCb)
  sdtm.store(RA.projM,'model>Foot');
 end
+if ~isfield(RO,'cf');RO.cf=10;end
 c10=comgui('guifeplot',RO.cf);
 if isfield(RO,'Merge')
  mo2=feutilb('CombineModel CompatMatPro',RA.projM(RO.Merge),model);

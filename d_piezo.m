@@ -25,7 +25,7 @@ if comstr(Cam,'buildc1');
   r1=varargin{2};
   C1=struct('X',[],'Xlab',[],'Y',[]);
   w=varargin{3};
-  if isa(r1,'ss')
+  if isa(r1,'ss')||isa(r1,'sparss')
     C1.Y=freqresp(r1,w); C1.Y=permute(C1.Y,[3 1 2]); 
     C1.X{1}=w(:)/2/pi;C1.Xlab{1}={'Frequency','Hz',[18 0 0 0 -1]};
     C1.X{2}=r1.OutputName;C1.Xlab{2}='Out';
