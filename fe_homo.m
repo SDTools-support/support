@@ -6,11 +6,11 @@ function [out,out1,out2]=fe_homo(varargin)
 % EXPERIMENTAL utilities that are not included in SDT. 
 % SDTools thus does not guarantee that support will be provided.
 %
-% See <a href="matlab: sdtweb _taglist fe_homo">TagList</a>
+% See <a href="matlab: sdtweb _taglist fe_homo">TagList</a> <a href="matlab:fe_homo keywords">Keywords</a>
 
 
 %       E. Balmes
-%       Copyright (c) 1990-2025 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2026 by SDTools, All Rights Reserved.
 %       For revision information use fe_homo('cvs')
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
@@ -2352,7 +2352,17 @@ end
 
 
 %% #end ------------------------------------------------------------------- -2
-elseif comstr(Cam,'@');out=eval(CAM);
+elseif comstr(Cam,'pcin')
+  %% #pcin needs robust implementation
+  out='';
+elseif comstr(Cam,'keywords');
+  %% #keywords -2
+  tagI=sdth.urn('tagI');
+  if ~isKey(tagI.tagM,'var.plylist')&&exist('fevisco','file')
+      sdtu.idx.pile('visc'); 
+  end
+  sdtu.idx.keywords(dbstack,[],varargin{2:end});
+
 elseif comstr(Cam,'cvs')
  out=sdtcheck('revision');
  %out='$Revision: 530 $  $Date: 2020-12-11 11:10:34 +0100 (Fri, 11 Dec 2020) $'; 
@@ -3193,24 +3203,24 @@ case {'pbc','kubc','simpleload'}
 case 'mubc'
   %%CL INNER FACE NORMAL X
   NodesFace=sort(data.IntNodes(:));
-  d1={'exx',struct('dir',{{'x'}},'DOF',[.01]), ...
-   struct('dir',{{'0'}},'DOF',[.02]), ...
-   struct('dir',{{'0'}},'DOF',[.03])
-   'eyy',struct('dir',{{'0'}},'DOF',[.01]), ...
-   struct('dir',{{'y'}},'DOF',[.02]), ...
-   struct('dir',{{'0'}},'DOF',[.03])
-   'ezz',struct('dir',{{'0'}},'DOF',[.01]), ...
-   struct('dir',{{'0'}},'DOF',[.02]), ...
-   struct('dir',{{'z'}},'DOF',[.03])
-   'eyz',struct('dir',{{'0'}},'DOF',[.01]), ...
+  d1={'exx',struct('dir',{{'x'}},'DOF',.01), ...
+   struct('dir',{{'0'}},'DOF',.02), ...
+   struct('dir',{{'0'}},'DOF',.03)
+   'eyy',struct('dir',{{'0'}},'DOF',.01), ...
+   struct('dir',{{'y'}},'DOF',.02), ...
+   struct('dir',{{'0'}},'DOF',.03)
+   'ezz',struct('dir',{{'0'}},'DOF',.01), ...
+   struct('dir',{{'0'}},'DOF',.02), ...
+   struct('dir',{{'z'}},'DOF',.03)
+   'eyz',struct('dir',{{'0'}},'DOF',.01), ...
    struct('dir',{{'0','y/2'}},'DOF',[.01;.03]), ...
    struct('dir',{{'0','z/2'}},'DOF',[.01;.02])
    'ezx',struct('dir',{{'0','x/2'}},'DOF',[.02;.03]), ...
-   struct('dir',{{'0'}},'DOF',[.02]), ...
+   struct('dir',{{'0'}},'DOF',.02), ...
    struct('dir',{{'z/2','0'}},'DOF',[.01;.02])
    'exy',struct('dir',{{'x/2','0'}},'DOF',[.02;.03]), ...
    struct('dir',{{'y/2','0'}},'DOF',[.01;.03]), ...
-   struct('dir',{{'0'}},'DOF',[.03])
+   struct('dir',{{'0'}},'DOF',.03)
    };
   d2=struct('def',zeros(length(model.DOF),size(d1,1)),'DOF',model.DOF);
   d2.lab=d1(:,1); 
@@ -3249,8 +3259,13 @@ function  r2=histToId(RO,def)
  r1=struct('dd',C1); 
 
  function   r1=toOrtho(C1,Range,r1);
-%% #toOrtho : extract orthotropic moduli
-
+%{
+```DocString {module=base} -2
+toOrtho:  extract orthotropic moduli
+```keywords
+{var{},fcn{dvisco.tutomatortho}}
+%}
+%%
 if nargin==1||(nargin==3&&isfield(r1,'pl'))
  %dd stiffness matrix, c softness 
  c=inv(C1);
