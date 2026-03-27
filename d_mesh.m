@@ -991,33 +991,9 @@ else; error('Command d_mesh BeamGen%s unknown',CAM);
 end
 out=model;
 elseif comstr(Cam,'track'); [CAM,Cam]=comstr(CAM,5);
- %% #BeamTrack : standard track model -----------------3
+ %% #BeamTrack : standard track model (beam/spring/mass) -----------------3
  
- [~,RO]=sdtm.urnPar(CAM,['ms(130#%g#"sleeper mass")' ...
-   'kb(70e3#%g#"ballast stiffness")' ...
-   'ncell(15#%g#"number of sleepers")' ...
-   'unit(SI#%s#"unit system")' ...
-   'lc(.15#%g#"refine length")' ...
-   'pk(75e3#%g#"pad stiffness")']);
- if length(RO.ncell)<2;RO.ncell(2)=0;end
- if ~isfield(RO,'xsens'); RO.xsens=[];end
-
- model=struct('Node',[1  0 0 0   -.3 0 0; % first rail node
-                     2  0 0 0     0 0 0;  % center rail node
-                     %3  0 0 0    .3 0 0; % end rail node (not used)
-                     4  0 0 0     0 0 -.07;
-                     5  0 0 0     0 0 -.07-.22], ...
-    'Elt',[%Inf abs('beam1');1 2 100 100 0 0;2 3 100 100 0 0;% Rail
-           Inf abs('celas') 0;2 4 -3 0 200 0 0;4 5 -3 0 300 0 0;
-           Inf abs('mass1') 0; 4 RO.ms*[1 1 1]  0 0 0]);
-model=feutil(sprintf('RepeatSel %i .6 0 0',RO.ncell(1)),model);
-
-% Now add rail
-x=[model.Node(:,5); RO.xsens(:)]; if isfield(RO,'addMass');x=[x;vertcat(RO.addMass{:,1})];end
-x=sort(unique(round(x*1000)))/1000;
-x=feutil(sprintf('refineline%.15g',RO.lc),[x(1)-.3;x;x(end)+.3]);
-[model.Node,i1]=feutil('addnode',model.Node,x*[1 0 0]);i1=model.Node(i1,1);
-model=feutil('addelt',model,'beam1',[i1(1:end-1) i1(2:end) ones(length(i1)-1,2)*100]);
+ error('Move to d_rail MeshBeamMass')
 out=model;
 
 %% #BeamEnd
@@ -2063,7 +2039,12 @@ RO.projM('skin')=skin;
 elseif comstr(Cam,'nacafootref')
  %% #MeshNacaFootRef
   [~,RO]=sdtm.urnPar(CAM,'{}{Clean%31,trans%s,Merge%s,cf%i}');
-  RA=evalin('base','RA');
+  if evalin('caller','exist(''RA'',''var'')&&isfield(RA,''projM'')')
+   RA=evalin('caller','RA');
+  elseif evalin('base','exist(''RA'',''var'')&&isfield(RA,''projM'')');
+   RA=evalin('base','RA');
+  else; warning('Missing RA.projM skipping');return;
+  end
   toNode=@(x)[x(:,1) zeros(size(x,1),3) x(:,2:4)];
   n1=[1 0  -10 80; 2 0  -5 80; 3 0  5 80; 4 0 10 80
       5 0  -10 40; 6 0  -5 35; 7 0  5 35; 8 0 10 40; 
@@ -2082,7 +2063,7 @@ RO.xyzlim=[Inf Inf Inf -Inf -Inf -Inf];
 if ~ishandle(2);h=[];else;h=findobj(2,'tag','annot');end
 RO.xValues=[-2 8 linspace(10,90,5) 92 102];
 RO.mergeX=[-2 8 92 102];RO.ForInsert='withnode{z<50&x>10&x<90}';
-sdt=getappdata(ancestor(h(1),'figure'),'sdt');
+if isempty(h);sdt=[];else;sdt=getappdata(ancestor(h(1),'figure'),'sdt');end
 if isfield(sdt,'annot');RO.annot=sdt.annot;end
 for j1=1:length(h);
  st1=get(h(j1),'DisplayName');
@@ -2254,6 +2235,7 @@ if isfield(RO,'trans')
  eval(RA.projM(RO.trans).InverseCb)
  sdtm.store(RA.projM,'model>Foot');
 end
+if ~isfield(RO,'cf');RO.cf=10;end
 c10=comgui('guifeplot',RO.cf);
 if isfield(RO,'Merge')
  mo2=feutilb('CombineModel CompatMatPro',RA.projM(RO.Merge),model);
@@ -2908,7 +2890,7 @@ projM('Naca')=RA;
 elseif comstr(Cam,'@');out=eval(CAM);
 %% #Tuto: recover model from a specific tuto step -3
 elseif comstr(Cam,'tuto'); 
- eval(sdtweb('_tuto',struct('file','d_mesh','CAM',CAM)));
+ r1=dbstack;eval(sdtweb('_tuto',struct('file',r1(1).name,'CAM',CAM)));
  if nargout==0; clear out; end
 
 elseif comstr(Cam,'cvs')

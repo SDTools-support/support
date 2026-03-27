@@ -2987,6 +2987,10 @@ elseif comstr(Cam,'load');[CAM,Cam]=comstr(CAM,5);
     wire=fe_sens('MeshSub',wire,RA.rmPoints(:));
     d1=feutilb('placeindof',wire.tdof(:,1),d1);
    end
+   if isfield(RA,'rmSensInd')&&~isempty(RA.rmSensInd)
+    wire.tdof(RA.rmSensInd,:)=[];
+    d1=feutilb('placeindof',wire.tdof(:,1),d1);
+   end
    out=struct('TEST',wire); out1=d1; out2=[];
   else % polytec files
    RA.FastScan=sdtm.regContains(f1,'(TimeScan|FastScan)');
@@ -3365,7 +3369,7 @@ end
 %% #Admin
 %% #Tuto: recover model from a specific tuto step -2
 elseif comstr(Cam,'tuto'); 
- eval(sdtweb('_tuto',struct('file','d_squeal','CAM',CAM)));
+ r1=dbstack;eval(sdtweb('_tuto',struct('file',r1(1).name,'CAM',CAM)));
  if nargout==0; clear out; end
 elseif comstr(Cam,'cvs')
   out=sdtcheck('revision','$Revision: cf99d9b $  $Date: 2024-06-05 14:54:56 +0200 $ ');

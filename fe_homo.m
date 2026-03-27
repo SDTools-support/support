@@ -6,11 +6,11 @@ function [out,out1,out2]=fe_homo(varargin)
 % EXPERIMENTAL utilities that are not included in SDT. 
 % SDTools thus does not guarantee that support will be provided.
 %
-% See <a href="matlab: sdtweb _taglist fe_homo">TagList</a>
+% See <a href="matlab: sdtweb _taglist fe_homo">TagList</a> <a href="matlab:fe_homo keywords">Keywords</a>
 
 
 %       E. Balmes
-%       Copyright (c) 1990-2025 by SDTools, All Rights Reserved.
+%       Copyright (c) 1990-2026 by SDTools, All Rights Reserved.
 %       For revision information use fe_homo('cvs')
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
@@ -19,6 +19,8 @@ elseif ~ischar(varargin{1});
   obj=varargin{1};evt=varargin{2};[CAM,Cam]=comstr(varargin{3},1); carg=24;
 else; [CAM,Cam]=comstr(varargin{1},1); carg=2;
 end
+projM=[];if isfield(varargin{end},'projM');projM=varargin{end}.projM;end    
+
 
 if comstr(Cam,'@');out=eval(CAM);
 %% #DFT : periodic computations assuming propagating waves
@@ -221,11 +223,11 @@ else  % Default wave in x direction
    if ~isfield(data,'IntZNodes');Range.val(:,3)=[];Range.lab(3)=[];end
    if ~isfield(data,'IntYNodes');Range.val(:,2)=[];Range.lab(2)=[];end
 end
-    
 if carg<=nargin&&isstruct(varargin{carg}); RO=varargin{carg};carg=carg+1;end
 [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
    'UseLong(#3#"Use long storage") ' ...
    'FRF(0#3#"Compute FRF") ' ...
+   'EigOpt([]#%g#"eigenvalue options") ' ...
    ],{RO,CAM});Cam=lower(CAM); %#ok<NBRAK>
 
 def=[];
@@ -269,7 +271,9 @@ cingui('timerStart', ...
    'h',waitbar(0,'PerDfrf'),'StartDelay',5, ...
    'StopFcn','if ishandle(uo.h);delete(uo.h);end'),RO.follow);
 end
-    
+if isfield(RO,'EigOpt')&&~isempty(RO.EigOpt);
+    SE=stack_set(SE,'info','EigOpt',RO.EigOpt);
+end
 if RO.FRF 
  %% #DftDispFrf Case where shapes are computed too -3
  ofact silent
@@ -343,9 +347,10 @@ else
  for jpar=1:size(RO.RangeNc.val,1)
   sp_util('setinput',RO.follow,jpar/size(RO.RangeNc.val,1),zeros(1));
   R1=RO.RangeNc; R1.val=R1.val(jpar,:);
+  R1=sdth.sfield('addselected',R1,RO,'ModalFilter');
   if isfield(RO,'UseLong');R1.UseLong=RO.UseLong;end
   d1=feval(RO.EigFcn{:},R1,SE);%fe_homo('dftEig')
-  if isfield(R1,'ModalFilter')&&R1.ModalFilter==R1.val(1)
+  if isfield(R1,'ModalFilter')&&abs(R1.ModalFilter-R1.val(1))<1e-4
     m=SE.K{1};z=spalloc(size(m,1),size(m,2),1);k=SE.K{2};
     m=[m z;z m];k=[k z;z k];%feutilb('dtkt',[real(d1.def);imag(d1.def)],{m,k})    
     d1.Filter=d1;
@@ -362,11 +367,29 @@ else
       RO.nM=size(d1.def,2);def=fe_def('subdef',def,1:RO.nM);
   end
   def=fe_def('appendDef',def,d1);
+  def=sdth.sfield('addselected',def,d1,'Filter');
  end
 end
 
 try
+ Nm=size(d1.def,2);
  i1=reshape(1:size(def.def,2),[],size(RO.RangeNc.val,1))';
+ if isfield(def,'Filter')
+  for j2=size(i1,1):-1:1
+   r2=d1.Filter.pdef*def.def(:,Nm*j2+(-Nm+1:0));
+   r2=abs(r2(1:2:end,:))+abs(r2(2:2:end,:));
+   [~,i2]=max(r2); 
+   if length(unique(i2))~=length(i2); 
+    for j3=2:length(i2)
+    end
+    %reshape(def.data(i1,1),size(i1,1),[]);figure(1);plot(1./Range.ncx(1:j2),ans(1:j2,1:5),':o')
+    1;
+   end
+   i1(j2,i2)=i1(j2,:);
+  end
+  %rs=@(x)reshape(x,size(i1,1),[]);figure(1);plot(rs(1./Range.ncx(def.data(i1(:,1:4),2))),rs(def.data(i1(:,1:4),1)),'o')
+ end
+ 
  def=fe_def('subdef',def,reshape(i1,[],1));
  ph=reshape(def.data(:,2),size(RO.RangeNc.val,1),[]); 
  RO.NeedHist=1;
@@ -397,7 +420,10 @@ def.Range.param.ncx=struct('LabFcn', ...
      'sprintf('' %i@lx=%.2f m'',nnz(def.data(1:ch,2)==def.data(ch,2)),val)');
 end
 
-out=def;
+out=def; 
+if ~isempty(projM)&&nargout==0;
+    sdtm.store(projM,'{def>CurDftDef,SE>CurModel}');
+end
 if RO.NeedHist
  data=fe_case(model,'getdata','Symmetry');
  i1=strcmpi(def.Range.lab,'kx');
@@ -428,6 +454,7 @@ if RO.NeedHist
  hist.Range.CellDir=RO.cyc.CellDir;
  hist.X{2}=(1:size(hist.Y,2))'; % Mode indices
  out1=hist;
+ if ~isempty(projM)&&nargout==0; sdtm.store(projM,'hist>CurHist');end
 else;out1=[];
 end
 
@@ -1239,9 +1266,14 @@ if comstr(Cam,'initseldef');[CAM,Cam]=comstr(CAM,11);
 %% #DfpInitSelDef : initialize for viewing of deformations
 
 model=varargin{carg};carg=carg+1;
-def=varargin{carg};carg=carg+1;
-if carg<=nargin;RO=varargin{carg};carg=carg+1;
-else; RO=struct;
+if isfield(model,'projM')
+ RO=projM('fe_homo.dftInitSelDef');
+ model=projM('CurModel'); def=projM('CurDftDef');hist=projM('CurHist');
+else
+ def=varargin{carg};carg=carg+1;
+ if carg<=nargin;RO=varargin{carg};carg=carg+1;
+ else; RO=struct;
+ end
 end
 if nargout>0; 
 elseif isfield(RO,'cf');
@@ -1389,16 +1421,23 @@ end
 if nargout==0;
     if isfield(RO,'cf');cf=RO.cf;else;cf=feplot;end
     cf.DefF={};cf.SelF{1}=sel;
-    cf.def=d1;clf(cf.opt(1));feplot
+    cf.def=d1;clf(cf.opt(1));
+    if ~isfield(RO,'cfos'); RO.cfos={'d.',{'FiCevalZ'},'p.',{'ImToFigN','WrW49c'}};end
+    sdth.os(cf.opt(1),RO.cfos{:});
+
 else;out=sel;
 end
+if ~isfield(RO,'cios'); RO.cios={'d.',{'ImGrid'},'p.',{'ImToFigN','WrW49c'}};end
 if isfield(RO,'ci')&&isfield(RO,'sens')&&strcmpi(RO.type,'dfrf')
  %% Display 2DFRF
  ci=comgui('guiiiplot',RO.ci);
  fe_homo('dfpSensObserve -dimpos 2 3 1',model,RO.sens,def, ...
      struct('ktype',RO.ktype,'PlotInfo','surface','ci',ci))
-elseif isfield(RO,'ViewHist') % Also display dispersion diag 
+elseif isfield(RO,'ViewHist')||isfield(RO,'ci') % Also display dispersion diag 
+ if ~isfield(RO,'ViewHist');RO.ViewHist=hist;end
  fe_homo('dfpViewHist',RO,RO.ViewHist);
+ if isfield(RO,'ci');sdth.os(RO.ci,RO.cios{:});end
+
 end
 
 
@@ -1418,12 +1457,13 @@ r1=hist.X{1};st=hist.Xlab{1};
 if iscell(st);st(~cellfun(@ischar,st))=[];
     if length(st)>1;st=sprintf('%s [%s]',st{1:2});else; st=st1{1};end
 end
+if isfield(RO,'fmax');hist.Y(hist.Y>RO.fmax)=NaN;end
 if size(hist.Y,3)==2 % If markers defined loop on markers
  r2=unique(hist.Y(:,:,2)); marker={'or','+g','db','sk','^m','<c','vy'};
  li={}; 
  for j1=1:length(r2);
      r3=hist.Y(:,:,1);r3(hist.Y(:,:,2)~=r2(j1))=NaN;
-     li(j1*3+[-2:0])={r3,r1,marker{remi(j1,length(marker))}};
+     li(j1*3+(-2:0))={r3,r1,marker{remi(j1,length(marker))}};
  end
  plot(li{:});xlabel('Omega [Hz]');ylabel(st);
 elseif norm(hist.Y(isfinite(hist.Y)),'inf')>1e4&&size(hist.Y,3)==1
@@ -1442,10 +1482,30 @@ end
 
 
 elseif comstr(Cam,'viewcurve');
-%% #DfpViewCurve : curve model for Q(n,omega) viewing in slice
-%  For Q(k,omega) viewing use fe_homo('dfpSensObserve')
-% Build a curvemodel for freq at DOF observation
-% see dyn_post('PerFEII')
+%% # : 
+
+%{
+```DocString {module=base} -2
+DfpViewCurve:  curve model for Q(n,omega) viewing in slice
+ For Q(k,omega) viewing use fe_homo('dfpSensObserve')
+ Build a curvemodel for freq at DOF observation
+ see dyn_post('PerFEII')
+```STX
+[out1,out2]=feutil(cmd,inp1);
+out3=feutil(cmd,inp1,inp2);
+```INP
+cmd (cmd (+xxxStxName) ): xxxSupplementaryDescription
+inp1 (xxxdtype): xxxDescription
+inp2 (xxxdtype): xxxDescription
+```OUT
+out1 (xxxdtype): xxxDescription
+out2 (xxxdtype): xxxDescription
+out2 (xxxdtype): xxxDescription
+```EXAMPLE
+t_cyclic('DftPerRed')
+%}
+%%
+
 def=varargin{carg};carg=carg+1;%d2=cf.def.def;def=d2.Source; 
 if carg<=nargin; RO=varargin{carg};carg=carg+1;
 else; RO=struct;end
@@ -1453,20 +1513,21 @@ if isfield(RO,'CurInd');
 elseif isfield(RO,'DOF');
   RO.CurInd=fe_c(def.DOF,RO.DOF,'ind');
   RO.CurInd(rem(def.DOF(RO.CurInd),1)>.5)=[];% Not the long DOF
-elseif isfield(RO,'sens');def.CurInd=1:size(RO.sens.cta,1);
+elseif isfield(RO,'sens');def.CurInd=1:size(RO.sens.cta,1);RO.CurInd=def.CurInd;
 else; RO.CurInd=1:3;
 end
 if ~isfield(RO,'mno');RO.mno=0;end
+if isfield(RO,'sens') % Observe as pseudo DOF to allow recombine
+   def.def=[RO.sens.cta*def.def(1:size(RO.sens.cta,2),:);
+       RO.sens.cta*def.def(size(RO.sens.cta,2)+1:end,:)];
+   %def.DOF=(1:size(RO.sens.cta,1))'+.01; def.DOF=[def.DOF;def.DOF+.5];
+   def.DOF=RO.sens.tdof(:,1); def.DOF=[def.DOF;def.DOF+.5];
+   def.CurInd=1:size(RO.sens.cta,1);
+else; def.CurInd=RO.CurInd;
+end
 
 if isfield(RO,'type')&&strncmpi(RO.type,'cfrf',4)
  %% Cfrfb : recompose all kappa
- if isfield(RO,'sens') % Observe as pseudo DOF to allow recombine
-   def.def=[RO.sens.cta*def.def(1:size(RO.sens.cta,2),:);
-       RO.sens.cta*def.def(size(RO.sens.cta,2)+1:end,:)];
-   def.DOF=(1:size(RO.sens.cta,1))'+.01; def.DOF=[def.DOF;def.DOF+.5];
-   def.CurInd=1:size(RO.sens.cta,1);
- else; def.CurInd=RO.CurInd;
- end
  fun=fe_homo('@DftRest'); 
  def.Rest=struct('mno',RO.mno,'kcx',dftu('getx',def,struct('lab',{{'kcx'}})), ...
      'type',RO.type);
@@ -2291,7 +2352,17 @@ end
 
 
 %% #end ------------------------------------------------------------------- -2
-elseif comstr(Cam,'@');out=eval(CAM);
+elseif comstr(Cam,'pcin')
+  %% #pcin needs robust implementation
+  out='';
+elseif comstr(Cam,'keywords');
+  %% #keywords -2
+  tagI=sdth.urn('tagI');
+  if ~isKey(tagI.tagM,'var.plylist')&&exist('fevisco','file')
+      sdtu.idx.pile('visc'); 
+  end
+  sdtu.idx.keywords(dbstack,[],varargin{2:end});
+
 elseif comstr(Cam,'cvs')
  out=sdtcheck('revision');
  %out='$Revision: 530 $  $Date: 2020-12-11 11:10:34 +0100 (Fri, 11 Dec 2020) $'; 
@@ -3132,24 +3203,24 @@ case {'pbc','kubc','simpleload'}
 case 'mubc'
   %%CL INNER FACE NORMAL X
   NodesFace=sort(data.IntNodes(:));
-  d1={'exx',struct('dir',{{'x'}},'DOF',[.01]), ...
-   struct('dir',{{'0'}},'DOF',[.02]), ...
-   struct('dir',{{'0'}},'DOF',[.03])
-   'eyy',struct('dir',{{'0'}},'DOF',[.01]), ...
-   struct('dir',{{'y'}},'DOF',[.02]), ...
-   struct('dir',{{'0'}},'DOF',[.03])
-   'ezz',struct('dir',{{'0'}},'DOF',[.01]), ...
-   struct('dir',{{'0'}},'DOF',[.02]), ...
-   struct('dir',{{'z'}},'DOF',[.03])
-   'eyz',struct('dir',{{'0'}},'DOF',[.01]), ...
+  d1={'exx',struct('dir',{{'x'}},'DOF',.01), ...
+   struct('dir',{{'0'}},'DOF',.02), ...
+   struct('dir',{{'0'}},'DOF',.03)
+   'eyy',struct('dir',{{'0'}},'DOF',.01), ...
+   struct('dir',{{'y'}},'DOF',.02), ...
+   struct('dir',{{'0'}},'DOF',.03)
+   'ezz',struct('dir',{{'0'}},'DOF',.01), ...
+   struct('dir',{{'0'}},'DOF',.02), ...
+   struct('dir',{{'z'}},'DOF',.03)
+   'eyz',struct('dir',{{'0'}},'DOF',.01), ...
    struct('dir',{{'0','y/2'}},'DOF',[.01;.03]), ...
    struct('dir',{{'0','z/2'}},'DOF',[.01;.02])
    'ezx',struct('dir',{{'0','x/2'}},'DOF',[.02;.03]), ...
-   struct('dir',{{'0'}},'DOF',[.02]), ...
+   struct('dir',{{'0'}},'DOF',.02), ...
    struct('dir',{{'z/2','0'}},'DOF',[.01;.02])
    'exy',struct('dir',{{'x/2','0'}},'DOF',[.02;.03]), ...
    struct('dir',{{'y/2','0'}},'DOF',[.01;.03]), ...
-   struct('dir',{{'0'}},'DOF',[.03])
+   struct('dir',{{'0'}},'DOF',.03)
    };
   d2=struct('def',zeros(length(model.DOF),size(d1,1)),'DOF',model.DOF);
   d2.lab=d1(:,1); 
@@ -3188,8 +3259,13 @@ function  r2=histToId(RO,def)
  r1=struct('dd',C1); 
 
  function   r1=toOrtho(C1,Range,r1);
-%% #toOrtho : extract orthotropic moduli
-
+%{
+```DocString {module=base} -2
+toOrtho:  extract orthotropic moduli
+```keywords
+{var{},fcn{dvisco.tutomatortho}}
+%}
+%%
 if nargin==1||(nargin==3&&isfield(r1,'pl'))
  %dd stiffness matrix, c softness 
  c=inv(C1);
