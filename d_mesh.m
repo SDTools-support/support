@@ -70,9 +70,10 @@ cf=comgui('guifeplot -project "SDT Root"',3); % Robust open in figure(3)
 cf.model=model;       % create feplot axes
 fecom(';view2;textnode;triax;'); % manipulate axes 
 
-%% Step2 FeutilMesh ----------------------------------------------------------
-% In practice you will generally prefer to generate the model using FEUTIL
+%% Step2 FeutilMesh : use feutil commands
+% In practice you will generally prefer to generate the model using feutil
 % in this case this can be done as follows
+% keywords{var{model},fcn{feutil}}
 
  model=struct('Node',[],'Elt',[]); % initialize empty model
 
@@ -110,6 +111,8 @@ fecom(';view2;textnode;triax;'); % manipulate axes
  
  
 %% Step4 : discuss beam orientation
+% keywords{var{},fcn{beam1,p_beam}}
+
  model.Elt=feutil('SelElt group3:8',model);
  i1=feutil('FindElt eltname beam1',model);
  model.Elt(i1,5)=0; % vx
@@ -1110,7 +1113,7 @@ if carg<=nargin; RO=varargin{carg}; carg=carg+1; else; RO=struct; end
 %% #Rve : classical representative volume element meshes ---------------------
 elseif comstr(Cam,'rve');[CAM,Cam]=comstr(CAM,4);
 if comstr(Cam,'1fiber')
-%% #Rve1Fiber : 3d mesh of a cube with an internal fiber -3
+%% #Rve1Fiber : 3d mesh of a cube with an internal fiber -2
 
  [RO,st,CAM]=cingui('paramedit -DoClean',[ ...
    'vf(0.5#%g#"Fiber volume fraction") '...
@@ -2710,42 +2713,23 @@ else; % Redirect to Cmd
         eval(iigui({'d_mesh(CAM,varargin{2:end})',nargout},'OutReDir'));
 end
 
+elseif comstr(Cam,'pcin');
+%% #pcin : define paramedit prototypes  -----------------------------------
+ li={'key','ToolTip','DoOpt';
+  'd_mesh.MeshNacaFootref','Foot morphing transformation', ... 
+  ['trans(CylA#%s#"coordinate transformation")' ...
+  '-clean(#31#"if present eliminate degenerate elements")' ...
+  'Merge(MacroVol#%s#"key for blade model")' ...
+  'cf(10#%i#"feplot figure where model will be shown")']
+  };
+  sdtm.pcin(['prero',comstr(CAM,5)],li);
+  if nargout>0; out=sdtm.pcin;else; sdtm.pedit('{disp}',li);end
+
 elseif comstr(Cam,'nmap');
 %% #nmap named maps ---
 
 [key,nmap,uo,carg]=sdtm.stdNmapArgs(varargin,CAM,carg);RO.inKeys=nmap.keys;
 projM=nmap;
-
-%% #Cin: #Map:Cin parameter formating and tooltip for meshing ----2
-
-cinM=projM('Map:Cin');% Create a default CinCell structures to be used for vhandle.uo 
-cinM.add={
-'gr:RefineHexaMesh','Hexa mesh refinement in fe_shapeotim', ...
-   {[ ... %% RefineHexaMesh
-  '-divlc(#%g#"to give a target lc for uniform division and mpc coupling at once")' ...
-  '-InterMPC(#3#"to add a MPC at interfaces to old mesh")' ...
-  '-lc(#%g#"ask for chararecteristic length on target")' ...
-  '-lcmin(#%g#"do not iterate if estimated refinement would be smaller than that")' ...
-  '-keepi(#3#"keep initial selection volume with lc iterations")' ....
-  ]}};
-
-cinM.add={
-'gr:Cube','2cube example', ...
-   {'ALoad','cbuild','cqoff','drill','exp','flipSlaveMaster','largeBase',...
-     'mixtq','nCube','offset','OnPlate','penta','quad','refine','single',...
-     'tab','tetra'}
-      };
-cinM.add={
-'gr:ScldCube','Large displacement cube', ...
-  {['Kc(1e12#%g#"NomStiff") ' ...
-   'stepx(0#%g#"step x")', ...
-   'Integ(-2#%g#"contact integration strategy")', ...
-   'lxyz(.075 .075 .075#%g#"cube dim")' ...
-   'DownForward(#%s#"Possibly trajectory as parameter")' ...
-   'InitQ0(#%s#"command to init q0")' ...
-   ],'largeBase','ALoad'} ... % do not redefine
-  };
-% vhandle.uo('',C3.info,rail19('nmap.Map:Cin'))
 
 %% #Bsections #Bprofiles: geometry data for mesh naca -2
 
