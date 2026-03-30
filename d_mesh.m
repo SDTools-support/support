@@ -2038,7 +2038,7 @@ RO.projM('skin')=skin;
 
 elseif comstr(Cam,'nacafootref')
  %% #MeshNacaFootRef
-  [~,RO]=sdtm.urnPar(CAM,'{}{Clean%31,trans%s,Merge%s,cf%i}');
+  [~,RO]=sdtm.urnPar(CAM,'{}{Clean%31,trans%s,Merge%s,cf%i,ca%i}');
   if evalin('caller','exist(''RA'',''var'')&&isfield(RA,''projM'')')
    RA=evalin('caller','RA');
   elseif evalin('base','exist(''RA'',''var'')&&isfield(RA,''projM'')');
@@ -2060,11 +2060,17 @@ elseif comstr(Cam,'nacafootref')
 mo1=feutil('divide 2 1',mo1);mo1.name='FootSec'; RA.projM(mo1.name)=mo1;
 
 RO.xyzlim=[Inf Inf Inf -Inf -Inf -Inf];
-if ~ishandle(2);h=[];else;h=findobj(2,'tag','annot');end
+
+%% use annotations of figure(2)
+if ~isfield(RO,'ca');RO.ca=2;end
+if ~ishandle(RO.ca);h=[];else;h=findobj(RO.ca,'tag','annot');end
 RO.xValues=[-2 8 linspace(10,90,5) 92 102];
 RO.mergeX=[-2 8 92 102];RO.ForInsert='withnode{z<50&x>10&x<90}';
 if isempty(h);sdt=[];else;sdt=getappdata(ancestor(h(1),'figure'),'sdt');end
-if isfield(sdt,'annot');RO.annot=sdt.annot;end
+if isfield(sdt,'annot');
+    RO.annot=sdt.annot;
+    sdtu.logger.doing('Morphing based on annotation lines of figure(%i)',RO.ca)
+end
 for j1=1:length(h);
  st1=get(h(j1),'DisplayName');
  if isempty(st1);
@@ -2164,7 +2170,7 @@ fecom(c10,'colordatapro-alpha0-edgealpha.2');figure(c10.opt(1))
 %n1=feutil('getnode x==-2',mo2);xyz=n1(:,5:7); x=xyz(:,1);y=xyz(:,2);xyz(:,1)=xyz(:,1)-((1-abs(y)/15)).^.2.*(5+10*double(xyz(:,3)<40));fecom('shownodemark',xyz)
 RO.debugNode=1;
 if isfield(RO,'annot')&&isfield(RO.annot,'L1')
- %% Fill PreMorph table based on identical lines
+ %% #NacaFootRef.PreMorph fill table based on identical lines
  r2=struct('ColumnName',{{'xr','yr','zr','x','y','z'}},'table',{{
  }},'name','PreMorph');
 
@@ -2195,20 +2201,20 @@ if isfield(RO,'annot')&&isfield(RO.annot,'L1')
    end
   end
  end
- % actually morph a foot
  if 1==2
   n2=cell2mat(r2.table);
   morph=scatteredInterpolant(n2(:,1),n2(:,2),n2(:,3),n2(:,4:6));
   
   i2=sdtm.indNearest(n2(:,1:3),RO.annot.L10(1,1:3));n2(i2,:)
-  r2.table(i2,1:6)=num2cell([ 0   -15    30 -124 1.4 115])
+  r2.table(i2,1:6)=num2cell([ 0   -15    30 -124 1.4 115]);
 
   i2=sdtm.indNearest(n2(:,1:3),RO.annot.L10(end,1:3));n2(i2,:)
-  r2.table(i2,1:6)=num2cell([ 0   -15    30 -124 1.4 115])
+  r2.table(i2,1:6)=num2cell([ 0   -15    30 -124 1.4 115]);
   
   mo2=fe_shapeoptim('ViewMorph',r2);
   cg=feplot(11);cg.model=mo2;fecom showfipro;fecom('shownodemark',cell2mat(r2.table(:,4:6)))
  end
+ %% actually morph a foot
  mo2=fe_shapeoptim('ViewMorph',r2);
  st1=fieldnames(RO.annot);
  for j1=1:length(st1)
@@ -2251,7 +2257,8 @@ elseif comstr(Cam,'nacainsert')
  RA=evalin('base','RA');
  mo1=RA.projM('MacroVol');
  r1=sdth.urn('FootStart',mo1);
- n1=feutil('getnode NodeId&x>10 & x<74',mo1,r1.data(:,2));
+ % away from 10 70 the mesh is flat
+ n1=feutil('getnode NodeId&x>10 & x<70',mo1,r1.data(:,2));
  r1.data(~ismember(r1.data(:,2),n1(:,1)),:)=[];
  [n1,i1]=sortrows(n1,5);r1.data=r1.data(i1,:);
  %n1=sortrows([n1;max(n1(:,1))+[1;2] zeros(2,3) [0 .8 -5*0;80 .8 -5*0]],5);
