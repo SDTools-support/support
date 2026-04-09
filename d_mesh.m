@@ -2728,7 +2728,7 @@ elseif comstr(Cam,'pcin');
   '-clean(#31#"if present eliminate degenerate elements")' ...
   'Merge(MacroVol#%s#"key for blade model")' ...
   'cf(10#%i#"feplot figure where model will be shown")']
-  };
+};
   sdtm.pcin(['prero',comstr(CAM,5)],li);
   if nargout>0; out=sdtm.pcin;else; sdtm.pedit('{disp}',li);end
 

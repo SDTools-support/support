@@ -315,7 +315,7 @@ if RO.FRF
    d1=fe_def('subdofind',d1,RO.iSubDof);
    d2=fe_def('subdofind',d2,RO.iSubDof);
   end
-  if isempty(out2); out2=d2; 
+  if isempty(out2); out2=d2; out2.fun=[0 5];
       if isfield(RO,'Range')&&isfield(RO.Range,'val')
        out2.Range=RO.Range;out2.Range.CellDir=RO.cyc.CellDir;
       else;% Just a loop on periodicity
@@ -1490,17 +1490,6 @@ DfpViewCurve:  curve model for Q(n,omega) viewing in slice
  For Q(k,omega) viewing use fe_homo('dfpSensObserve')
  Build a curvemodel for freq at DOF observation
  see dyn_post('PerFEII')
-```STX
-[out1,out2]=feutil(cmd,inp1);
-out3=feutil(cmd,inp1,inp2);
-```INP
-cmd (cmd (+xxxStxName) ): xxxSupplementaryDescription
-inp1 (xxxdtype): xxxDescription
-inp2 (xxxdtype): xxxDescription
-```OUT
-out1 (xxxdtype): xxxDescription
-out2 (xxxdtype): xxxDescription
-out2 (xxxdtype): xxxDescription
 ```EXAMPLE
 t_cyclic('DftPerRed')
 %}
@@ -1518,10 +1507,9 @@ else; RO.CurInd=1:3;
 end
 if ~isfield(RO,'mno');RO.mno=0;end
 if isfield(RO,'sens') % Observe as pseudo DOF to allow recombine
-   def.def=[RO.sens.cta*def.def(1:size(RO.sens.cta,2),:);
-       RO.sens.cta*def.def(size(RO.sens.cta,2)+1:end,:)];
-   %def.DOF=(1:size(RO.sens.cta,1))'+.01; def.DOF=[def.DOF;def.DOF+.5];
-   def.DOF=RO.sens.tdof(:,1); def.DOF=[def.DOF;def.DOF+.5];
+   def.isLong=1; 
+   def=fe_caseg('sensobservedef',RO.sens,def);
+   def.DOF=def.tdof;
    def.CurInd=1:size(RO.sens.cta,1);
 else; def.CurInd=RO.CurInd;
 end
@@ -1561,13 +1549,34 @@ else % Basic case with extraction of periodic mode at specific node
  end
  %C1.Source.CurInd=fe_c(C1.Source.DOF,42+(1:3)'/100,'ind');
 end
-if isfield(RO,'doGetData');C1=C1.GetData;end
+if isfield(RO,'doGetData');
+    C1=C1.GetData;
+    if isfield(def,'isLong')&&def.isLong
+     C1.X{1}(size(C1.Y,1)/2+1:end,:)=[];
+     C1.Y(size(C1.Y,1)/2+1:end,:)=[];
+     C1.Y=reshape(C1.Y,size(C1.Y,1),size(C1.X{2},1),[]);
+    end
+    C1.X{3}=RO.sens.lab;
+    
+end
 if isfield(RO,'PlotInfo');
-  r1=RO.PlotInfo;r1{cellfun(@(x)isequal(x,'@C1'),r1)}=C1; C1=feval(r1{:});
+  r1=RO.PlotInfo;
+  if iscell(r1)
+   r1{cellfun(@(x)isequal(x,'@C1'),r1)}=C1; 
+   C1=feval(r1{:});
+  else; C1.PlotInfo=ii_plp(['plotinfo' r1],C1);
+  end
+  C1=sdsetprop(C1,'PlotInfo','ua.XDimPos',[1 2],'scale','xy1');
+  C1.DimPos=[2 1 3];
+  C1.ID{1}.po.MainDim='x';
 end
-if nargout==0; ci=iiplot;iicom(ci,'curveinit','Disp',C1);
-else; out=C1;
+if nargout==0&&~isfield(RO,'ci');RO.ci=iiplot;end
+if isfield(RO,'ci')&&~isempty(RO.ci)
+   ci=comgui('guiiiplot;',RO.ci);
+   iicom(ci,'curveinit','Disp',C1);
+   if isfield(RO,'os');cingui('objset',ci,RO.os);end
 end
+if nargout>0; out=C1;end
 
 elseif comstr(Cam,'datatip');
 %% #Dfpdatatip : initalize datatip cursor : fe_homo('dfpDatatip',ci)
