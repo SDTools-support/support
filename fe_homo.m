@@ -636,7 +636,9 @@ for j1=1:size(RO.P2Sets,1) % Robust format RC
  RC=sdth.sfield('AddMissing',RO.P2Sets{j1,2},RC);
  RO.P2Sets{j1,2}=RC;
 end
-if ~isfield(RO,'fe_coor');RO.fe_coor='lrilu';end
+if isfield(RO,'fe_coor');elseif strcmpi(RO.type,'svd');RO.fe_coor='lrisvd';
+else; RO.fe_coor='lrilu';
+end
 if ~isfield(RO,'SvdTol');RO.SvdTol=1e-8;end
 RO.usedIndDof=find(~any(def.def,2));kd=[];
 if ~isreal(def.def);def.def=[real(def.def) imag(def.def)];end
@@ -3057,7 +3059,7 @@ function [T2,RC,RO]=genT2(T2,RC,RO);
    % cf=feplot(10);cf.def=struct('def',T2,'DOF',SE.DOF(i2));fecom(';colordataA;coloralpha');
    end 
    %[T2,s]=svd(T2,0,'vector');T2=T2(:,s>RO.SvdTol*s(1));
-   if ~sdtm.Contains(RO.curSetType,'lrilu');RO.curCoor='lrilu';end
+   if sdtm.Contains(RO.curSetType,'lrilu');RO.curCoor='lrilu';end
    RC.SvdTol=RO.SvdTol; % How delayed to fe_coor
    %fprintf('%20s: svd_1=%.1e nkept=%i, %s\n',RO.P2Sets{j1,3},s(1),size(T2,2),RO.curCoor);
  end
