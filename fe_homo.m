@@ -636,7 +636,7 @@ for j1=1:size(RO.P2Sets,1) % Robust format RC
  RC=sdth.sfield('AddMissing',RO.P2Sets{j1,2},RC);
  RO.P2Sets{j1,2}=RC;
 end
-if isfield(RO,'fe_coor');elseif strcmpi(RO.type,'svd');RO.fe_coor='lrisvd';
+if isfield(RO,'fe_coor');elseif strcmpi(RC.type,'svd');RO.fe_coor='lrisvd';
 else; RO.fe_coor='lrilu';
 end
 if ~isfield(RO,'SvdTol');RO.SvdTol=1e-8;end
