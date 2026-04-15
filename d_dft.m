@@ -43,11 +43,11 @@ if comstr(Cam,'nida')
  R1.Phase2={'fe_homo','DftRedp2LU'};R1.EdgeTol=1e-5;
  SE=fe_homo('dftRedList',mo1,R1);
   
- Range=struct('ncx',1./linspace(1e-3,.49,30)');
- SE=stack_set(SE,'info','EigOpt',[5 30 1e3]);
- [def,hist]=fe_homo('dftDisp -UseLong',SE,struct('Range',Range,'fmax',1e7));
+ Range=struct('ncx',1./linspace(1e-3,.49,60)');
+ SE=stack_set(SE,'info','EigOpt',[5 50 1e3]);
+ [def,hist]=fe_homo('dftDisp -UseLong',SE,struct('Range',Range,'fmax',70e3));
 
- RD=struct('mno',(0:4)','cf',102,'ci',112,'ViewHist',hist,'ktype','kcx');
+ RD=struct('mno',(0:4)','cf',102,'ci',112,'ViewHist',hist,'ktype','kcx','fmax',70e3);
  fe_homo('dfpInitSelDef',SE,def,RD);fecom('ShowFiCEvalz')
 
 %% Step2 : Build a 2D force response and use interactive display

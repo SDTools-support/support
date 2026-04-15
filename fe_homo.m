@@ -224,11 +224,8 @@ else  % Default wave in x direction
    if ~isfield(data,'IntYNodes');Range.val(:,2)=[];Range.lab(2)=[];end
 end
 if carg<=nargin&&isstruct(varargin{carg}); RO=varargin{carg};carg=carg+1;end
-[RO,st,CAM]=cingui('paramedit -DoClean',[ ...
-   'UseLong(#3#"Use long storage") ' ...
-   'FRF(0#3#"Compute FRF") ' ...
-   'EigOpt([]#%g#"eigenvalue options") ' ...
-   ],{RO,CAM});Cam=lower(CAM); %#ok<NBRAK>
+DoOpt=sdtm.pcin('prero.fe_homo.dftDisp');
+[RO,st,CAM]=cingui('paramedit -DoClean',DoOpt,{RO,CAM});Cam=lower(CAM);
 
 def=[];
 if isfield(model,'TR')&&isfield(model.TR,'adof')
@@ -376,7 +373,7 @@ try
  i1=reshape(1:size(def.def,2),[],size(RO.RangeNc.val,1))';
  if isfield(def,'Filter')
   for j2=size(i1,1):-1:1
-   r2=d1.Filter.pdef*def.def(:,Nm*j2+(-Nm+1:0));
+   r2=def.Filter.pdef*def.def(:,Nm*j2+(-Nm+1:0));
    r2=abs(r2(1:2:end,:))+abs(r2(2:2:end,:));
    [~,i2]=max(r2); 
    if length(unique(i2))~=length(i2); 
@@ -2363,8 +2360,18 @@ end
 
 
 %% #end ------------------------------------------------------------------- -2
-elseif comstr(Cam,'pcin')
-  %% #pcin needs robust implementation
+elseif comstr(Cam,'pcin');
+%% #pcin : define paramedit prototypes  -----------------------------------
+ li={'key','ToolTip','DoOpt';
+  'fe_homo.dftDisp','compute periodic dispersion diagram',[ ...
+   'UseLong(#3#"Use long storage") ' ...
+   'FRF(0#3#"Compute FRF") ' ...
+   'EigOpt(#%g#"eigenvalue options")']
+  'fe_homo.dftEig','compute periodic response',[ ...
+    'EigOpt(#%g#"eigenvalue options")' ...
+   ] };
+  sdtm.pcin(['prero',comstr(CAM,5)],li);% usually CAM empty
+  if nargout>0; out=sdtm.pcin;else; sdtm.pedit('{disp}',li);end
   out='';
 elseif comstr(Cam,'keywords');
   %% #keywords -2
@@ -2822,6 +2829,7 @@ elseif comstr(Cam,'buildk')
  
 elseif comstr(Cam,'getx');
  %% #dftu_GetX (find nc,ld,Kx)  -3
+ % keywords{var{},fcn{dft1d}}
  % feval(fe_homo('@dftu'),'getx lx',def,RO,ch)
  %  RO=struct('lab',{{'ak'}})
  def=varargin{1}; if nargin>2; RO=varargin{2};else; RO=struct;end
@@ -2850,10 +2858,14 @@ elseif comstr(Cam,'getx');
    out=struct('X',Range.val(:,ind),'Xlab',{Range.lab(ind)});
    RO.nc=out.X;
    if isempty(RO.nc)&&size(RO.CellDir,2)==1 
-    % single dir with just kx
+    %% single dir with just kx
     i1=strncmpi(Range.lab,'kx',2);
     if any(i1); 
       r1=Range.val(:,i1); % kx=2*pi/kcx=2*pi*(dx*kx)
+      if any(~isfinite(r1))
+       Range.val(:,i1)=Range.val(:,strcmpi(Range.lab,'kcx'))*norm(RO.CellDir);
+       r1=Range.val(:,i1);
+      end
       RO.nc=r1;RO.nc(r1~=0)=2*pi/norm(RO.CellDir)./r1(r1~=0);
       RO.nc(r1==0)=1; % one periodicity for
     end
@@ -2960,6 +2972,7 @@ elseif comstr(Cam,'addrange')
   i1=strncmpi(def.Range.lab,st1,length(st1));
   if ~any(i1);def.Range.lab{end+1}=st{j1};end
  end
+ def.Range.val(:,end+1:length(def.Range.lab))=NaN;
  r1=dftu('getx',def);
  
  for j1=1:length(r1.Xlab)
@@ -3123,7 +3136,7 @@ if comstr(Cam,'rangech')
  if isempty(ch)&&~isempty(strfind(ga.XLabel.String,'kHz'));
   ch=find(abs(r1(:,1)-pos(1)*1000)<1e-6);
  end
- if length(ch)>1; ch=ch(ua.ch);end % Instance of freq at correct k
+ if isscalar(ch);elseif isfield(ua,'ch');ch=ch(ua.ch);else; ch=ch(1);end % Instance of freq at correct k
  if ~isempty(ch) % dispersion curve
  elseif strcmpi(go.Type,'surface')
   r2=go.XData; [r3,i1]=min(abs(r2-pos(1)));pos(:,1)=r2(i1);
