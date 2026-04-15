@@ -52,7 +52,7 @@ elseif comstr(Cam,'script');[CAM,Cam]=comstr(CAM,7);
 
 if comstr(Cam,'tutopzpatchext')
 %% #TutoPzPatchExt : Piezoelectric extension patch - Statics -2
-% see sdtweb pz_fe#tutopzpatchext 
+% see sdtweb pz_fe.tutopzpatchext 
 
 %% BeginSource sdtweb('_example','pz_fe.tex#tutopzpatchext')
 
@@ -139,9 +139,8 @@ fecom('ch 1')
 
 elseif comstr(Cam,'tutopzpatchshear')
 %% #TutoPzPatchShear : Piezoelectric shear patch - statics -2
+% see sdtweb pz_fe.tutopzpatchshear 
 
-% see sdtweb pz_fe#tutopzpatchshear 
-%
 %% BeginSource sdtweb('_example','pz_fe.tex#tutopzpatchshear')
 
 % Init working directory for figure generation
@@ -227,9 +226,8 @@ disp([{'CT';'CS'} num2cell([CT;CS])])
 
 elseif comstr(Cam,'tutopzdiskimpedance')
 %% #TutoPzDiskImpedance : Piezoelectric disk impedance -2
+% see sdtweb pz_fe.tutopzdiskimpedance 
 
-% see sdtweb pz_fe#tutopzdiskimpedance 
-%
 %% BeginSource sdtweb('_example','pz_fe.tex#tutopzdiskimpedance')
 
 % Init working directory for figure generation
@@ -244,7 +242,7 @@ d_piezo('setstyle',cf)
 % Visualize electrodes
 fecom('curtabCase',{'Top Actuator';'Bottom Actuator'}) % 
 fecom(';showline;proviewon;triax') % 
-cf.mdl.name='PIC 181 piezo disk electrodes'
+cf.mdl.name='PIC 181 piezo disk electrodes';
 d_piezo('setstyle',cf)
 %% Step 2 : Define range of frequencies and compute dynamic response
 frq=linspace(20e3,200e3,256);
@@ -253,7 +251,7 @@ def=fe_simul('dfrf',stack_set(model,'info','Freq',frq));
 
 % visualize potential
 feplot(model,def); cf=fecom; 
-fecom(';showpatch;colordata21;'); cf.mdl.name='PIC 181 piezo disk voltage'
+fecom(';showpatch;colordata21;'); cf.mdl.name='PIC 181 piezo disk voltage';
 d_piezo('setstyle',cf) ; 
 cf.osd_('cbtr{string,Voltage(V)}')
 fecom('colorscaleone') %To have the correct scale
@@ -261,7 +259,7 @@ fecom('colorscaleone') %To have the correct scale
 % View electric field
 fecom(';showline;scd 1e-4')
 p_piezo('viewElec EltSel "matid1" DefLen 1e-4',cf); 
-cf.mdl.name='PIC 181 piezo disk E-field'
+cf.mdl.name='PIC 181 piezo disk E-field';
 % To have a single color change clim (must be done with axProp to bypass normal)
 st=cf.ua.axProp; st(3:4)={'@axes',{'clim',[480 510]}};cf.ua.axProp=st;
 d_piezo('setstyle',cf)
@@ -283,9 +281,8 @@ d_piezo('setstyle',ci);
 
 elseif comstr(Cam,'tutopzbeamcol')
 %% #TutoPzBeamCol : 3D beam with collocated sensors and actuators -2
+% see sdtweb pz_fe.tutopzbeamcol 
 
-% see sdtweb pz_fe#tutopzbeamcol 
-%
 %% BeginSource sdtweb('_example','io_theory.tex#tutopzbeamcol')
 
 % Init working directory for figure generation
@@ -392,7 +389,7 @@ d_piezo('setstyle',ci);
 elseif comstr(Cam,'tutopzbeamncol')
 %% #TutoPzBeamNCol : 3D beam with non collocated sensors and actuators -2
 
-% see sdtweb io_theory#tutopzbeamncol 
+% see sdtweb io_theory.tutopzbeamncol 
 %
 %% BeginSource sdtweb('_example','io_theory.tex#tutopzbeamncol')
 
@@ -480,7 +477,7 @@ d_piezo('setstyle',ci);
 elseif comstr(Cam,'tutopzbeamsurfvol')
 %% #TutoPzBeamSurfVol : 3D beam with Surface and Volume forces -2
 
-% see sdtweb io_theory#tutopzbeamsurfvol 
+% see sdtweb io_theory.tutopzbeamsurfvol 
 %
 %% BeginSource sdtweb('_example','io_theory.tex#tutopzbeamsurfvol')
 
@@ -569,7 +566,7 @@ d_piezo('SetStyle',cf); feplot(cf);
 elseif comstr(Cam,'tutopzbeamuimp')
 %% #TutoPzBeamUImp : 3D beam with imposed displacement -2
 
-% see sdtweb io_theory#tutopzbeamuimp 
+% see sdtweb io_theory.tutopzbeamuimp 
 %
 %% BeginSource sdtweb('_example','io_theory.tex#tutopzbeamuimp')
 
@@ -635,7 +632,7 @@ d_piezo('setstyle',ci);
 elseif comstr(Cam,'tutopzbeamdispvelacc')
 %% #TutoPzBeamDispVelAcc : 3D beam with displ,vel and acc sensor -2
 
-% see sdtweb io_theory#tutopzbeamdispvelacc
+% see sdtweb io_theory.tutopzbeamdispvelacc
 %
 %% BeginSource sdtweb('_example','io_theory.tex#tutopzbeamdispvelacc')
 
@@ -672,7 +669,7 @@ d_piezo('setstyle',ci);
 elseif comstr(Cam,'tutopzplate4pzt')
 %% #TutoPzPlate4pzt : Cantilever plate with 4 piezo patches -2
 
-% see sdtweb pzio_theory#tutopzplate4pzt
+% see sdtweb pzio_theory.tutopzplate4pzt
 %
 %% BeginSource sdtweb('_example','pzio_theory.tex#tutopzplate4pzt')
 
@@ -741,7 +738,7 @@ d_piezo('setstyle',ci);
 elseif comstr(Cam,'tutopzaccshaker')
 %% #TutoPzAccShaker : Piezoelectric shaker and accelero -2
 
-% see sdtweb pzio_theory#tutopzaccshaker
+% see sdtweb pzio_theory.tutopzaccshaker
 %
 %% BeginSource sdtweb('_example','pzio_theory.tex#tutopzaccshaker')
 
@@ -788,7 +785,7 @@ d_piezo('setstyle',ci);
 elseif comstr(Cam,'tutopzmeshingbasics')
 %% #TutoPzMeshingBasics : Plate with 4 pzt patches:manual meshing -2
 
-% see sdtweb pzplatemeshing#tutopzmeshingbasics
+% see sdtweb pzplatemeshing.tutopzmeshingbasics
 %
 %% BeginSource sdtweb('_example','pzplatemeshing.tex#tutopzmeshingbasics')
 
@@ -896,7 +893,7 @@ disp(['difference of static response ' num2str((d2-d)/d*100) '%'])
 elseif comstr(Cam,'tutopzmeshingauto')
 %% #TutoPzMeshingAuto : Plate with 4 pzt patches:auto meshing -2
 
-% see sdtweb pzplatemeshing#tutopzmeshingauto
+% see sdtweb pzplatemeshing.tutopzmeshingauto
 %
 %% BeginSource sdtweb('_example','pzplatemeshing.tex#tutopzmeshingauto')
 
@@ -1186,7 +1183,7 @@ xlabel('mesh size (mm)'); ylabel('tip displacement (mm/V)')
 elseif comstr(Cam,'tutopzmeshingmfc')
 %% #TutoPzMeshingMFC : Plate with MFCs : meshing -2
 
-% see sdtweb pzplatemeshing#tutopzmeshingmfc
+% see sdtweb pzplatemeshing.tutopzmeshingmfc
 %
 %% BeginSource sdtweb('_example','pzplatemeshing.tex#tutopzmeshingmfc')
 
