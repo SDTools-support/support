@@ -17,7 +17,7 @@ The following products are included by default in all SDT distribution.
 :link-type: url
 **SDT-Base**
 ^^^
-![](_images/Logo_SDT_76.png)
+![](_images/Logo_SDT.png)
 +++
 Main documentation book containing base functions of SDT
 ```
