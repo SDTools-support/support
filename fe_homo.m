@@ -14,12 +14,13 @@ function [out,out1,out2]=fe_homo(varargin)
 %       For revision information use fe_homo('cvs')
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
-if nargin<1; CAM=''; Cam='';
+if nargin<1; CAM=''; Cam='';projM=[];
 elseif ~ischar(varargin{1}); 
   obj=varargin{1};evt=varargin{2};[CAM,Cam]=comstr(varargin{3},1); carg=24;
+  if isfield(evt,'nmap');projM=evt.nmap;evt.projM=projM;end
 else; [CAM,Cam]=comstr(varargin{1},1); carg=2;
 end
-projM=[];if isfield(varargin{end},'projM');projM=varargin{end}.projM;end    
+if isfield(varargin{end},'projM');projM=varargin{end}.projM;end    
 
 
 if comstr(Cam,'@');out=eval(CAM);
@@ -212,8 +213,10 @@ if 1==2
  ph=reshape(def.data(:,2),[],size(def.Range.val,1)); 
  figure(1);loglog(1./max(def.Range.val(ph(1,:),:),[],2),fh')
 end
-
-model=varargin{carg};carg=carg+1;RO=struct;
+if carg>nargin; model=obj;RO=evt;
+else
+ model=varargin{carg};carg=carg+1;RO=struct;
+end
 if carg<=nargin; Range=varargin{carg};carg=carg+1;
   if isfield(Range,'Range');RO=Range;Range=RO.Range;end
 else  % Default wave in x direction
@@ -224,9 +227,9 @@ else  % Default wave in x direction
    if ~isfield(data,'IntYNodes');Range.val(:,2)=[];Range.lab(2)=[];end
 end
 if carg<=nargin&&isstruct(varargin{carg}); RO=varargin{carg};carg=carg+1;end
-DoOpt=sdtm.pcin('prero.fe_homo.dftDisp');
+DoOpt='prero.fe_homo.dftDisp';if isKey(projM,DoOpt(7:end));RO=projM(DoOpt(7:end));end
 [RO,st,CAM]=cingui('paramedit -DoClean',DoOpt,{RO,CAM});Cam=lower(CAM);
-
+if isfield(RO,'Range');Range=RO.Range;end
 def=[];
 if isfield(model,'TR')&&isfield(model.TR,'adof')
     RO.MatDes=model.Opt(2,:);
@@ -1264,8 +1267,12 @@ elseif comstr(Cam,'dfp');[CAM,Cam]=comstr(CAM,4);
 if comstr(Cam,'initseldef');[CAM,Cam]=comstr(CAM,11);
 %% #DfpInitSelDef : initialize for viewing of deformations
 
-model=varargin{carg};carg=carg+1;
-if isfield(model,'projM')
+if carg>nargin;model=obj;
+else;model=varargin{carg};carg=carg+1;
+end
+if isfield(evt,'nmap');projM=evt.nmap;RO=projM('fe_homo.dftInitSelDef');
+    def=projM('CurDftDef');hist=projM('CurHist');
+elseif isfield(model,'projM')
  RO=projM('fe_homo.dftInitSelDef');
  model=projM('CurModel'); def=projM('CurDftDef');hist=projM('CurHist');
 else
@@ -2363,10 +2370,10 @@ end
 elseif comstr(Cam,'pcin');
 %% #pcin : define paramedit prototypes  -----------------------------------
  li={'key','ToolTip','DoOpt';
-  'fe_homo.dftDisp','compute periodic dispersion diagram',[ ...
-   'UseLong(#3#"Use long storage") ' ...
-   'FRF(0#3#"Compute FRF") ' ...
-   'EigOpt(#%g#"eigenvalue options")']
+  'fe_homo.dftDisp','compute periodic dispersion diagram',{'DoOpt'
+   'UseLong(#3#"Use long storage") '
+   'FRF(0#3#"Compute FRF") '
+   'EigOpt';'cf';'ci';'cfos';'cios'}
   'fe_homo.dftEig','compute periodic response',[ ...
     'EigOpt(#%g#"eigenvalue options")' ...
    ] };
@@ -3136,7 +3143,9 @@ if comstr(Cam,'rangech')
  if isempty(ch)&&~isempty(strfind(ga.XLabel.String,'kHz'));
   ch=find(abs(r1(:,1)-pos(1)*1000)<1e-6);
  end
- if isscalar(ch);elseif isfield(ua,'ch');ch=ch(ua.ch);else; ch=ch(1);end % Instance of freq at correct k
+ if isscalar(ch);elseif isfield(ua,'ch');ch=ch(ua.ch);
+ elseif ~isempty(ch); ch=ch(1);else; ch=1; 
+ end % Instance of freq at correct k
  if ~isempty(ch) % dispersion curve
  elseif strcmpi(go.Type,'surface')
   r2=go.XData; [r3,i1]=min(abs(r2-pos(1)));pos(:,1)=r2(i1);
