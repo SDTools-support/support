@@ -14,7 +14,8 @@ function [out,out1,out2]=fe_homo(varargin)
 %       For revision information use fe_homo('cvs')
 
 %#ok<*NASGU,*ASGLU,*CTCH,*TRYNC,*NOSEM>
-if nargin<1; CAM=''; Cam='';projM=[];
+obj=[];evt=[];projM=[];
+if nargin<1; CAM=''; Cam='';
 elseif ~ischar(varargin{1}); 
   obj=varargin{1};evt=varargin{2};[CAM,Cam]=comstr(varargin{3},1); carg=24;
   if isfield(evt,'nmap');projM=evt.nmap;evt.projM=projM;end
@@ -227,9 +228,10 @@ else  % Default wave in x direction
    if ~isfield(data,'IntYNodes');Range.val(:,2)=[];Range.lab(2)=[];end
 end
 if carg<=nargin&&isstruct(varargin{carg}); RO=varargin{carg};carg=carg+1;end
-DoOpt='prero.fe_homo.dftDisp';if isKey(projM,DoOpt(7:end));RO=projM(DoOpt(7:end));end
+DoOpt='prero.fe_homo.dftDisp';
+if ~isempty(projM)&&isKey(projM,DoOpt(7:end));RO=projM(DoOpt(7:end));end
 [RO,st,CAM]=cingui('paramedit -DoClean',DoOpt,{RO,CAM});Cam=lower(CAM);
-if isfield(RO,'Range');Range=RO.Range;end
+if isfield(RO,'Range')&&isfield(RO.Range,'val');Range=RO.Range;end
 def=[];
 if isfield(model,'TR')&&isfield(model.TR,'adof')
     RO.MatDes=model.Opt(2,:);
@@ -350,7 +352,8 @@ else
   R1=sdth.sfield('addselected',R1,RO,'ModalFilter');
   if isfield(RO,'UseLong');R1.UseLong=RO.UseLong;end
   d1=feval(RO.EigFcn{:},R1,SE);%fe_homo('dftEig')
-  if isfield(R1,'ModalFilter')&&abs(R1.ModalFilter-R1.val(1))<1e-4
+  if ~isfield(R1,'ModalFilter')||isempty(RO.ModalFilter);
+  elseif abs(R1.ModalFilter-R1.val(1))<1e-4
     m=SE.K{1};z=spalloc(size(m,1),size(m,2),1);k=SE.K{2};
     m=[m z;z m];k=[k z;z k];%feutilb('dtkt',[real(d1.def);imag(d1.def)],{m,k})    
     d1.Filter=d1;
@@ -2364,22 +2367,49 @@ out=obs;
 
 else; error('Ass%s Unknown',CAM);
 end
+elseif comstr(CAM,'view');[CAM,Cam]=comstr(CAM,5);
+%% #view : view commands
+
+if comstr(Cam,'nodelines')
+%% #viewNodeLines -2
+ DoOpt=sdtm.pcin('prero.fe_homo.viewNodeLines');
+ [RO,st,CAM]=cingui('paramedit -DoClean',DoOpt,{struct,CAM}); Cam=lower(CAM);
+ ci=comgui('guiiiplot;',RO.ci);
+ C1=ci.Stack{ci.ua.sList{1}};
+ C1.PlotInfo=ii_plp('PlotInfo2D -type "surface"',C1,RO);
+ if isfield(C1,'ID')&&iscell(C1.ID)&&isfield(C1.ID{1},'po')
+  C1=rmfield(C1,'ID');
+ end
+ iicom(ci,'curveinit',C1)
+ comgui('objset',ci,'fe_homo.viewNodeLines');
+
+else; error('View%s',CAM)
+end
 
 
 %% #end ------------------------------------------------------------------- -2
-elseif comstr(Cam,'pcin');
-%% #pcin : define paramedit prototypes  -----------------------------------
- li={'key','ToolTip','DoOpt';
+elseif comstr(Cam,'pcin')||comstr(Cam,'preos')
+  %% #pcin define paramedit prototypes
+ preRO={'key','ToolTip','DoOpt';
   'fe_homo.dftDisp','compute periodic dispersion diagram',{'DoOpt'
+   'Range(#struct#"wave number range for computations") '
    'UseLong(#3#"Use long storage") '
+   'ModalFilter(#%g#"filter against given range point if not empty") '
    'FRF(0#3#"Compute FRF") '
-   'EigOpt';'cf';'ci';'cfos';'cios'}
+   'EigOpt';'cf';'ci';'cfos';'cios';'projM'}
+  'fe_homo.viewNodeLines','display associated with node lines',{'DoOpt'
+    'ci';'ua.YFcn';'ua.scale';
+    }
   'fe_homo.dftEig','compute periodic response',[ ...
     'EigOpt(#%g#"eigenvalue options")' ...
    ] };
-  sdtm.pcin(['prero',comstr(CAM,5)],li);% usually CAM empty
-  if nargout>0; out=sdtm.pcin;else; sdtm.pedit('{disp}',li);end
-  out='';
+  preOs={'key','ToolTip','os'
+     'fe_homo.viewNodeLines','node lines', ...
+      {'@PlotWd',{'@OsDic',{'ImToFigN','ImSw80','WrW49c'}}, ...
+        '@ColorMap',{'ColorMapBand parula(4)'}}
+      }; 
+  % augment cinM/osM using preRO/preOs
+  sdtm.pInitPre([nargout exist('preRO','var') exist('preOs','var')]);
 elseif comstr(Cam,'keywords');
   %% #keywords -2
   tagI=sdth.urn('tagI');
@@ -2937,6 +2967,7 @@ elseif comstr(Cam,'getx');
      r1=Range.val(:,strcmpi(Range.lab,'kcx'));
      if isempty(r1);% xxx needs checking
       r1=Range.val(:,strcmpi(Range.lab,'kx'));% physical wave kx=2pi/(ncx*dx)
+      if isempty(r1);error('Problem');end
       i1=(r1~=0); r1(i1)=2*pi./r1(i1)/norm(RO.CellDir(:,1));%ncx=2*pi/kx/dx
       
      else;
