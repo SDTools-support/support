@@ -793,6 +793,7 @@ elseif comstr(Cam,'redlist')
  if ~isfield(RO,'BuildList');RO.BuildList=RO.peig;end % DV compatibility
  if ~isfield(RO,'Phase2');RO.Phase2={'fe_homo','DftRedP2'};end
  if ~isfield(RO,'matdes');RO.matdes=[2 1];end
+ sdtu.logger.doing(dbstack,sdtm.toString(RO.BuildList));
  if isfield(RO,'Assemble')&&~isempty(RO.Assemble)
   [SE,Case,Load]=fe_case(model,RO.Assemble);
  else

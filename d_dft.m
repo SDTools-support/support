@@ -164,6 +164,7 @@ if comstr(Cam,'viewdebug')
     d2=struct('def',T2,'DOF',SE.DOF);  
     if size(d2.def,1)~=size(d2.DOF,1);d2.def=evalin('caller','T3')*T2;end
     % c10.def=struct('def',T2,'DOF',RC.DOF)
+   elseif isfield(T2,'def');d2=T2;
    end
  if comstr(Cam,'t2')
    c10.def=d2;
