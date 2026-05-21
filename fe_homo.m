@@ -592,8 +592,8 @@ elseif comstr(Cam,'redp2')
  Case=[];SE=[]; def=[];
  eval(iigui({'SE','def','RO','Case','Load'},'MoveFromCaller'))
 
- % Inspired from sdtweb dyn_solve RedV2Phase2 
- cyc=stack_get(Case,'cyclic','Symmetry','get');
+% Initial was sdtweb dyn_solve RedV2Phase2 
+cyc=stack_get(Case,'cyclic','Symmetry','get');
 RO.EdgeDof=fe_c(def.DOF,cyc.IntNodes(:,1),'ind');
 RO.EdgeDof(:,2)=fe_c(def.DOF,cyc.IntNodes(:,2),'ind');
 if ~isfield(RO,'EdgeTol');RO.EdgeTol=1e-5;end
