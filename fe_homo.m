@@ -744,12 +744,6 @@ if ~isempty(i1)
     'adof',[r1.adof{1};r1.adof{3}; r1.adof{2}], ...
     'info',[size(r1.Tl,2) size(r1.Ti,2) size(r1.Tl,2)]);
 end
-if 1==2
- z=SE;z.TR=TR;
- z.K=cellfun(@(x)z.TR.def'*x*z.TR.def,z.K,'uni',0);
- s=2i*pi; Z=feutilb('sumkcoef',z.K,[s^2 1 s 1i]);diag(Z)
- [u,s]=svd(Z);s=diag(s);[un1,i1]=max(abs(u(:,s<1e-3)));fe_c(TR.adof(i1))
-end
 if 1==2 % Check matrix diagonal and topology
   figure(11);clf;semilogy(feutilb('dtkt',TR.def,SE.K));
   ii_plp(cumsum([RO.P2info(:,1);RO.P2info(:,3);RO.P2info(:,2)])*[1 0]); 
