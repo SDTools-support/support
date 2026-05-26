@@ -631,15 +631,15 @@ elseif ischar(RO.P2Sets{1}); %{name,DOF,type} -> {DOF,type,name};
 elseif size(RO.P2Sets,2)<3; 
  RO.P2Sets(:,3)=cellfun(@(x)sprintf('Set%i',x),num2cell(1:size(RO.P2Sets,1)),'uni',0);
 end
+RC=struct('EdgeDof',[],'EdgeTol',RO.EdgeTol,'DOF',[],'k',[],'Active',0);
 for j1=1:size(RO.P2Sets,1) % Robust format RC
  if ~isstruct(RO.P2Sets{j1,2});
         RO.P2Sets{j1,2}=struct('type',RO.P2Sets{j1,2});
  end
- RC=struct('EdgeDof',[],'EdgeTol',RO.EdgeTol,'DOF',[],'k',[],'Active',0);
- RC=sdth.sfield('AddMissing',RO.P2Sets{j1,2},RC);
- RO.P2Sets{j1,2}=RC;
+ RO.P2Sets{j1,2}=sdth.sfield('AddMissing',RO.P2Sets{j1,2},RC);
+ RC.Active=RO.P2Sets{j1,2}.Active; % Same active for all
 end
-if isfield(RO,'fe_coor');elseif strcmpi(RC.type,'svd');RO.fe_coor='lrisvd';
+if isfield(RO,'fe_coor');elseif strcmpi(RO.P2Sets{end,2},'svd');RO.fe_coor='lrisvd';
 else; RO.fe_coor='lrilu';
 end
 if ~isfield(RO,'SvdTol');RO.SvdTol=1e-8;end

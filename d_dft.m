@@ -159,7 +159,7 @@ if comstr(Cam,'viewdebug')
  c10=feplot(10,';');
  if ~isequal(c10.mdl.Node,SE.Node);c10.model=SE;end
    if isfield(T2,'adof')&&iscell(T2.adof)
-    if size(T3,2)~=size(T2.l,1);T3=1;end % Possibly already T3
+    if size(T3,2)~=size(T2.Tl,1);T3=1;end % Possibly already T3
     d2=struct('def',T3*[T2.Tl T2.Tr T2.Ti],'DOF',SE.DOF,'adof',vertcat(T2.adof{:}));
    elseif isnumeric(T2)
     d2=struct('def',T2,'DOF',SE.DOF);  
