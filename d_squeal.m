@@ -3369,6 +3369,19 @@ end
 
 %% #Admin
 %% #Tuto: recover model from a specific tuto step -2
+elseif comstr(Cam,'pcin');
+ %% #pcind -2
+ preRO={'key','ToolTip','DoOpt';
+  'd_rail.Mesh.xxx','beam mass track slice model',[ ...
+   'ncell(15#%g#"number of sleepers")' ...
+   ]  };
+ preOs={'key','ToolTip','os'
+     'd_squeal.viewSpec','View spectrogram', ...
+      {'@PlotWd',{'@OsDic',{'ImToFigN','ImSw80','WrW49c'}}, ...
+        '@ColorMap',{'ColorMapBand parula(4)'}}
+      }; 
+ % augment cinM/osM using preRO/preOs
+ sdtm.pInitPre([nargout exist('preRO','var') exist('preOs','var')]);
 elseif comstr(Cam,'tuto'); 
  r1=dbstack;eval(sdtweb('_tuto',struct('file',r1(1).name,'CAM',CAM)));
  if nargout==0; clear out; end
