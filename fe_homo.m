@@ -1403,7 +1403,7 @@ if isfield(RO,'type')&&comstr(RO.type,'dfrf')
 %% RO.type='dfrf' % recombined FRF with (freq x k) order
  r2=d1.def.Source; r2.Rest.type='dfrfb';
  r2.Rest.kcx=dftu('getx',d1,struct('lab',{{'kcx'}}));
- r1=feval(fe_def('@omethods'),'xvec',d1,[],'jPar');
+ r1=cdm.xvec(d1,[],'jPar');
  if diff(r1(1:2)); % sort kappa x freq
   r1=reshape(d1.data(:,1),size(r2.Range.val,1),[])';r1=r1(:,1);
   r2.Rest.type='dfrf';
@@ -1523,7 +1523,7 @@ if isfield(RO,'type')&&strncmpi(RO.type,'cfrf',4)
  fun=fe_homo('@DftRest'); 
  def.Rest=struct('mno',RO.mno,'kcx',dftu('getx',def,struct('lab',{{'kcx'}})), ...
      'type',RO.type);
- r1=feval(fe_def('@omethods'),'xvec',def,[],'jPar');
+ r1=cdm.xvec(def,[],'jPar');
  if diff(r1(1:2)); % sort kappa x freq
   r1=reshape(def.data(:,1),size(def.Range.val,1),[])';r1=r1(:,1);
   def.Rest.type='cfrf';
@@ -2470,8 +2470,6 @@ end
 %% #DftRest : curvemodel implementation of spatial restitution
 function out=DftRest(varargin) 
  if ischar(varargin{1});[CAM,Cam]=comstr(varargin{1},1);carg=2;end
- persistent omethods
- if isempty(omethods); omethods=fe_def('@omethods');end
  
  if comstr(Cam,'getx')
  %% #getX -3
