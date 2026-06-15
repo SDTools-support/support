@@ -1530,7 +1530,7 @@ if isfield(RO,'type')&&strncmpi(RO.type,'cfrf',4)
  else
   r1=reshape(def.data(:,1),[],size(def.Range.val,1));r1=r1(:,1);def.type='cfrfb';
  end
- def.X={r1,[]};def.Xlab={'Frequency [Hz]','DOF'}; 
+ def.X={r1,def.DOF};def.Xlab={'Frequency [Hz]','DOF'}; 
  if isfield(RO,'sens');def.X{2}=RO.sens.lab;end
  % C1.X={Freq,Kappa,DOF}
  if size(RO.mno,1)>1; def.Xlab{3}='Slice';def.X{3}=RO.mno;end
@@ -2584,7 +2584,7 @@ function out=DftRest(varargin)
    end
    r3=dftu('enk',def.Rest.mno(:,1),def.Rest.kcx);
    out=reshape(out*r3.Enk',[],length(def.CurInd),size(r3.Enk,1)); 
-   out=subsref(out,S); % freq,DOF
+   out=struct('X',{def.X(1)},'Y',subsref(out,S)); % freq,DOF
    
   else
   %% #curve_on_first cell with specific harmonic
