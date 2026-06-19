@@ -2370,7 +2370,8 @@ if comstr(Cam,'nodelines')
  DoOpt=sdtm.pcin('prero.fe_homo.viewNodeLines');
  [RO,st,CAM]=cingui('paramedit -DoClean',DoOpt,{struct,CAM}); Cam=lower(CAM);
  ci=comgui('guiiiplot;',RO.ci);
- C1=ci.Stack{ci.ua.sList{1}};
+ if ~isfield(RO,'CurveName')||isempty(RO.CurveName);RO.CurveName=ci.ua.sList{1};end
+ C1=ci.Stack{RO.CurveName};
  C1.PlotInfo=ii_plp('PlotInfo2D -type "surface"',C1,RO);
  if isfield(C1,'ID')&&iscell(C1.ID)&&isfield(C1.ID{1},'po')
   C1=rmfield(C1,'ID');
@@ -2394,6 +2395,7 @@ elseif comstr(Cam,'pcin')||comstr(Cam,'preos')
    'EigOpt';'cf';'ci';'cfos';'cios';'projM'}
   'fe_homo.viewNodeLines','display associated with node lines',{'DoOpt'
     'ci';'ua.YFcn';'ua.scale';
+    'CurveName(#%s#"curve name")'
     }
   'fe_homo.dftEig','compute periodic response',[ ...
     'EigOpt(#%g#"eigenvalue options")' ...
