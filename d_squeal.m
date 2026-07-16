@@ -1744,7 +1744,8 @@ projM=c2.data;
 if isfield(projM,'nmap');projM=projM.nmap.nmap;
 else;projM=vhandle.nmap;c2.data.nmap=struct('nmap','projM');
 end
-if isempty(Cam)
+tag='d_squeal.ViewSpec';if isKey(projM,tag);CAM=projM(tag);end
+if isempty(CAM)
   m1=c2.Stack{'curData'};if isempty(m1);m1=c2.Stack{'Time'}.meta;end
   st=m1.views;st=st{sdtm.regContains(st,'ViewSpec')};
   if strncmp(st,'d_',2);Cb=sdtm.urnCb(st,projM);
@@ -1879,9 +1880,12 @@ else;% If spectro
  if isfield(C2,'Y')
   r2=sum(sum(abs(C2.Y),3),1);if C2.X{2}(1)==0; r2(1:2)=0;end
  else; % Update needed
-  r2=specMax;
+  try;r2=specMax;
+  catch; fprintf('SpecMax failed\n');r2=[];
+  end
  end
- if isnumeric(r2);[~,i2]=max(r2(:,1));RO.f=C2.X{2}(i2); 
+ if isempty(r2);
+ elseif isnumeric(r2);[~,i2]=max(r2(:,1));RO.f=C2.X{2}(i2); 
  else; RO.f=r2.fOcc(1);
  end
  out=RO; 
@@ -2283,7 +2287,7 @@ if RO.back; return;end
  elseif comstr(Cam,'hbv')
 %% #ViewHBV : estimate HBV : instant frequency and modulation
 
-if carg>nargin||comstr(Cam,'HBV{') 
+if carg>nargin||comstr(Cam,'hbv{') 
  c2=sdth.urn('Dock.Id.ci'); 
  if carg<=nargin&&isfield(varargin{carg},'Y');Time=varargin{carg};carg=carg+1;
  else
@@ -2301,6 +2305,7 @@ else
  if isfield(RO,'projM');projM=RO.projM;end
 end
 hfs=ii_signal('@sqSig');
+if length(CAM)==3; CAM=projM('d_squeal.ViewHBV');end
 ROc=hfs('depend',RO,Time,projM,CAM); % sdtweb ii_signal sqsig.depend
 %try
     [out,RB]=hfs('HbvDo',ROc); % sdtweb ii_signal obspha
@@ -3458,7 +3463,7 @@ function out=specMax(RO)
   if nargin==0;RO=struct('do',{''});end
   out=[];
   if ~isfield(RO,'do');RO.do={''};end
-  c13=get(13,'userdata');  ob=handle(c13.ua.ob(1));
+  c13=get(13,'userdata'); ua=c13.ua; ob=handle(ua.ob(1));
   if isfield(RO,'filt')&&contains(RO.filt,'f50');cdm.viewFilt('f50',13);end
   if isprop(ob,'ZData');Z=ob.ZData; else;Z=ob.CData;end
   if ob.YData(1)==0;Z(1:2,:)=NaN;end
@@ -3473,7 +3478,10 @@ function out=specMax(RO)
       end
       Z=Z/spec.Source.Edit.BlockSize; % rescale FFT
   end
-  f=ob.YData;t=ob.XData;
+  f=ob.YData; 
+  if length(f)==2&&strcmpi(ob.Type,'image');f=linspace(f(1),f(2),size(Z,2));end
+
+  t=ob.XData;
   st1='';
   try;st1=get(get(findobj(c13.opt(1),'type','colorbar'),'Label'),'string');end
   if ~isempty(st1)&&contains(lower(st1),'pa')
@@ -3484,12 +3492,13 @@ function out=specMax(RO)
   r3=mean(r2);r2(:,2)=r2(:,2)*r3(1)/r3(2); % Scale mean to have mean(SMean) = mean(Max)
   %% remove 50 Hz 
   i5=find(rem(f,50*RO.fCoef)==0);i5=[i5 i5-1 i5+1];i5(i5==0)=1;i5(i5>length(f))=length(f);
-  r2(i5(:,1),2)=(r2(i5(:,2),2)+r2(i5(:,3),2))/2; 
-
+  if ~isempty(i5)
+   r2(i5(:,1),2)=(r2(i5(:,2),2)+r2(i5(:,3),2))/2; 
+  end
   gf=sdth.urn('figure(101).os{@Dock,{name,SqSig},name,101 SpecMax,NumberTitle,off}');
   figure(double(gf));
   if isfield(RO,'hold');hold(RO.hold);else; clf;end
-  h=plot(ob.YData,r2);set(h,'linewidth',1,'marker','.');
+  h=plot(f,r2);set(h,'linewidth',1,'marker','.');
   xlabel(sprintf('Frequency [%s]',RO.fUnit));
   ylabel(sprintf('Spectro [%.1f - %.1f s]',min(t),max(t)))
   ga=get(h(1),'parent');set(ga,'yscale','log');legend(h,'Max','ScaledMean');
