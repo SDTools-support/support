@@ -442,7 +442,7 @@ if ~isfield(Range.param,'RunCfg');
       struct('type',{'.','{}'},'subs',{'list',{'@token{1}',3}})
       }});
 end
-Range.param.RunCfg=feval(fe_range('@popMerge'),Range,'RunCfg',{RO.urn,RO});
+Range.param.RunCfg=vhandle.uo.popMerge(Range,'RunCfg',{RO.urn,RO});
 if ~isfield(Range,'FileName')||isempty(Range.FileName);Range.FileName={'@RunCfg'};
 elseif ~any(strcmpi(Range.FileName,'@RunCfg'));Range.FileName{end+1}='@RunCfg';
 end

@@ -307,7 +307,7 @@ elseif comstr(Cam,'meshcfg');[CAM,Cam]=comstr(CAM,8);
     end
     
     MeshCfg{2}.MeshCfg=MeshCfg{1};
-    Range.param.MeshCfg=feval(fe_range('@popMerge'),Range,'MeshCfg',MeshCfg);
+    Range.param.MeshCfg=vhandle.uo.popMerge(Range,'MeshCfg',MeshCfg);
     if nargout>1; out1=struct('NeedInit',{MeshCfg});end
     if carg>nargin; break;end %Possibly multiple matches
     [CAM,Cam]=comstr(varargin{carg},1);carg=carg+1;
@@ -390,7 +390,7 @@ elseif comstr(Cam,'simucfg');[CAM,Cam]=comstr(CAM,8);
     end
     
     if isfield(Range,'SimuCfg')&&ischar(Range.SimuCfg);Range.SimuCfg=SimuCfg{1};end
-    Range.param.SimuCfg=feval(fe_range('@popMerge'),Range,'SimuCfg',SimuCfg);
+    Range.param.SimuCfg=vhandle.uo.popMerge(Range,'SimuCfg',SimuCfg);
     
     if carg>nargin; break;end %Possibly multiple matches
     [CAM,Cam]=comstr(varargin{carg},1);carg=carg+1;
@@ -445,7 +445,7 @@ elseif comstr(Cam,'runcfg');[CAM,Cam]=comstr(CAM,7);
       %% #RunEnd -----------------------------------------------------------------2
     end
     
-    Range.param.RunCfg=feval(fe_range('@popMerge'),Range,'RunCfg',RunCfg);
+    Range.param.RunCfg=vhandle.uo.popMerge(Range,'RunCfg',RunCfg);
     
     if carg>nargin; break;end %Possibly multiple matches
     [CAM,Cam]=comstr(varargin{carg},1);carg=carg+1;
@@ -729,7 +729,7 @@ elseif comstr(Cam,'range'); [CAM,Cam]=comstr(CAM,6);
         'param',struct(CAM,struct('type','pop','level',20)));
       if all(cellfun(@ischar,val(:))) || ...
           (size(val,2)==2&&all(cellfun(@ischar,val(:,1))))
-        [out.param.(CAM),out.val]=feval(fe_range('@popMerge'),out,CAM,val);
+        [out.param.(CAM),out.val]=vhandle.uo.popMerge(out,CAM,val);
       else; error('Not a valid val');
       end
     else
@@ -751,7 +751,7 @@ elseif comstr(Cam,'range'); [CAM,Cam]=comstr(CAM,6);
     if iscell(val)
       out=struct('val',[],'lab',{{CAM}}, ...
         'param',struct(CAM,struct('type','pop','level',10)));
-      [out.param.(CAM),out.val]=feval(fe_range('@popMerge'),out,CAM,val);
+      [out.param.(CAM),out.val]=vhandle.uo.popMerge(out,CAM,val);
     else
       out=struct('val',val(:),'lab',{{CAM}}, ...
         'param',struct(CAM,struct('type','double','level',10)));
