@@ -1944,8 +1944,6 @@ end
 if ~isfield(Time,'name');Time.name='Time';end
 Time=cdm.cleanCurveUnits(Time);
 
-omethod=sdth.eMethods.omethod;
-
 %% #build needed quantities -3
 C0=struct;st1=cell(0,3);
 RO.projM=projM; 
@@ -2152,7 +2150,7 @@ end
 i1=sdtm.Contains(lower(RO.Other),'a(f)');
 if any(i1)
   %% #ViewPar.a(f) amplitude as function of frequency -3
-  [r1,i2,st]=omethod('xvec',Time,1,{'Time','iFreq'});RO.Other(i1)=[];
+  [r1,i2,st]=cdm.xvec(Time,1,{'Time','iFreq'});RO.Other(i1)=[];
   [r1,st]=getAmp(r1,Time,st,RO);r1(:,4:end)=[];
   if strncmp(RO.Other{2},'{',1)
     [~,RP]=sdtm.urnPar(RO.Other{2},'{}{lp%g}');
@@ -2196,7 +2194,7 @@ if ~isempty(i1)
   RO.Other(i1)=[];
 
 dbstack; keyboard; 
-  [r1,i2,st]=omethod('xvec',Time,1,st1);
+  [r1,i2,st]=cdm.xvec(Time,1,st1);
   [r1,st]=getAmp(r1,Time,st,RO);r1=r1(:,i3);st=st(i3,:);
 
   gf=sdth.urn(sprintf('figure(104).os{@Dock,{name,SqSig},name,104 %s,NumberTitle,off}',RO.Other{i1}));
@@ -2214,7 +2212,7 @@ end
 i1=sdtm.Contains(lower(RO.Other),'a(t)');
 if any(i1);RO.Other(i1)=[];
   %% #ViewPar.a_t Display amplitude as function of time and instant freq -3
-  [r1,i2,st]=omethod('xvec',Time,1,{'Time','iFreq'});
+  [r1,i2,st]=cdm.xvec(Time,1,{'Time','iFreq'});
   [r1,st]=getAmp(r1,Time,st);
   gf=sdth.urn('figure(105).os{@Dock,{name,SqSig},name,105 a(t),NumberTitle,off}');
 
@@ -2243,7 +2241,7 @@ end
 if any(sdtm.Contains(lower(RO.Other),'at'))
   %% #ViewPar.at : harmonic modulation d_squeal('viewpar{at,cuParShape}',C1) -3
   gf=202;figure(gf); 
-  [r1,i2,st]=omethod('xvec',Time,1,{'Time','iFreq','TR'});
+  [r1,i2,st]=cdm.xvec(Time,1,{'Time','iFreq','TR'});
   % d_squeal('viewpar{at{5000},cuParShape}',C1)
   [~,r2]=sdtm.urnPar(RO.Other{sdtm.Contains(lower(RO.Other),'at')},'{N%g}{harm%g,dh%g,der%g}');
   if ~isfield(r2,'dh');r2.dh=1;end
@@ -2336,7 +2334,6 @@ if sdtm.Contains(lower(RO.do),'autoseg')
  c2.Stack{'Time'}.ID=struct('po',r4,'marker','band');
  stack_set(c2,'curve','EvtTime',C3);
 end
-omethod=sdth.eMethods.omethod;
 if ~isequal(projM,c2.data.nmap.nmap);sdtw('_ewt','report problem');end
 if ~isempty(projM) % Store in standard map 
  projM('SqLastSpec')=RO;
@@ -2367,7 +2364,7 @@ if ~isempty(st); d_squeal(['viewpar' st]);end
  %TA=fe_def('subdef',TA,@(x)x(:,1)>61.7&x(:,1)<64.3);TA.X{2}=repmat(TA.X{2}(1,:),3,1)
 
  gf=301;figure(gf);clf; cmap=lines(size(TA.Y,2));
- sdth.omethod('cleanvec',TA,'{x,1}{y,1}{gf301}');
+ cdm.urnVec(TA,'{x,1}{y,1}{gf301}');
  for j2=2:size(TA.Y,2)
   h=line(TA.X{1}(:,1),TA.Y(:,j2),'color',cmap(j2,:));
  end
@@ -2544,7 +2541,7 @@ r2=C2.Y;r2=r2./r2(:,1);r2=complex(RO.lp*real(r2),RO.lp*imag(r2));
 r2=r2.*sum(abs(r2).^2,2).^(-.5);
 r3=(abs(r2*r2(RO.iref,:)'));
 gf=107;figure(gf); 
-[r1,i2,st]=sdth.omethod('xvec',C2,1,{'Time','iFreq'});
+[r1,i2,st]=cdm.xvec(C2,1,{'Time','iFreq'});
 
 cingui('plotwd',gf,'@OsDic(SDT Root)',{'ImToFigN','WrW49c'});
 %gf=103:110; gf(~ishandle(i2))=[];
