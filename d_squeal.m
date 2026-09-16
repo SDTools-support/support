@@ -2335,7 +2335,7 @@ if sdtm.Contains(lower(RO.do),'autoseg')
  stack_set(c2,'curve','EvtTime',C3);
 end
 if ~isequal(projM,c2.data.nmap.nmap);sdtw('_ewt','report problem');end
-if ~isempty(projM) % Store in standard map 
+if ~isempty(projM)||isa(projM,'vhandle.nmap') % Store in standard map 
  projM('SqLastSpec')=RO;
  projM('ParShape')=out;% Store result 
 end
