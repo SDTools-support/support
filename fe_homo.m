@@ -229,7 +229,7 @@ else  % Default wave in x direction
 end
 if carg<=nargin&&isstruct(varargin{carg}); RO=varargin{carg};carg=carg+1;end
 DoOpt='prero.fe_homo.dftDisp';
-if ~isempty(projM)&&isKey(projM,DoOpt(7:end));RO=projM(DoOpt(7:end));end
+if isa(projM,'vhandle.nmap')&&isKey(projM,DoOpt(7:end));RO=projM(DoOpt(7:end));end
 [RO,st,CAM]=cingui('paramedit -DoClean',DoOpt,{RO,CAM});Cam=lower(CAM);
 if isfield(RO,'Range')&&isfield(RO.Range,'val');Range=RO.Range;end
 def=[];
@@ -424,7 +424,7 @@ def.Range.param.ncx=struct('LabFcn', ...
 end
 
 out=def; 
-if ~isempty(projM)&&nargout==0;
+if  isa(projM,'vhandle.nmap')&&nargout==0;
     sdtm.store(projM,'{def>CurDftDef,SE>CurModel}');
 end
 if RO.NeedHist
@@ -457,7 +457,7 @@ if RO.NeedHist
  hist.Range.CellDir=RO.cyc.CellDir;
  hist.X{2}=(1:size(hist.Y,2))'; % Mode indices
  out1=hist;
- if ~isempty(projM)&&nargout==0; sdtm.store(projM,'hist>CurHist');end
+ if isa(projM,'vhandle.nmap')&&nargout==0; sdtm.store(projM,'hist>CurHist');end
 else;out1=[];
 end
 

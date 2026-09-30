@@ -2303,7 +2303,7 @@ else
  if isfield(RO,'projM');projM=RO.projM;end
 end
 hfs=ii_signal('@sqSig');
-if length(CAM)==3; CAM=projM('d_squeal.ViewHBV');end
+tag='d_squeal.ViewHBV';if length(CAM)==3&&isKey(projM,tag); CAM=projM(tag);end
 ROc=hfs('depend',RO,Time,projM,CAM); % sdtweb ii_signal sqsig.depend
 %try
     [out,RB]=hfs('HbvDo',ROc); % sdtweb ii_signal obspha
@@ -2311,6 +2311,7 @@ ROc=hfs('depend',RO,Time,projM,CAM); % sdtweb ii_signal sqsig.depend
 %    sdtm.toString(err)
 %    out=[];return
 %end
+if isfield(RB,'TimeRem'); stack_set(c2,'curve','TimeRem',RB.TimeRem);end
 RO=RB; if nargout>1; out1=RO;end
 
 if isfield(RO,'ci')&&~isempty(RO.ci)
@@ -2320,22 +2321,24 @@ if isfield(RO,'ci')&&~isempty(RO.ci)
     else; r2=cdm.urnVec(out,'{x,iFreq}');
         r2=struct('X',{{out.X{1}(:,1),r2(2)}},'Y',r2{1});
     end
-    ci.Stack{'spec'}.ID=struct('po',r2,'marker','xy'); 
+    r3=ci.Stack{'spec'}; 
+    if ~isempty(r3);r3.ID=struct('po',r2,'marker','xy'); ci.Stack{'spec'}=r3;end
     %if length(RO.f)==1;ci.ua.axProp={'ylim',RO.f*[.98 1.02]};
     %else; ci.ua.axProp={'ylim',[min(RO.f)*.98 max(RO.f)*1.02]};
     %end
     iiplot(ci);
 end
+c2=sdth.urn('Dock.id');
 if sdtm.Contains(lower(RO.do),'autoseg')
  r4=abs(out.Y(:,2));it=find(r4>max(r4)*RO.EvtTol);
  C3=feval(process_r('@SigEvt'),'init',Time,struct('it',it,'do','AutoSeg'));
- C3.DimPos=1:3; c2=sdth.urn('Dock.id');
+ C3.DimPos=1:3; 
  r4=Time.X{1}(C3.Source.Range.val(:,1:2));
  c2.Stack{'Time'}.ID=struct('po',r4,'marker','band');
  stack_set(c2,'curve','EvtTime',C3);
 end
 if ~isequal(projM,c2.data.nmap.nmap);sdtw('_ewt','report problem');end
-if ~isempty(projM)||isa(projM,'vhandle.nmap') % Store in standard map 
+if isa(projM,'vhandle.nmap') % Store in standard map 
  projM('SqLastSpec')=RO;
  projM('ParShape')=out;% Store result 
 end
@@ -3374,9 +3377,26 @@ end
 elseif comstr(Cam,'pcin');
  %% #pcind -2
  preRO={'key','ToolTip','DoOpt';
-  'd_rail.Mesh.xxx','beam mass track slice model',[ ...
-   'ncell(15#%g#"number of sleepers")' ...
-   ]  };
+  'd_squeal.Hbv','HBV demodulation',{'DoOpt'
+   'dmBand(NaN#%g#"first demodulation bandwidth")' 
+   'ifBand(NaN#%g#"instant frequency bandwidth")' 
+   'ifSat(NaN#%g#"instant frequency saturation xxx")' 
+   'aeBand(NaN#%g#"instant frequency bandwidth")' 
+   'harm(1#%g#"kept harmonics")' 
+   'do("{ReEstY}"#%s#"list of things done at the end")' 
+   'tclip(#%ug#"time clipping")' 
+   'postTclip(#%ug#"time clipping")' 
+   'bandpass(#%ug#"firt do band pass filtering")' 
+   'clipBand(#%ug#"time clipping")' 
+   'f(#%s#"initial frequency estimate")' 
+   'chRef(#%g#"channel reference")' 
+   'jPar(#%g#"current experiment")' 
+   'iu(#%s#"xxx")' 
+   'hf(#%ug#"xxx")' 
+   'ci(#%i#"xxx")' 
+   'Yrem(0#31#"remove signal from spectrograme copy")' 
+   }  };
+
  preOs={'key','ToolTip','os'
      'd_squeal.viewSpec','View spectrogram', ...
       {'@PlotWd',{'@OsDic',{'ImToFigN','ImSw80','WrW49c'}}, ...
