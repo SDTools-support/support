@@ -590,7 +590,16 @@ elseif comstr(Cam,'dfrf')
 elseif comstr(Cam,'redp2') 
 %% #DFTRedP2set : SE generation with left/right (phase2) 
  Case=[];SE=[]; def=[];
- eval(iigui({'SE','def','RO','Case','Load'},'MoveFromCaller'))
+ if evalin('base','exist(''DebugRedP2'',''var'')')
+   if isscalar(dbstack);
+       eval(iigui({'SE','def','RO','Case','Load'},'GetInBaseC'));%fe_homo('DftRedP2');
+   else
+       eval(iigui({'SE','def','RO','Case','Load'},'MoveFromCaller'))
+       eval(iigui({'SE','def','RO','Case','Load'},'SetInBaseC'));%fe_homo('DftRedP2');
+   end
+ else
+  eval(iigui({'SE','def','RO','Case','Load'},'MoveFromCaller'))
+ end
 
 % Initial was sdtweb dyn_solve RedV2Phase2 
 cyc=stack_get(Case,'cyclic','Symmetry','get');
@@ -787,7 +796,7 @@ elseif comstr(Cam,'redlist')
  if ~isfield(RO,'BuildList');RO.BuildList=RO.peig;end % DV compatibility
  if ~isfield(RO,'Phase2');RO.Phase2={'fe_homo','DftRedP2'};end
  if ~isfield(RO,'matdes');RO.matdes=[2 1];end
- sdtu.logger.doing(dbstack,sdtm.toString(RO.BuildList));
+ sdtu.logger.doing(dbstack,sdtm.toString(RO.BuildList,'','inline'));
  if isfield(RO,'Assemble')&&~isempty(RO.Assemble)
   [SE,Case,Load]=fe_case(model,RO.Assemble);
  else
@@ -817,7 +826,7 @@ elseif comstr(Cam,'redlist')
      else; error('Not expected');
      end
      if comstr(Cam,'tstat')% {'tstat',linspace(0,.5,RO.Static)'}
-      def2=fe_cyclic(CAM,SE3,val); def2.data(:,2)=0;
+      def2=fe_cyclic(CAM,SE3,val); 
       def2.LabFcn='sprintf(''%i@ %.1f rad/m'',ch,2*pi*def.data(ch,1)/.6)';
      elseif comstr(Cam,'feval')%  [d1,SE]=p_pml('SolveDfrf',mo1,RD);
       i1=find(cellfun(@(x)ischar(x)&&strncmpi(x,'@',1),val));
@@ -827,7 +836,7 @@ elseif comstr(Cam,'redlist')
      else % {eig2 -pcond=1',[5 3 0]}
       def2=fe_cyclic(CAM,stack_set(SE3,'info','EigOpt',val));
      end
-     if ~isempty(R2.fmax);
+     if ~isempty(R2.fmax)&&~comstr(Cam,'tstat')
          i1=def2.data(:,1)<R2.fmax; if nnz(i1)==0;i1=1:4;end
          def2=fe_def('subdef',def2,i1);
      end
@@ -3090,7 +3099,29 @@ function [T2,RC,RO]=genT2(T2,RC,RO);
     [u,s]=svd(di.def(i2,:),0);s=diag(s); 
     [T2,fr]=fe_norm(u,m(i2,i2),RC.k);
  elseif strncmpi(RO.curSetType,'fe_norm',7);
-   if RO.curActive
+   if 1==2%isfield(RC,'Rb')&&RO.curActive
+       %% order_terms_with_kept_energy 
+       m=evalin('caller','T3''*m*T3');
+       k=evalin('caller','T3''*k*T3');
+       rba=RC.Rb.def(RO.indActive,:);%
+       for j1=size(rba,2)/6
+        islice=j1*6+(-5:0);rb=rba(:,islice); iactive=find(any(rb,2)); 
+        z=T2-rb*((rb'*k*rb)\(rb'*k*T2));
+        [u,s,~]=svd(z'*k*z,0,'vector');s(s<RO.SvdTol*s(1))=[];
+        d2=struct('def',evalin('caller','T3')*z*u(:,1:length(s)),'DOF',RC.Rb.DOF,'data',s);
+       end
+
+       rb=RC.Rb.def(RO.indActive,:);%
+       z=T2-rb*((rb'*k*rb)\(rb'*k*T2));
+       [u,s,~]=svd(z'*k*z,0,'vector');s(s<RO.SvdTol*s(1))=[];u(:,length(s)+1:end)=[];
+       d2=struct('def',evalin('caller','T3')*z*u,'DOF',RC.Rb.DOF,'data',s);
+
+       ch=83
+       z=T2(:,ch+[0 140]);[sqrt(sum(feutilb('dtkt',z,k)))/2/pi sum(feutilb('dtkt',z,m))]
+       z=z-rb*((rb'*k*rb)\(rb'*k*z));[sqrt(sum(feutilb('dtkt',z,k)))/2/pi sum(feutilb('dtkt',z,m))]
+       
+       z=T2(:,83+[0 140]);sqrt(sum(feutilb('dtkt',z,k)))/2/pi
+   elseif RO.curActive
      m=evalin('caller','T3''*m*T3');
      k=evalin('caller','T3''*k*T3');
      [T2,fr]=fe_norm(T2(:,any(T2)),m,k);
