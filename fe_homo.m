@@ -689,7 +689,7 @@ for j1=1:size(RO.P2Sets,1)
    curCoor=RO.curCoor;T2ref=def.def(i2,:);eval(iigui({'T2','RC','curCoor','T2ref'},'SetInBaseC'));
    T3=fe_coor(curCoor,T2,RC);subspace([T3.Tl,T3.Tr,T3.Ti],T2ref)
   end
-  T0=T2;
+  T0=T2; %  eval(iigui({'T3','RO','T0','RC','SE','m','def'},'SetInBaseC')) 
   T2=fe_coor(RO.curCoor,T0,RC);% sdtweb fe_coor('lrisvd')
  end
  % d_dft('viewdebugT2') p_pml('viewqz'); 
