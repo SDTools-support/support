@@ -886,7 +886,7 @@ end
   if isfield(RO,'Load'); RB.Load=1; end
   if isfield(RA,'NoT'); if RA.NoT; RB.KismDOF=1; else; RB.KiscDOF=1; end; end % add info if NoT is controlled
   if comstr(Cam,'tr') % and output TR
-   fe2xf('BuildTrEnh-norm-NoT','TR',model,Case,RB,bopt{:});
+   fe2xf('nEnh-norm-NoT','TR',model,Case,RB,bopt{:});
    out=TR;
   else % and reduce
    if ~isempty(RO.enh); MVR=fe2xf('BuildTrEnh-norm-MVR','TR',model,Case,RB,bopt{:}); % NoT ??
