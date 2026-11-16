@@ -360,8 +360,9 @@ else
     if rem(d1.DOF(end),1)<.5;r1=[real(d1.def);imag(d1.def)]; else;r1=d1.def;end
     d1.Filter.pdef=pinv(r1'*m*r1)*(r1'*m); d1.Filter.def=r1; 
   end
-  d1.data(:,2)=jpar; d1.data(:,3:end)=[];d1.Xlab{2}={'Freq','jPar'};
-  if R1.val(1)~=1 % Not ncx==1
+  d1.data(:,2)=jpar; d1.data(:,3:end)=[];d1.Xlab{2}={'Freq';'jPar'};
+  if isfield(R1,'KeepPair');
+  elseif R1.val(1)~=1 % Not ncx==1
    d1=fe_def('subdef',d1,1:2:size(d1.def,2)); % On vector of the pair
   end
   if size(d1.def,2)<RO.nM; 
@@ -377,7 +378,14 @@ end
 try
  Nm=size(d1.def,2);
  i1=reshape(1:size(def.def,2),[],size(RO.RangeNc.val,1))';
- if isfield(def,'Filter')
+ if isfield(def,'Filter')&&isfield(RO,'Group')
+  %% energy groups
+  for j2=2:size(RO.Group,1)
+   r2=sum((def.Filter.pdef(RO.Group{j2,2},:)*def.def).^2)';
+   def.data(:,2+j2)=r2;def.Xlab{2}{2+j2}=RO.Group{j2,1};
+  end
+  def=fe_def('subdef',def,reshape(i1,[],1));
+ elseif isfield(def,'Filter')
   for j2=size(i1,1):-1:1
    r2=def.Filter.pdef*def.def(:,Nm*j2+(-Nm+1:0));
    r2=abs(r2(1:2:end,:))+abs(r2(2:2:end,:));
@@ -391,10 +399,10 @@ try
    i1(j2,i2)=i1(j2,:);
   end
   %rs=@(x)reshape(x,size(i1,1),[]);figure(1);plot(rs(1./Range.ncx(def.data(i1(:,1:4),2))),rs(def.data(i1(:,1:4),1)),'o')
+  def=fe_def('subdef',def,reshape(i1,[],1));
+  ph=reshape(def.data(:,2),size(RO.RangeNc.val,1),[]); 
  end
  
- def=fe_def('subdef',def,reshape(i1,[],1));
- ph=reshape(def.data(:,2),size(RO.RangeNc.val,1),[]); 
  RO.NeedHist=1;
 catch
  sdtw('_nb','Failed hist reshape');
@@ -434,6 +442,11 @@ if RO.NeedHist
      []}}, ... % Kappa=1/(nc)
      'Xlab',{{'kx','Mode'}}, ...
      'Y',reshape(def.data(:,1),size(def.Range.val,1),[]));
+ if isfield(RO,'Group')
+  hist.X{3}=def.Xlab{2}([1 3:end]);
+  hist.Y=reshape(def.data(:,[1 3:end]),size(def.Range.val,1),[],size(def.data,2)-1);
+  hist.Group=RO.Group; 
+ end
  if isfield(SE,'dof_in') % OutIn
    cr=fix(SE.dof_in)+(1:3)'/100;
    if isfield(SE,'TR');
@@ -1478,14 +1491,23 @@ if size(hist.Y,3)==2 % If markers defined loop on markers
      r3=hist.Y(:,:,1);r3(hist.Y(:,:,2)~=r2(j1))=NaN;
      li(j1*3+(-2:0))={r3,r1,marker{remi(j1,length(marker))}};
  end
- plot(li{:});xlabel('Omega [Hz]');ylabel(st);
+ plot(li{:});xlabel('Frequency [Hz]');ylabel(st);
 elseif norm(hist.Y(isfinite(hist.Y)),'inf')>1e4&&size(hist.Y,3)==1
- plot(hist.Y/1000,r1);xlabel('Omega [kHz]');ylabel(st);
+ plot(hist.Y/1000,r1);xlabel('Frequency [kHz]');ylabel(st);
+elseif isfield(hist,'Group');
+ r2=repmat(hist.X{1}(:,1),1,size(hist.Y,2));
+ r3=reshape(hist.Y(:,:,3:end),size(hist.Y,1)*size(hist.Y,2),[]);
+ r3(:,end+1)=1-sum(r3,2);cmap=[vertcat(hist.Group{2:end,3});.5 .5 .5];
+ r3=r3*cmap;r3=reshape(r3,[size(r2,1) size(r2,2) 3]);
+ h=patch(reshape(hist.Y(:,:,1),size(r2)),r2,r3);
+ r3=reshape(hist.Y(:,:,3),[],1)*hist.Group{2,3};
+ xlabel('Frequency [Hz]');ylabel(st);
+ cdm.urnOsM('fe_homo.DfpViewHistGroup',h.Parent)
 elseif size(hist.Y,3)>1;warning('Forced response not expected');
  plot(squeeze(hist.Y(:,:,strncmpi(hist.X{3},'Freq',4))),r1);
- xlabel('Omega [Hz]');ylabel(st);
+ xlabel('Frequency [Hz]');ylabel(st);
 else
- plot(hist.Y,r1);xlabel('Omega [Hz]');ylabel(st);
+ plot(hist.Y,r1);xlabel('Frequency [Hz]');ylabel(st);
 end
 if isfield(hist,'axProp'); cingui('objset',gca,hist.axProp); end% Should move to fe_homo
 
@@ -2413,7 +2435,11 @@ elseif comstr(Cam,'pcin')||comstr(Cam,'preos')
      'fe_homo.viewNodeLines','node lines', ...
       {'@PlotWd',{'@OsDic',{'ImToFigN','ImSw80','WrW49c'}}, ...
         '@ColorMap',{'ColorMapBand parula(4)'}}
-      }; 
+      'fe_homo.DfpViewHistGroup','coloring of wave groups', ...
+        {'@PlotWd',{'@OsDic',{'ImToFigN','ImSw80','WrW49c'}}, ...
+        '@patch',{'facecolor','none', ...
+        'linestyle','none','marker','.','markersize',12,'MarkerEdgeColor','flat'}}
+        }; 
   % augment cinM/osM using preRO/preOs
   sdtm.pInitPre([nargout exist('preRO','var') exist('preOs','var')]);
 elseif comstr(Cam,'keywords');
