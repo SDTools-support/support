@@ -1499,10 +1499,11 @@ elseif isfield(hist,'Group');
  r3=reshape(hist.Y(:,:,3:end),size(hist.Y,1)*size(hist.Y,2),[]);
  r3(:,end+1)=1-sum(r3,2);cmap=[vertcat(hist.Group{2:end,3});.5 .5 .5];
  r3=r3*cmap;r3=reshape(r3,[size(r2,1) size(r2,2) 3]);
+ clf;
  h=patch(reshape(hist.Y(:,:,1),size(r2)),r2,r3);
  r3=reshape(hist.Y(:,:,3),[],1)*hist.Group{2,3};
  xlabel('Frequency [Hz]');ylabel(st);
- cdm.urnOsM('fe_homo.DfpViewHistGroup',h.Parent)
+ cdm.urnOsM('fe_homo.DfpViewHistGroup',h.Parent);
 elseif size(hist.Y,3)>1;warning('Forced response not expected');
  plot(squeeze(hist.Y(:,:,strncmpi(hist.X{3},'Freq',4))),r1);
  xlabel('Frequency [Hz]');ylabel(st);
