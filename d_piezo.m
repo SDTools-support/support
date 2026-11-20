@@ -4015,7 +4015,7 @@ elseif comstr(Cam,'setplotwd');[CAM,Cam]=comstr(CAM,7);
 
 elseif comstr(Cam,'definestyles');[CAM,Cam]=comstr(CAM,11);
     %% #DefineStyles: defines default styles for feplot and iiplot figures -2
-    
+% xxx     
 sdtroot('SetOsDic',{
     'cms_wide',{'Position',[NaN NaN 800 600]} % ImSw100 ImSw80{@line,""} : removes the @line part of the style ImSw80
     'cms_tall',{'Position',[NaN NaN 600 800]}
@@ -4434,6 +4434,30 @@ elseif comstr(Cam,'pcond')
 elseif comstr(Cam,'tuto'); 
  r1=dbstack;eval(sdtweb('_tuto',struct('file',r1(1).name,'CAM',CAM)));
  if nargout==0; clear out; end
+elseif comstr(Cam,'pcin');
+    %% #pcind -2
+    preRO={'key','ToolTip','DoOpt';
+        'd_piezo.meshRect','beam mass track slice model',{'DoOpt'
+        ' nx(0#%g#" x divsion")'
+        ' ny(0#%g#" y division")'
+        ' xc(#%g#" position of corner")'
+        ' yc(#%g#" position of corner")'
+        ' ang(0#%g#" rotation of patch")'
+        }};
+    preOs={'key','ToolTip','os'
+        'd_piezo.JicPSpec','initialize spectrogram',{ ...
+        '@EndFcn','ii_mmif(''spectro{tmin 80 320,fmin0 300,BufTime1, overlap.9,windowhanning} -display14 -inNamePResp -NewNamePSpec'')', ...
+        '@PlotWd',{'@OsDic',{'ImToFigN','ImSw80','WrW49c'}}, ...
+        '@ua.Edit',struct('Interp','none'), ...
+        }
+        'd_piezo.cms_wide','',{'Position',[NaN NaN 800 600]} % ImSw100 ImSw80{@line,""} : removes the @line part of the style ImSw80
+        'd_piezo.cms_tall','',{'Position',[NaN NaN 600 800]}
+        'd_piezo.cms_tw','',{'Position',[NaN NaN 800 800]}
+        'd_piezo.cms_f14' ,'',{'@axes',{'fontsize',14},'@title',{'fontsize',14},'@ii_legend',{'fontsize',14}}
+        'd_piezo.cms_grid','',{'@axes',{'xgrid','on','ygrid','on','zgrid','on'}};
+        }; 
+    % augment cinM/osM using preRO/preOs
+    sdtm.pInitPre([nargout exist('preRO','var') exist('preOs','var')]);
 elseif comstr(Cam,'@');out=eval(CAM);
 elseif comstr(Cam,'cvs')
  out=sdtcheck('revision','$Revision: c3f9e0b $  $Date: 2021-03-16 18:05:59 +0100 $ ');
@@ -4451,13 +4475,7 @@ function [model,RO,RB]=meshRect(model,RO,RB);
 
 %% Add rectangular patches
 % RO.Rect=[xc lx nx, yc ly ny ang (MatId ProId)] 
-  [RB,st,CAM]=cingui('paramedit -DoClean',[ ...
-      ' nx(0#%g#" x divsion")'...
-      ' ny(0#%g#" y division")'...
-      ' xc(#%g#" position of corner")'...
-      ' yc(#%g#" position of corner")'...
-      ' ang(0#%g#" rotation of patch")'...
-        ],{RB,RB.CAM});
+  [RB,st,CAM]=cingui('paramedit -DoClean','prero.d_piezo.meshRect',{RB,RB.CAM});
 if RB.lx==0||RB.ly==0; RB=struct; return; end
  r3=[RO.MatId RO.ProId];r3(r3==0)=[];RO.PatchId(end+1,1)=r3(1);
  
